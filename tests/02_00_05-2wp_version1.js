@@ -20,7 +20,6 @@ let rskTxHelpers;
 
 /**
  * Takes the blockchain to the required state for this test file to run in isolation.
- * @param {RskTransactionHelper} rskTxHelper 
  */
 const fulfillRequirementsToRunAsSingleTestFile = async () => {
     await rskUtils.activateFork(Runners.common.forks.fingerroot500);
@@ -37,7 +36,8 @@ describe('Lock funds using peg-in protocol version 1', () => {
             await fulfillRequirementsToRunAsSingleTestFile();
         }
 
-        const bridge = getBridge(rskTxHelper.getClient(), getLatestActiveForkName());
+        const latestActiveForkName = await getLatestActiveForkName();
+        const bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
 
         // Get the current locking cap
         lockingCapInBtc = btcEthUnitConverter.satoshisToBtc(Number(await bridge.methods.getLockingCap().call()));

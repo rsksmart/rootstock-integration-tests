@@ -16,7 +16,6 @@ let bridge;
 
 /**
  * Takes the blockchain to the required state for this test file to run in isolation.
- * @param {RskTransactionHelper} rskTxHelper 
  */
 const fulfillRequirementsToRunAsSingleTestFile = async () => {
     await activateFork(Runners.common.forks.wasabi100);
