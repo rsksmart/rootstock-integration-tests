@@ -11,7 +11,6 @@ let btcTxHelper;
 
 /**
  * Takes the blockchain to the required state for this test file to run in isolation.
- * @param {RskTransactionHelper} rskTxHelper 
  */
 const fulfillRequirementsToRunAsSingleTestFile = async () => {
     await rskUtils.activateFork(Runners.common.forks.fingerroot500);
@@ -30,7 +29,8 @@ describe('Lock multisig address', () => {
 
     // Should refund if the btc sender address is a multisig
     it('lock should work when using multisig address', async () => {
-        const bridge = getBridge(rskTxHelper.getClient(), getLatestActiveForkName());
+        const latestActiveForkName = await getLatestActiveForkName();
+        const bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
         const federationAddress = await bridge.methods.getFederationAddress().call();
 
         const senderAddressInfo = await btcTxHelper.generateMultisigAddress(3, 2, 'legacy');
@@ -55,4 +55,4 @@ describe('Lock multisig address', () => {
         expect(Number(finalSenderAddressBalance)).to.be.above(MINIMUM_PEGIN_VALUE_IN_BTC - btcTxHelper.getFee()).and.below(MINIMUM_PEGIN_VALUE_IN_BTC)
         } 
     );
-})
+});

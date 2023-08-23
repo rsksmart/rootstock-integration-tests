@@ -9,7 +9,8 @@ let bridge;
 describe('getEstimatedFeesForNextPegOutEvent - post fingerroot', () => {
   before(async () => {
     const rskTxHelper = getRskTransactionHelper();
-    bridge = getBridge(rskTxHelper.getClient(), await getLatestActiveForkName());
+    const latestActiveForkName = await getLatestActiveForkName();
+    bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
   });
 
   it('getEstimatedFeesForNextPegOutEvent bridge method returns fee estimation for one pegout when there are no pegout requests', async () => {

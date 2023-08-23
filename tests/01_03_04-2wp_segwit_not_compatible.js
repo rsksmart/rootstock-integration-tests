@@ -29,7 +29,8 @@ describe('Lock p2sh-p2wpkh address', () => {
     it('lock should fail when using p2sh-p2wpkh address', async () => {
         const senderAddress = await btcTxHelper.generateBtcAddress('p2sh-segwit')
 
-        const bridge = getBridge(rskTxHelper.getClient(), getLatestActiveForkName());
+        const latestActiveForkName = await getLatestActiveForkName();
+        const bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
         const federationAddress = await bridge.methods.getFederationAddress().call();
 
         const federationAddressBalanceInitial = Number(await btcTxHelper.getAddressBalance(federationAddress));

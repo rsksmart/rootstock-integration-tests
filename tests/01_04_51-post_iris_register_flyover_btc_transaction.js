@@ -2,12 +2,13 @@ const expect = require('chai').expect;
 const { ensure0x, fundAddressAndGetData, additionalFederationAddresses, } = require('../lib/utils');
 const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
 const lbc = require('../lib/liquidity-bridge-contract');
-const { mineAndSync, sendTxWithCheck, getFedsPubKeys, activateFork } = require('../lib/rsk-utils');
+const { sendTxWithCheck, getFedsPubKeys, activateFork } = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBridge } = require('../lib/precompiled-abi-forks-util');
 const btcEthUnitConverter = require('btc-eth-unit-converter');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const CustomError = require('../lib/CustomError');
+const { mineForPeginRegistration } = require('../lib/2wp-utils');
 
 let rskTxHelpers;
 let rskTxHelper;
@@ -63,9 +64,8 @@ describe('Calling registerFastBtcTransaction after iris', () => {
       const flyoverFedAddress = redeemScriptParser.getAddressFromRedeemScript('REGTEST', flyoverRedeemScript);
       additionalFederationAddresses.add(flyoverFedAddress);
       const data = await fundAddressAndGetData(btcTxHelper, flyoverFedAddress, BTC_BALANCE_TO_TRANSFER_IN_BTC, AMOUNT_FOR_FUNDER_IN_BTC);
-      await btcTxHelper.mine(2);
-      await rskTxHelper.updateBridge();
-      await mineAndSync(rskTxHelpers);
+      
+      await mineForPeginRegistration(rskTxHelper, btcTxHelper);
 
       const cowAddress = await rskTxHelper.newAccountWithSeed('cow');
 
