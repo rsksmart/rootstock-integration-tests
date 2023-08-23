@@ -1,4 +1,4 @@
-# Federate Node Integration tests
+# Rootstock Integration tests
 
 ## Disclaimer
 
