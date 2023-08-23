@@ -1,0 +1,9 @@
+node_modules
+.vscode/
+.lock
+config/*.js
+**/*.secp256
+**/*.bip39
+logs
+.env
+.DS_Store

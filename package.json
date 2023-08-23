@@ -1,0 +1,52 @@
+{
+  "name": "federator-integration-tests",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --timeout 600000",
+    "test-fail-fast": "mocha -b --timeout 600000",
+    "run-tests-multiple-times": "node testRunner.js",
+    "run-single-test-file": "node singleTestFileRunner.js"
+  },
+  "author": "",
+  "license": "GPL3",
+  "dependencies": {
+    "@rsksmart/bridge-state-data-parser": "^1.1.0",
+    "@rsksmart/btc-rsk-derivation": "^0.0.2",
+    "@rsksmart/pmt-builder": "^3.0.0",
+    "@rsksmart/powpeg-redeemscript-parser": "^1.0.0",
+    "bn.js": "^4.11.8",
+    "bridge-transaction-parser-hop400": "github:rsksmart/bridge-transaction-parser#v0.4.0-beta",
+    "bridge-transaction-parser-fingerroot500": "github:rsksmart/bridge-transaction-parser#v0.5.0-beta",
+    "btc-eth-unit-converter": "github:rsksmart/btc-eth-unit-converter#v0.3.0-beta",
+    "btc-transaction-helper": "git+https://git@github.com/rsksmart/btc-transaction-helper#v3.4.0",
+    "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
+    "colors": "^1.1.2",
+    "dev-null": "^0.1.1",
+    "dotenv": "^16.0.3",
+    "find": "^0.2.9",
+    "fs-extra": "^4.0.2",
+    "glob": "^7.1.2",
+    "lodash": "^4.17.5",
+    "mocha": "^10.1.0",
+    "mocha-junit-reporter": "^1.17.0",
+    "pegin-address-verificator": "git+https://git@github.com/rsksmart/pegin-address-verifier#v0.2.1",
+    "peglib": "git+https://github.com/rsksmart/rsk-peglib#v1.4.15",
+    "precompiled-orchid": "npm:@rsksmart/rsk-precompiled-abis@^1.0.0-ORCHID",
+    "precompiled-wasabi100": "npm:@rsksmart/rsk-precompiled-abis@^2.0.0-WASABI",
+    "precompiled-papyrus200": "npm:@rsksmart/rsk-precompiled-abis@^3.0.0-PAPYRUS",
+    "precompiled-iris300": "npm:@rsksmart/rsk-precompiled-abis@^4.0.0-IRIS",
+    "precompiled-hop400": "npm:@rsksmart/rsk-precompiled-abis@^5.0.0-HOP",
+    "precompiled-fingerroot500": "npm:@rsksmart/rsk-precompiled-abis@^5.0.0-FINGERROOT",
+    "rsk-transaction-helper": "git+https://github.com/rsksmart/rootstock-transaction-helper#v3.1.0",
+    "solc": "^0.7.5",
+    "stream-line-wrapper": "^0.1.1",
+    "tmp": "0.0.33",
+    "wait-for-port": "0.0.2"
+  },
+  "devDependencies": {
+    "shelljs": "^0.8.5"
+  }
+}
