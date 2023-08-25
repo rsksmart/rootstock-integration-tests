@@ -1,98 +1,56 @@
 const expect = require('chai').expect
-var { sequentialPromise, wait } = require('../lib/utils');
-const bitcoin = require('peglib').bitcoin;
-const rsk = require('peglib').rsk;
-const pegUtils = require('peglib').pegUtils;
-const CustomError = require('../lib/CustomError');
-const pegAssertions = require('../lib/assertions/2wp');
-const rskUtilsLegacy = require('../lib/rsk-utils-legacy');
 const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 
-var federationAddress;
-var btcClient;
-var rskClient;
-var rskClients;
-var pegClient;
-var test;
+const { getBtcClient } = require('../lib/btc-client-provider');
+const { sendPegin, MINIMUM_PEGIN_VALUE_IN_BTC } = require('../lib/2wp-utils');
+const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const { isUtxoRegisteredInBridge } = require('../lib/2wp-utils');
+
 let rskTxHelpers;
+let rskTxHelper;
+let btcTxHelper;
 
-const NETWORK = bitcoin.networks.testnet;
-const INITIAL_BTC_BALANCE = bitcoin.btcToSatoshis(10);
-
-const WHITELIST_CHANGE_PK = '3890187a3071327cee08467ba1b44ed4c13adb2da0d5ffcc0563c371fa88259c';
-const WHITELIST_CHANGE_ADDR = '87d2a0f33744929da08b65fd62b627ea52b25f8e';
+const fulfillRequirementsToRunAsSingleTestFile = async () => {
+    await rskUtils.activateFork(Runners.common.forks.wasabi100);
+};
 
 describe('Lock multisig address', () => {
     before(async () => {
-        try{
-            btcClient = bitcoin.getClient(
-              Runners.hosts.bitcoin.rpcHost,
-              Runners.hosts.bitcoin.rpcUser,
-              Runners.hosts.bitcoin.rpcPassword,
-              NETWORK
-            );
-            rskClient = rsk.getClient(Runners.hosts.federate.host);
-            rskClients = Runners.hosts.federates.map(federate => rsk.getClient(federate.host));
-            pegClient = pegUtils.using(btcClient, rskClient);
-            test = pegAssertions.with(btcClient, rskClient, pegClient, rskClients);
-            utils = rskUtilsLegacy.with(btcClient, rskClient, pegClient);
-            rskTxHelpers = getRskTransactionHelpers();
-      
-            // Grab the federation address
-            federationAddress = await rskClient.rsk.bridge.methods.getFederationAddress().call();
-            await btcClient.importAddress(federationAddress, 'federations');
-            
-            let addresses = await pegClient.generateNewAddress('test');
-            expect(addresses.inRSK).to.be.true;
-            
-            await btcClient.sendToAddress(addresses.btc, INITIAL_BTC_BALANCE);
-            await btcClient.generate(1);
-            await test.assertBitcoinBalance(addresses.btc, INITIAL_BTC_BALANCE, 'Initial BTC balance');
-            
-            let addr = await rskClient.eth.personal.importRawKey(WHITELIST_CHANGE_PK, '');
-            expect(addr.slice(2)).to.equal(WHITELIST_CHANGE_ADDR);
-            
-            await rskClient.eth.personal.unlockAccount(addr, '');
-            await sequentialPromise(10, () => rskUtils.mineAndSync(rskTxHelpers));
-      
-           // Update the bridge to sync btc blockchains
-            await rskClient.fed.updateBridge();
-            await rskUtils.mineAndSync(rskTxHelpers);
-      
-            return federationAddress;
-        }
-        catch (err) {
-          throw new CustomError('Lock whitelisting failure', err);
+        rskTxHelpers = getRskTransactionHelpers();
+        rskTxHelper = rskTxHelpers[0];
+        btcTxHelper = getBtcClient()
+
+        if(process.env.RUNNING_SINGLE_TEST_FILE) {
+            await fulfillRequirementsToRunAsSingleTestFile();
         }
     });
 
+    // Should fail and not refund when sending a pengin from a multisig address pre papyrus
     it('lock should fail when using multisig address', async () => {
-        try {
-            const INITIAL_BTC_BALANCE = bitcoin.btcToSatoshis(40);
-            const INITIAL_RSK_BALANCE = bitcoin.btcToSatoshis(10);
+        const senderAddress = await btcTxHelper.generateMultisigAddress(3, 2, 'legacy');
 
-            let multisigObj = await btcClient.generateMultisigAddress('test');
+        const latestActiveForkName = await getLatestActiveForkName();
+        const bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
+        const federationAddress = await bridge.methods.getFederationAddress().call();
 
-            await btcClient.sendToAddress(multisigObj.btc, INITIAL_BTC_BALANCE);
-            await btcClient.generate(1);
-            await test.assertBitcoinBalance(multisigObj.btc, INITIAL_BTC_BALANCE, "Wrong initial BTC balance");
-            await wait(1000);
+        const federationAddressBalanceInitial = Number(await btcTxHelper.getAddressBalance(federationAddress));
 
-            let btcBalances = await btcClient.getAddressBalance(federationAddress);
-            initialFederationBalance = btcBalances[federationAddress] || 0;
+        await btcTxHelper.fundAddress(senderAddress.address, MINIMUM_PEGIN_VALUE_IN_BTC + btcTxHelper.getFee());
 
-            await test.assertLock(multisigObj, [{ address: federationAddress, amount: INITIAL_RSK_BALANCE }], { fails: true });
+        const btcPeginTxHash = await sendPegin(rskTxHelper, btcTxHelper, senderAddress, MINIMUM_PEGIN_VALUE_IN_BTC);
 
-            btcBalances = await btcClient.getAddressBalance([multisigObj.btc, federationAddress]);
-            btcBalance = btcBalances[multisigObj.btc];
-            let finalFederationBalance = btcBalances[federationAddress] || 0;
+        const federationAddressBalanceAfterPegin = Number(await btcTxHelper.getAddressBalance(federationAddress));
+        expect(Number(federationAddressBalanceAfterPegin)).to.be.equal(Number(federationAddressBalanceInitial + MINIMUM_PEGIN_VALUE_IN_BTC));
 
-            expect(finalFederationBalance).to.be.greaterThan(initialFederationBalance);
-            expect(INITIAL_BTC_BALANCE).to.be.greaterThan(btcBalance);
-        } 
-        catch (err) {
-            throw new CustomError('Transfer BTC to RBTC failure', err);
-        }
-    });
-})
+        const isPeginUtxoRegistered = await isUtxoRegisteredInBridge(rskTxHelper, btcPeginTxHash);
+        expect(isPeginUtxoRegistered).to.be.false;
+
+        const federationAddressBalanceFinal = Number(await btcTxHelper.getAddressBalance(federationAddress));
+        expect(Number(federationAddressBalanceFinal)).to.be.equal(Number(federationAddressBalanceInitial + MINIMUM_PEGIN_VALUE_IN_BTC));
+
+        const senderAddressBalanceFinal = await btcTxHelper.getAddressBalance(senderAddress.address);
+        expect(Number(senderAddressBalanceFinal)).to.be.equal(0);
+    })
+});
+
