@@ -42,7 +42,7 @@ describe('Transfer BTC to RBTC before papyrus200', function() {
     const unlocked = await rskTxHelper.unlockAccount(recipientRskAddressInfo.address);
     expect(unlocked, 'Account was not unlocked').to.be.true;
 
-    const latestActiveForkName = await getLatestActiveForkName();
+    const latestActiveForkName = getLatestActiveForkName();
     const bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
     const federationAddress = await bridge.methods.getFederationAddress().call();
 
