@@ -14,8 +14,11 @@ describe('Transfer BTC to RBTC before papyrus200', function() {
   let btcTxHelper;
   let rskTxHelper;
 
-  const MINIMUM_PEGIN_VALUE_IN_SATOSHI = btcEthUnitConverter.btcToSatoshis(MINIMUM_PEGIN_VALUE_IN_BTC)
-  const MINIMUM_PEGIN_VALUE_IN_WEIS = btcEthUnitConverter.btcToWeis(MINIMUM_PEGIN_VALUE_IN_BTC)
+  const PEGIN_VALUE_IN_SATOSHI = btcEthUnitConverter.btcToSatoshis(3 * MINIMUM_PEGIN_VALUE_IN_BTC);
+  const MINIMUM_PEGOUT_VALUE_IN_WEIS = btcEthUnitConverter.btcToWeis(MINIMUM_PEGIN_VALUE_IN_BTC);
+  const PEGIN_VALUE_IN_BTC = 3 * MINIMUM_PEGIN_VALUE_IN_BTC;
+  const PEGOUT_VALUE_IN_RBTC = PEGIN_VALUE_IN_BTC / 3
+  const RSK_TX_FEE_IN_RBTC = 0.001
  
   const fulfillRequirementsToRunAsSingleTestFile = async () => {
     await rskUtils.activateFork(Runners.common.forks.wasabi100);
@@ -24,17 +27,17 @@ describe('Transfer BTC to RBTC before papyrus200', function() {
   before(async () => {
       rskTxHelpers = getRskTransactionHelpers();
       rskTxHelper = rskTxHelpers[0];
-      btcTxHelper = getBtcClient()
+      btcTxHelper = getBtcClient();
 
       if(process.env.RUNNING_SINGLE_TEST_FILE) {
           await fulfillRequirementsToRunAsSingleTestFile();
-      }
-  })
+      };
+  });
 
 
   it('should transfer BTC to RBTC', async () => {
     const btcAddressInfo = await btcTxHelper.generateBtcAddress('legacy');
-    await whitelistingAssertions.assertAddLimitedLockWhitelistAddress(rskTxHelper, btcAddressInfo.address, 3 * MINIMUM_PEGIN_VALUE_IN_SATOSHI);
+    await whitelistingAssertions.assertAddLimitedLockWhitelistAddress(rskTxHelper, btcAddressInfo.address, PEGIN_VALUE_IN_SATOSHI);
     await rskUtils.mineAndSync(rskTxHelpers);
     
     const recipientRskAddressInfo = getDerivedRSKAddressInformation(btcAddressInfo.privateKey, btcTxHelper.btcConfig.network);
@@ -48,14 +51,14 @@ describe('Transfer BTC to RBTC before papyrus200', function() {
 
     const federationAddressBalanceInitial = Number(await btcTxHelper.getAddressBalance(federationAddress));
 
-    await btcTxHelper.fundAddress(btcAddressInfo.address, 3 * MINIMUM_PEGIN_VALUE_IN_BTC + btcTxHelper.getFee());
+    await btcTxHelper.fundAddress(btcAddressInfo.address, PEGIN_VALUE_IN_BTC + btcTxHelper.getFee());
     
-    const btcPeginTxHash = await sendPegin(rskTxHelper, btcTxHelper, btcAddressInfo, 3 * MINIMUM_PEGIN_VALUE_IN_BTC);
+    const btcPeginTxHash = await sendPegin(rskTxHelper, btcTxHelper, btcAddressInfo, PEGIN_VALUE_IN_BTC);
     await ensurePeginIsRegistered(rskTxHelper, btcPeginTxHash);
-    const recipientRskAddressBalanceAfterPegin = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address))
-    expect(Number(recipientRskAddressBalanceAfterPegin)).to.be.equal(Number(3 * MINIMUM_PEGIN_VALUE_IN_WEIS));
+    const recipientRskAddressBalanceAfterPegin = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
+    expect(Number(recipientRskAddressBalanceAfterPegin)).to.be.equal(Number(3 * MINIMUM_PEGOUT_VALUE_IN_WEIS));
 
-    await sendTxToBridge(rskTxHelper, MINIMUM_PEGIN_VALUE_IN_BTC, recipientRskAddressInfo.address);
+    await sendTxToBridge(rskTxHelper, PEGOUT_VALUE_IN_RBTC, recipientRskAddressInfo.address);
     await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
 
     const federationAddressBalanceAfterFirstPegout = Number(await btcTxHelper.getAddressBalance(federationAddress));
@@ -64,16 +67,17 @@ describe('Transfer BTC to RBTC before papyrus200', function() {
     const senderAddressBalanceAfterFirstPegout = Number(await btcTxHelper.getAddressBalance(btcAddressInfo.address));
     expect(Number(senderAddressBalanceAfterFirstPegout)).to.be.above(MINIMUM_PEGIN_VALUE_IN_BTC - btcTxHelper.getFee()).and.below(MINIMUM_PEGIN_VALUE_IN_BTC);
 
-    const recipientRskAddressAfterFirstPegout = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address))
-    expect(Number(recipientRskAddressAfterFirstPegout)).to.be.above(MINIMUM_PEGIN_VALUE_IN_WEIS - btcTxHelper.getFee()).and.below(2 * MINIMUM_PEGIN_VALUE_IN_WEIS);
+    const recipientRskAddressAfterFirstPegout = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
+    expect(Number(recipientRskAddressAfterFirstPegout)).to.be.above(MINIMUM_PEGOUT_VALUE_IN_WEIS - RSK_TX_FEE_IN_RBTC).and.below(2 * MINIMUM_PEGOUT_VALUE_IN_WEIS);
     
-    await sendTxToBridge(rskTxHelper, MINIMUM_PEGIN_VALUE_IN_BTC, recipientRskAddressInfo.address);
+    await sendTxToBridge(rskTxHelper, PEGOUT_VALUE_IN_RBTC, recipientRskAddressInfo.address);
     await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
 
     const senderAddressBalanceAfterSecondPegout = Number(await btcTxHelper.getAddressBalance(btcAddressInfo.address));
-    expect(Number(senderAddressBalanceAfterSecondPegout)).to.be.above(2*MINIMUM_PEGIN_VALUE_IN_BTC - 2*btcTxHelper.getFee()).and.below(2*MINIMUM_PEGIN_VALUE_IN_BTC);
+    expect(Number(senderAddressBalanceAfterSecondPegout)).to.be.above(2*MINIMUM_PEGIN_VALUE_IN_BTC - 2 * btcTxHelper.getFee()).and.below(2 * MINIMUM_PEGIN_VALUE_IN_BTC);
 
-    const recipientRskAddressAfterSecondPegout = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address))
-    expect(Number(recipientRskAddressAfterSecondPegout)).to.be.below(MINIMUM_PEGIN_VALUE_IN_WEIS);
+    const recipientRskAddressAfterSecondPegout = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
+    expect(Number(recipientRskAddressAfterSecondPegout)).to.be.below(MINIMUM_PEGOUT_VALUE_IN_WEIS);
   });
 });
+
