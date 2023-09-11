@@ -66,7 +66,7 @@ describe('Transfer BTC to RBTC before papyrus200', function() {
     expect(Number(senderAddressBalanceAfterFirstPegout)).to.be.above(PEGOUT_VALUE_IN_RBTC - btcTxHelper.getFee()).and.below(PEGOUT_VALUE_IN_RBTC);
 
     const recipientRskAddressBalanceAfterFirstPegout = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
-    expect(Number(recipientRskAddressBalanceAfterFirstPegout)).to.be.above(btcEthUnitConverter.btcToWeis(PEGIN_VALUE_IN_BTC - PEGOUT_VALUE_IN_RBTC - RSK_TX_FEE_IN_RBTC)).and.below(btcToWeis(PEGIN_VALUE_IN_BTC - PEGOUT_VALUE_IN_RBTC));
+    expect(Number(recipientRskAddressBalanceAfterFirstPegout)).to.be.above(btcEthUnitConverter.btcToWeis(PEGIN_VALUE_IN_BTC - PEGOUT_VALUE_IN_RBTC - RSK_TX_FEE_IN_RBTC)).and.below(btcEthUnitConverter.btcToWeis(PEGIN_VALUE_IN_BTC - PEGOUT_VALUE_IN_RBTC));
     
     await sendTxToBridge(rskTxHelper, PEGOUT_VALUE_IN_RBTC, recipientRskAddressInfo.address);
     await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
@@ -75,7 +75,7 @@ describe('Transfer BTC to RBTC before papyrus200', function() {
     expect(Number(senderAddressBalanceAfterSecondPegout)).to.be.above(senderAddressBalanceAfterFirstPegout + PEGOUT_VALUE_IN_RBTC - btcTxHelper.getFee()).and.below(senderAddressBalanceAfterFirstPegout + PEGOUT_VALUE_IN_RBTC);
 
     const recipientRskAddressBalanceAfterSecondPegout = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
-    expect(Number(recipientRskAddressBalanceAfterSecondPegout)).to.be.above(recipientRskAddressBalanceAfterFirstPegout - btcToWeis(PEGOUT_VALUE_IN_RBTC - RSK_TX_FEE_IN_RBTC)).and.below(recipientRskAddressBalanceAfterFirstPegout - btcToWeis(PEGOUT_VALUE_IN_RBTC));
+    expect(Number(recipientRskAddressBalanceAfterSecondPegout)).to.be.above(recipientRskAddressBalanceAfterFirstPegout - btcEthUnitConverter.btcToWeis(PEGOUT_VALUE_IN_RBTC + RSK_TX_FEE_IN_RBTC)).and.below(recipientRskAddressBalanceAfterFirstPegout - btcEthUnitConverter.btcToWeis(PEGOUT_VALUE_IN_RBTC));
   });
 });
 
