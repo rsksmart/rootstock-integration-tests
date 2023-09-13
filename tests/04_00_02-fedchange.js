@@ -279,7 +279,7 @@ describe('RSK Federation change', function() {
       }
 
       await checkFederationAddedNewKeys();
-      var addKeysResult = await rskClientOldFed.rsk.bridge.methods.addFederatorPublicKeyMultikey('0xaabb', '0xccdd', '0xeeff').call({ from: getRandomFedChangeAddress() });
+      const addKeysResult = await rskClientOldFed.rsk.bridge.methods.addFederatorPublicKeyMultikey('0xaabb', '0xccdd', '0xeeff').call({ from: getRandomFedChangeAddress() });
       expect(Number(addKeysResult)).to.equal(-10); // not a public key
 
       const addPublicKeysResult = await rskClientOldFed.rsk.bridge.methods.addFederatorPublicKeyMultikey(
