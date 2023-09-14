@@ -279,16 +279,16 @@ describe('RSK Federation change', function() {
       }
 
       await checkFederationAddedNewKeys();
-      var addResult = await rskClientOldFed.rsk.bridge.methods.addFederatorPublicKeyMultikey('0xaabb', '0xccdd', '0xeeff').call({ from: getRandomFedChangeAddress() });
-      expect(Number(addResult)).to.equal(-10); // not a public key
-      
-      await rskClientOldFed.rsk.bridge.methods.addFederatorPublicKeyMultikey(
+      const addKeysResult = await rskClientOldFed.rsk.bridge.methods.addFederatorPublicKeyMultikey('0xaabb', '0xccdd', '0xeeff').call({ from: getRandomFedChangeAddress() });
+      expect(Number(addKeysResult)).to.equal(-10); // not a public key
+
+      const addPublicKeysResult = await rskClientOldFed.rsk.bridge.methods.addFederatorPublicKeyMultikey(
         newFederationPublicKeys[0][KEY_TYPE_BTC],
         newFederationPublicKeys[0][KEY_TYPE_RSK],
         newFederationPublicKeys[0][KEY_TYPE_MST]
-      ).call({ from: getRandomFedChangeAddress() }), (addResult => {
-          expect(Number(addResult)).to.equal(-2); // already in there
-      });
+      ).call({ from: getRandomFedChangeAddress() });
+
+      expect(Number(addPublicKeysResult)).to.equal(-2);
 
       var sz = await rskClientOldFed.rsk.bridge.methods.getPendingFederationSize().call();
       expect(Number(sz)).to.equal(newFederationPublicKeys.length); // success
