@@ -5,7 +5,6 @@ const rskUtils = require('../lib/rsk-utils');
 const { sendPegin, ensurePeginIsRegistered, sendTxToBridge } = require('../lib/2wp-utils');
 const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivation');
 const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
-const whitelistingAssertions = require('../lib/assertions/whitelisting');
 const btcEthUnitConverter = require('btc-eth-unit-converter');
 
 describe('2wp after iris300, using new minimum values', () => {
@@ -39,13 +38,13 @@ describe('2wp after iris300, using new minimum values', () => {
     it('should peg-in when sending minimum value', async () => {
         // Create legacy type address to use as sender
         const senderAddressInfo = await btcTxHelper.generateBtcAddress('legacy');
-        await whitelistingAssertions.assertAddLimitedLockWhitelistAddress(rskTxHelper, senderAddressInfo.address, MINIMUM_PEGIN_VALUE_IN_SATOSHI);
-        await rskUtils.mineAndSync(rskTxHelpers);
         const senderAddressBalanceInitial = Number(await btcTxHelper.getAddressBalance(senderAddressInfo.address));
+        expect(senderAddressBalanceInitial).to.equal(0);
 
         // Get the RSK address where the funds should be locked to
         const recipientRskAddressInfo = getDerivedRSKAddressInformation(senderAddressInfo.privateKey, btcTxHelper.btcConfig.network);
         const recipientRskAddressBalanceInitial = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
+        expect(recipientRskAddressBalanceInitial).to.equal(0);
 
         await btcTxHelper.fundAddress(senderAddressInfo.address, MINIMUM_PEGIN_VALUE_IN_BTC + btcTxHelper.getFee());
         
@@ -55,12 +54,10 @@ describe('2wp after iris300, using new minimum values', () => {
 
         // Assert
         const senderAddressBalanceFinal = Number(await btcTxHelper.getAddressBalance(senderAddressInfo.address));
-        const recipientRskAddressBalanceFinal = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
+        expect(senderAddressBalanceFinal).to.equal(0);
 
-        expect(Number(senderAddressBalanceInitial)).to.equal(0);
-        expect(Number(recipientRskAddressBalanceInitial)).to.equal(0);
-        expect(Number(senderAddressBalanceFinal)).to.equal(0);
-        expect(Number(recipientRskAddressBalanceFinal)).to.equal(btcEthUnitConverter.btcToWeis(MINIMUM_PEGIN_VALUE_IN_BTC));
+        const recipientRskAddressBalanceFinal = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
+        expect(recipientRskAddressBalanceFinal).to.equal(btcEthUnitConverter.btcToWeis(MINIMUM_PEGIN_VALUE_IN_BTC));
     });
 
     it('should not peg-in and not refund when sending below minimum value', async () => {
@@ -68,8 +65,6 @@ describe('2wp after iris300, using new minimum values', () => {
 
         // Create legacy type address to use as sender
         const senderAddressInfo = await btcTxHelper.generateBtcAddress('legacy');
-        await whitelistingAssertions.assertAddLimitedLockWhitelistAddress(rskTxHelper, senderAddressInfo.address, MINIMUM_PEGIN_VALUE_IN_SATOSHI);
-        await rskUtils.mineAndSync(rskTxHelpers);
 
         await btcTxHelper.fundAddress(senderAddressInfo.address, PEGIN_VALUE_IN_BTC + btcTxHelper.getFee());
 
@@ -81,19 +76,18 @@ describe('2wp after iris300, using new minimum values', () => {
         await sendPegin(rskTxHelper, btcTxHelper, senderAddressInfo, PEGIN_VALUE_IN_BTC);
 
         const federationAddressBalanceAfterPegin = Number(await btcTxHelper.getAddressBalance(federationAddress));
+        expect(federationAddressBalanceAfterPegin).to.be.equal(Number(federationAddressBalanceInitial + PEGIN_VALUE_IN_BTC));
         
         const senderAddressBalanceAfterPegin = Number(await btcTxHelper.getAddressBalance(senderAddressInfo.address));
+        expect(senderAddressBalanceAfterPegin).to.be.equal(0);
         
         await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
 
         const senderAddressBalanceFinal = Number(await btcTxHelper.getAddressBalance(senderAddressInfo.address));
+        expect(senderAddressBalanceFinal).to.be.equal(0);
 
         const federationAddressBalanceFinal = Number(await btcTxHelper.getAddressBalance(federationAddress));
-        
-        expect(Number(federationAddressBalanceAfterPegin)).to.be.equal(Number(federationAddressBalanceInitial + PEGIN_VALUE_IN_BTC));
-        expect(Number(senderAddressBalanceAfterPegin)).to.be.equal(0);
-        expect(Number(senderAddressBalanceFinal)).to.be.equal(0);
-        expect(Number(federationAddressBalanceFinal)).to.be.equal(Number(federationAddressBalanceInitial + PEGIN_VALUE_IN_BTC));
+        expect(federationAddressBalanceFinal).to.be.equal(Number(federationAddressBalanceInitial + PEGIN_VALUE_IN_BTC));
     });
 
     it('should peg-out successfully when sending exactly the minimum pegout value', async () => {
@@ -104,8 +98,6 @@ describe('2wp after iris300, using new minimum values', () => {
 
         // Create legacy type address to use as sender
         const senderAddressInfo = await btcTxHelper.generateBtcAddress('legacy');
-        await whitelistingAssertions.assertAddLimitedLockWhitelistAddress(rskTxHelper, senderAddressInfo.address, btcEthUnitConverter.btcToSatoshis(PEGIN_VALUE_IN_BTC));
-        await rskUtils.mineAndSync(rskTxHelpers);
 
         await btcTxHelper.fundAddress(senderAddressInfo.address, PEGIN_VALUE_IN_BTC + btcTxHelper.getFee());
 
@@ -115,23 +107,24 @@ describe('2wp after iris300, using new minimum values', () => {
         const unlocked = await rskTxHelper.unlockAccount(recipientRskAddressInfo.address);
         expect(unlocked, 'Account was not unlocked').to.be.true;
         const recipientRskAddressBalanceInitial = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
+        expect(recipientRskAddressBalanceInitial).to.be.equal(0);
 
         // Execute peg-in
         const btcPeginTxHash = await sendPegin(rskTxHelper, btcTxHelper, senderAddressInfo, PEGIN_VALUE_IN_BTC);
         await ensurePeginIsRegistered(rskTxHelper, btcPeginTxHash);
+
         const recipientRskAddressBalanceAfterPegin = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
-        
+        expect(recipientRskAddressBalanceAfterPegin).to.be.equal(btcEthUnitConverter.btcToWeis(PEGIN_VALUE_IN_BTC));
+
         // Execute peg-out
         await sendTxToBridge(rskTxHelper, MIN_PEGOUT_VALUE_IN_RBTC, recipientRskAddressInfo.address);
         await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
 
         const senderAddressBalanceFinal = Number(await btcTxHelper.getAddressBalance(senderAddressInfo.address));
+        expect(senderAddressBalanceFinal).to.be.above(MIN_PEGOUT_VALUE_IN_RBTC - TX_FEE_IN_RBTC).and.below(MIN_PEGOUT_VALUE_IN_RBTC);
        
         const recipientRskAddressBalanceFinal = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
-
-        expect(Number(recipientRskAddressBalanceAfterPegin)).to.be.equal(btcEthUnitConverter.btcToWeis(PEGIN_VALUE_IN_BTC));
-        expect(Number(senderAddressBalanceFinal)).to.be.above(MIN_PEGOUT_VALUE_IN_RBTC - TX_FEE_IN_RBTC).and.below(MIN_PEGOUT_VALUE_IN_RBTC);
-        expect(Number(recipientRskAddressBalanceFinal)).to.be.above(btcEthUnitConverter.btcToWeis(PEGIN_VALUE_IN_BTC - MIN_PEGOUT_VALUE_IN_RBTC - TX_FEE_IN_RBTC)).and.below(btcEthUnitConverter.btcToWeis(PEGIN_VALUE_IN_BTC - MIN_PEGOUT_VALUE_IN_RBTC));
+        expect(recipientRskAddressBalanceFinal).to.be.above(btcEthUnitConverter.btcToWeis(PEGIN_VALUE_IN_BTC - MIN_PEGOUT_VALUE_IN_RBTC - TX_FEE_IN_RBTC)).and.below(btcEthUnitConverter.btcToWeis(PEGIN_VALUE_IN_BTC - MIN_PEGOUT_VALUE_IN_RBTC));
     });
 });
 
