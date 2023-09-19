@@ -2,7 +2,7 @@ const expect = require('chai').expect
 const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
-const { sendPegin, ensurePeginIsRegistered, sendTxToBridge, MINIMUM_PEGIN_VALUE_IN_BTC } = require('../lib/2wp-utils');
+const { sendPegin, ensurePeginIsRegistered, sendTxToBridge } = require('../lib/2wp-utils');
 const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
 const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivation');
 const btcEthUnitConverter = require('btc-eth-unit-converter');
@@ -14,7 +14,7 @@ describe('Transfer BTC to RBTC before papyrus200', function() {
   let btcTxHelper;
   let rskTxHelper;
 
-  const PEGIN_VALUE_IN_BTC = 3 * MINIMUM_PEGIN_VALUE_IN_BTC;
+  const PEGIN_VALUE_IN_BTC = 3;
   const PEGOUT_VALUE_IN_RBTC = PEGIN_VALUE_IN_BTC / 3;
   const RSK_TX_FEE_IN_RBTC = 0.001;
  
