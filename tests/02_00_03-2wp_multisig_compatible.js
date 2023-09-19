@@ -32,15 +32,14 @@ describe('Lock multisig address', () => {
     it('lock should work when using multisig address', async () => {
         const latestActiveForkName = await getLatestActiveForkName();
         const bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
-        const federationAddress = await bridge.methods.getFederationAddress().call();
         
         const minimumPeginValueInSatoshis = await bridge.methods.getMinimumLockTxValue().call();
         const minimumPeginValueInBtc = satoshisToBtc(minimumPeginValueInSatoshis);
 
-        const senderAddressInfo = await btcTxHelper.generateMultisigAddress(3, 2, 'legacy');
-
+        const federationAddress = await bridge.methods.getFederationAddress().call();
         const federationAddressBalanceInitial = Number(await btcTxHelper.getAddressBalance(federationAddress));
-        
+
+        const senderAddressInfo = await btcTxHelper.generateMultisigAddress(3, 2, 'legacy');
         await btcTxHelper.fundAddress(senderAddressInfo.address, minimumPeginValueInBtc + btcTxHelper.getFee());
         await sendPegin(rskTxHelper, btcTxHelper, senderAddressInfo, minimumPeginValueInBtc);
 

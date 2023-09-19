@@ -27,16 +27,16 @@ describe('Lock p2sh-p2wpkh address', () => {
     });
 
     it('lock should fail when using p2sh-p2wpkh address', async () => {
-        const minimumPeginValueInSatoshis = await bridge.methods.getMinimumLockTxValue().call();
-        const minimumPeginValueInBtc = satoshisToBtc(minimumPeginValueInSatoshis);
-        const senderAddress = await btcTxHelper.generateBtcAddress('p2sh-segwit')
-
         const latestActiveForkName = await getLatestActiveForkName();
         const bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
-        const federationAddress = await bridge.methods.getFederationAddress().call();
 
+        const minimumPeginValueInSatoshis = await bridge.methods.getMinimumLockTxValue().call();
+        const minimumPeginValueInBtc = satoshisToBtc(minimumPeginValueInSatoshis);
+
+        const federationAddress = await bridge.methods.getFederationAddress().call();
         const federationAddressBalanceInitial = Number(await btcTxHelper.getAddressBalance(federationAddress));
 
+        const senderAddress = await btcTxHelper.generateBtcAddress('p2sh-segwit')
         await btcTxHelper.fundAddress(senderAddress.address, minimumPeginValueInBtc + btcTxHelper.getFee());
 
         const btcPeginTxHash = await sendPegin(rskTxHelper, btcTxHelper, senderAddress, minimumPeginValueInBtc);
