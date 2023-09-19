@@ -2,7 +2,7 @@ const expect = require('chai').expect
 const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
-const { sendPegin, MINIMUM_PEGIN_VALUE_IN_BTC } = require('../lib/2wp-utils');
+const { sendPegin } = require('../lib/2wp-utils');
 const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
 
 let rskTxHelpers;
@@ -32,6 +32,7 @@ describe('Lock multisig address', () => {
         const latestActiveForkName = await getLatestActiveForkName();
         const bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
         const federationAddress = await bridge.methods.getFederationAddress().call();
+        const MINIMUM_PEGIN_VALUE_IN_BTC = await bridge.methods.getMinimumLockTxValue().call();
 
         const senderAddressInfo = await btcTxHelper.generateMultisigAddress(3, 2, 'legacy');
 
@@ -53,6 +54,5 @@ describe('Lock multisig address', () => {
         
         const finalSenderAddressBalance = await btcTxHelper.getAddressBalance(senderAddressInfo.address);
         expect(Number(finalSenderAddressBalance)).to.be.above(MINIMUM_PEGIN_VALUE_IN_BTC - btcTxHelper.getFee()).and.below(MINIMUM_PEGIN_VALUE_IN_BTC)
-        } 
-    );
+    });
 });
