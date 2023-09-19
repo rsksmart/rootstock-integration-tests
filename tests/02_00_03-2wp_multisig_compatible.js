@@ -1,4 +1,5 @@
 const expect = require('chai').expect
+const { satoshisToBtc } = require('btc-eth-unit-converter');
 const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
@@ -32,17 +33,19 @@ describe('Lock multisig address', () => {
         const latestActiveForkName = await getLatestActiveForkName();
         const bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
         const federationAddress = await bridge.methods.getFederationAddress().call();
-        const MINIMUM_PEGIN_VALUE_IN_BTC = await bridge.methods.getMinimumLockTxValue().call();
+        
+        const minimumPeginValueInSatoshis = await bridge.methods.getMinimumLockTxValue().call();
+        const minimumPeginValueInBtc = satoshisToBtc(minimumPeginValueInSatoshis);
 
         const senderAddressInfo = await btcTxHelper.generateMultisigAddress(3, 2, 'legacy');
 
         const federationAddressBalanceInitial = Number(await btcTxHelper.getAddressBalance(federationAddress));
         
-        await btcTxHelper.fundAddress(senderAddressInfo.address, MINIMUM_PEGIN_VALUE_IN_BTC + btcTxHelper.getFee());
-        await sendPegin(rskTxHelper, btcTxHelper, senderAddressInfo, MINIMUM_PEGIN_VALUE_IN_BTC);
+        await btcTxHelper.fundAddress(senderAddressInfo.address, minimumPeginValueInBtc + btcTxHelper.getFee());
+        await sendPegin(rskTxHelper, btcTxHelper, senderAddressInfo, minimumPeginValueInBtc);
 
         const federationAddressBalanceAfterPegin = Number(await btcTxHelper.getAddressBalance(federationAddress));
-        expect(Number(federationAddressBalanceAfterPegin)).to.be.equal(Number(federationAddressBalanceInitial + MINIMUM_PEGIN_VALUE_IN_BTC))
+        expect(Number(federationAddressBalanceAfterPegin)).to.be.equal(Number(federationAddressBalanceInitial + minimumPeginValueInBtc))
 
         const senderAddressBalanceAfterPegin = Number(await btcTxHelper.getAddressBalance(senderAddressInfo.address));
         expect(Number(senderAddressBalanceAfterPegin)).to.be.equal(0)
@@ -53,6 +56,6 @@ describe('Lock multisig address', () => {
         expect(Number(finalFederationAddressBalance)).to.be.equal(Number(federationAddressBalanceInitial))
         
         const finalSenderAddressBalance = await btcTxHelper.getAddressBalance(senderAddressInfo.address);
-        expect(Number(finalSenderAddressBalance)).to.be.above(MINIMUM_PEGIN_VALUE_IN_BTC - btcTxHelper.getFee()).and.below(MINIMUM_PEGIN_VALUE_IN_BTC)
+        expect(Number(finalSenderAddressBalance)).to.be.above(minimumPeginValueInBtc - btcTxHelper.getFee()).and.below(minimumPeginValueInBtc)
     });
 });
