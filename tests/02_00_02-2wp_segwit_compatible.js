@@ -14,7 +14,8 @@ let btcTxHelper;
 
 
 const fulfillRequirementsToRunAsSingleTestFile = async () => {
-    await rskUtils.activateFork(Runners.common.forks.fingerroot500);
+    const latestForkName = rskUtils.getLatestForkName()
+    await rskUtils.activateFork(latestForkName);
 };
 
 describe('Lock using p2sh-p2wpkh address', () => {
@@ -47,12 +48,12 @@ describe('Lock using p2sh-p2wpkh address', () => {
         await ensurePeginIsRegistered(rskTxHelper, btcPeginTxHash);
 
         const federationAddressBalanceAfterPegin = Number(await btcTxHelper.getAddressBalance(federationAddress));
-        expect(Number(federationAddressBalanceAfterPegin)).to.be.equal(Number(federationAddressBalanceInitial + MINIMUM_PEGIN_VALUE_IN_BTC));
+        expect(federationAddressBalanceAfterPegin).to.be.equal(Number(federationAddressBalanceInitial + MINIMUM_PEGIN_VALUE_IN_BTC));
 
         const senderAddressBalanceAfterPegin = Number(await btcTxHelper.getAddressBalance(senderAddressInfo.address));
-        expect(Number(senderAddressBalanceAfterPegin)).to.be.equal(0);
+        expect(senderAddressBalanceAfterPegin).to.be.equal(0);
 
         const recipientRskAddressBalanceAfterPegin = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
-        expect(Number(recipientRskAddressBalanceAfterPegin)).to.be.equal(btcEthUnitConverter.btcToWeis(MINIMUM_PEGIN_VALUE_IN_BTC));
+        expect(recipientRskAddressBalanceAfterPegin).to.be.equal(btcEthUnitConverter.btcToWeis(MINIMUM_PEGIN_VALUE_IN_BTC));
     });   
 });
