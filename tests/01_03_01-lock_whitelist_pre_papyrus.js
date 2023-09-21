@@ -11,16 +11,16 @@ const  {
 const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
-const { sendPegin, ensurePeginIsRegistered, MINIMUM_PEGIN_VALUE_IN_BTC } = require('../lib/2wp-utils');
+const { sendPegin, ensurePeginIsRegistered } = require('../lib/2wp-utils');
 const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivation');
 const { btcToWeis, btcToSatoshis, satoshisToBtc } = require('btc-eth-unit-converter');
 const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
 
-let federationAddress;
 let rskTxHelpers;
 let btcTxHelper;
 let rskTxHelper;
 let bridge;
+let federationAddress;
 
 const EXPECTED_UNSUCCESSFUL_RESULT = -10;
 const FUND_AMOUNT_IN_WEIS = 1000000000;
@@ -35,50 +35,56 @@ const WHITELIST_ADDRESSES = {
 
 const WHITELIST_RANDOM_PUBLIC_KEY = 'msJRGyaYvT8YNjvU3q9nPgBpZj9umAgetn';
 
+/**
+ * Takes the blockchain to the required state for this test file to run in isolation.
+ */
+const fulfillRequirementsToRunAsSingleTestFile = async () => {
+    await rskUtils.activateFork(Runners.common.forks.wasabi100);
+};
+
 const assertLockCreatingWhiteListAddress = async (rskTxHelper, btcTxHelper, useUnlimitedWhitelist) => {
+    const minPeginValueInSatoshis = await bridge.methods.getMinimumLockTxValue().call();
+    const minPeginValueInBtc = satoshisToBtc(minPeginValueInSatoshis);
 
     const btcAddressInformation = await btcTxHelper.generateBtcAddress('legacy');
-
     const recipientRskAddressInfo = getDerivedRSKAddressInformation(btcAddressInformation.privateKey, btcTxHelper.btcConfig.network);
-  
     const initialRskAddressBalanceInWeis = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
-
-    await btcTxHelper.fundAddress(btcAddressInformation.address, MINIMUM_PEGIN_VALUE_IN_BTC + btcTxHelper.getFee());
+    await btcTxHelper.fundAddress(btcAddressInformation.address, minPeginValueInBtc + btcTxHelper.getFee());
 
     if (useUnlimitedWhitelist) {
       await assertAddUnlimitedWhitelistAddress(rskTxHelper, btcAddressInformation.address);
     } else {
-      await assertAddOneOffWhitelistAddress(rskTxHelper, btcAddressInformation.address, btcToSatoshis(MINIMUM_PEGIN_VALUE_IN_BTC));
+      await assertAddOneOffWhitelistAddress(rskTxHelper, btcAddressInformation.address, minPeginValueInSatoshis);
     }
-  
     await assertWhitelistAddressPresence(rskTxHelper, btcAddressInformation.address, true);
 
-    const peginBtcTxHash = await sendPegin(rskTxHelper, btcTxHelper, btcAddressInformation, MINIMUM_PEGIN_VALUE_IN_BTC);
-
+    const peginBtcTxHash = await sendPegin(rskTxHelper, btcTxHelper, btcAddressInformation, minPeginValueInBtc);
     await ensurePeginIsRegistered(rskTxHelper, peginBtcTxHash);
 
     await assertWhitelistAddressPresence(rskTxHelper, btcAddressInformation.address, useUnlimitedWhitelist);
 
     const finalRskAddressBalanceInWeis = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
-
-    const peginValueInWeis = btcToWeis(MINIMUM_PEGIN_VALUE_IN_BTC);
-
+    const peginValueInWeis = btcToWeis(minPeginValueInBtc);
     expect(finalRskAddressBalanceInWeis).to.equal(initialRskAddressBalanceInWeis + peginValueInWeis);
-
-  };
+};
 
 describe('Lock whitelisting', () => {
     before(async () => {
+      if(process.env.RUNNING_SINGLE_TEST_FILE) {
+          await fulfillRequirementsToRunAsSingleTestFile();
+      }
+      
       rskTxHelpers = getRskTransactionHelpers();
       btcTxHelper = getBtcClient();
       rskTxHelper = rskTxHelpers[0];
       bridge = getBridge(rskTxHelper.getClient(), await getLatestActiveForkName());
+      
       federationAddress = await bridge.methods.getFederationAddress().call();
       await btcTxHelper.importAddress(federationAddress, 'federations');
     });
 
     it(`should prevent calling addOneOffLockWhitelistAddress without a correct key`, async () => {
-        const addOneOffLockWhitelistAddressMethod = bridge.methods.addOneOffLockWhitelistAddress(WHITELIST_RANDOM_PUBLIC_KEY, 1000000000);
+        const addOneOffLockWhitelistAddressMethod = bridge.methods.addOneOffLockWhitelistAddress(WHITELIST_RANDOM_PUBLIC_KEY, FUND_AMOUNT_IN_WEIS);
         const rskTxSenderAddress = await rskTxHelper.newAccountWithSeed('test');
         await rskUtils.sendFromCow(rskTxHelper, rskTxSenderAddress, FUND_AMOUNT_IN_WEIS);
         const checkCallback = callResult => {
@@ -138,7 +144,7 @@ describe('Lock whitelisting', () => {
     const nonWhitelistedCasesAmounts = [[15], [5, 7], [1, 23, 4]];
 
     nonWhitelistedCasesAmounts.forEach(testCaseAmounts => {
-      it(`should return BTC from non-whitelisted addresses using same UTXOs as for lock attempt (${testCaseAmounts.length} UTXOs)`, async () => {
+      it(`should return BTC from non-whitelisted addresses using same UTXOs as for peg-in attempt (${testCaseAmounts.length} UTXOs)`, async () => {
           const AMOUNT_TO_TRY_TO_LOCK = testCaseAmounts.reduce((a, b) => a + b);
           const MAX_EXPECTED_FEE = 0.001;
           // The extra 0.5 is to get some change back on the lock tx. This shouldn't really
@@ -146,37 +152,28 @@ describe('Lock whitelisting', () => {
           const INITIAL_PEGIN_BALANCE = AMOUNT_TO_TRY_TO_LOCK + MAX_EXPECTED_FEE + 0.5;
 
           const btcAddressInformation = await btcTxHelper.generateBtcAddress('legacy');
-
           const recipientRskAddressInfo = getDerivedRSKAddressInformation(btcAddressInformation.privateKey, btcTxHelper.btcConfig.network);
-
           await btcTxHelper.fundAddress(btcAddressInformation.address, INITIAL_PEGIN_BALANCE);
-
           const initialFederationBalance = await btcTxHelper.getAddressBalance(federationAddress);
 
           const peginBtcTxHash = await sendPegin(rskTxHelper, btcTxHelper, btcAddressInformation, testCaseAmounts);
-          
           const peginBtcTx = await btcTxHelper.getTransaction(peginBtcTxHash);
+          const btcBalanceAfterPegin = await btcTxHelper.getAddressBalance(btcAddressInformation.address);
+          expect(btcToSatoshis(btcBalanceAfterPegin)).to.equal(btcToSatoshis(INITIAL_PEGIN_BALANCE - AMOUNT_TO_TRY_TO_LOCK - MAX_EXPECTED_FEE), 'Lock BTC debit');
 
-          const btcBalance = await btcTxHelper.getAddressBalance(btcAddressInformation.address);
-
-          expect(btcToSatoshis(btcBalance)).to.equal(btcToSatoshis(INITIAL_PEGIN_BALANCE - AMOUNT_TO_TRY_TO_LOCK - MAX_EXPECTED_FEE), 'Lock BTC debit');
-
-          const federationBalance = await btcTxHelper.getAddressBalance(federationAddress);
-
-          expect(btcToSatoshis(federationBalance)).to.equal(btcToSatoshis(initialFederationBalance + AMOUNT_TO_TRY_TO_LOCK), `Lock BTC federation ${federationAddress} credit`);
+          const federationBalanceAfterPegin = await btcTxHelper.getAddressBalance(federationAddress);
+          expect(btcToSatoshis(federationBalanceAfterPegin)).to.equal(btcToSatoshis(initialFederationBalance + AMOUNT_TO_TRY_TO_LOCK), `Lock BTC federation ${federationAddress} credit`);
           
           await rskTxHelper.updateBridge();
           await rskUtils.mineAndSync(rskTxHelpers);
+          
           const initialBlockNumber = await rskTxHelper.getBlockNumber();
-
           await rskUtils.mineAndSync(rskTxHelpers);
-
           const currentBlockNumber = await rskTxHelper.getBlockNumber();
           expect(currentBlockNumber).to.equal(initialBlockNumber + 1);
           
-          const currentRskBalance = await rskTxHelper.getBalance(recipientRskAddressInfo.address);
-
-          expect(Number(currentRskBalance), 'Wrong RSK balance').to.equal(0);
+          const currentRskBalance = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
+          expect(currentRskBalance, 'Wrong RSK balance').to.equal(0);
 
           await rskUtils.triggerRelease(rskTxHelpers, getBtcClient());
 
@@ -189,13 +186,10 @@ describe('Lock whitelisting', () => {
           expect(finalFederationBalance).to.equal(initialFederationBalance);
 
           const utxos = await btcTxHelper.getUtxos(btcAddressInformation.address);
-          
           const nonLockUtxos = utxos.filter(utxo => utxo.txid !== peginBtcTxHash);
-
           expect(nonLockUtxos.length).to.equal(1);
 
           const returnUtxo = nonLockUtxos[0];
-
           expect(AMOUNT_TO_TRY_TO_LOCK - returnUtxo.amount).to.be.at.most(MAX_EXPECTED_FEE);
 
           const returnTx = await btcTxHelper.getTransaction(returnUtxo.txid);
@@ -214,49 +208,40 @@ describe('Lock whitelisting', () => {
           });
 
           expect(nonMatchedAmounts.length).to.equal(0);
-
       });
     });
 
     it('should prevent locking RBTC when transfer is above maximum whitelisted', async () => {
-
-      const WHITELISTED_MAX_VALUE = MINIMUM_PEGIN_VALUE_IN_BTC - 0.1;
+      const PEGIN_VALUE_IN_BTC = 1;
+      const WHITELISTED_MAX_VALUE = PEGIN_VALUE_IN_BTC - 0.1;
 
       const btcAddressInformation = await btcTxHelper.generateBtcAddress('legacy');
       const recipientRskAddressInfo = getDerivedRSKAddressInformation(btcAddressInformation.privateKey, btcTxHelper.btcConfig.network);
-
-      await btcTxHelper.fundAddress(btcAddressInformation.address, MINIMUM_PEGIN_VALUE_IN_BTC + btcTxHelper.getFee());
+      await btcTxHelper.fundAddress(btcAddressInformation.address, PEGIN_VALUE_IN_BTC + btcTxHelper.getFee());
 
       const initialFederationBalance = await btcTxHelper.getAddressBalance(federationAddress);
 
       await assertAddOneOffWhitelistAddress(rskTxHelper, btcAddressInformation.address, btcToSatoshis(WHITELISTED_MAX_VALUE));
 
-      await sendPegin(rskTxHelper, btcTxHelper, btcAddressInformation, MINIMUM_PEGIN_VALUE_IN_BTC);
+      await sendPegin(rskTxHelper, btcTxHelper, btcAddressInformation, PEGIN_VALUE_IN_BTC);
 
-      const midBtcAddressBalance = await btcTxHelper.getAddressBalance(btcAddressInformation.address);
+      const btcAddressBalanceAfterPegin = await btcTxHelper.getAddressBalance(btcAddressInformation.address);
+      expect(btcAddressBalanceAfterPegin).to.equal(0, 'At this point the btc address should not have any balance');
 
-      expect(midBtcAddressBalance).to.equal(0, 'At this point the btc address should not have any balance');
-
-      const finalFederationBalance = await btcTxHelper.getAddressBalance(federationAddress);
-
-      expect(finalFederationBalance).to.equal(initialFederationBalance + MINIMUM_PEGIN_VALUE_IN_BTC, 'The federation address should have its balance increased by the pegin amount');
+      const federationBalanceAfterPegin = await btcTxHelper.getAddressBalance(federationAddress);
+      expect(federationBalanceAfterPegin).to.equal(initialFederationBalance + PEGIN_VALUE_IN_BTC, 'The federation address should have its balance increased by the pegin amount');
 
       await rskTxHelper.updateBridge();
       await rskUtils.mineAndSync(rskTxHelpers);
 
-      const currentRskBalance = await rskTxHelper.getBalance(recipientRskAddressInfo.address);
-
-      expect(Number(currentRskBalance)).to.equal(0, 'The recipient rsk address should not have any balance');
+      const recipientRskAddressBalance = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
+      expect(recipientRskAddressBalance).to.equal(0, 'The recipient rsk address should not have any balance');
 
       // At this point there is a pegout waiting for confirmations, let's release it.
       await rskUtils.triggerRelease(rskTxHelpers, getBtcClient());
 
-      const finalBtcAddressBalance = await btcTxHelper.getAddressBalance(btcAddressInformation.address);
-
-      const expectedFinalBtcAddressBalance = MINIMUM_PEGIN_VALUE_IN_BTC - btcTxHelper.getFee();
-
-      expect(expectedFinalBtcAddressBalance).to.be.at.most(finalBtcAddressBalance, 'The btc address should have its balance decreased by about the pegin amount and the fee');
-
+      const btcAddressBalanceAfterRefund = await btcTxHelper.getAddressBalance(btcAddressInformation.address);
+      expect(btcAddressBalanceAfterRefund).to.be.within(PEGIN_VALUE_IN_BTC - btcTxHelper.getFee(), PEGIN_VALUE_IN_BTC, 'The btc address should have its balance decreased by about the pegin amount and the fee');
     });
 
     it('should transfer BTC to RBTC from ONE-OFF whitelisted addresses', async () => {
