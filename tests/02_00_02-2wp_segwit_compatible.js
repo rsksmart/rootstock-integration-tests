@@ -13,9 +13,8 @@ let btcTxHelper;
 
 const fulfillRequirementsToRunAsSingleTestFile = async (rskTxHelper) => {
     const latestForkName = rskUtils.getLatestForkName()
-    console.log(`latestForkName: ${JSON.stringify(latestForkName)}`)
     await rskUtils.activateFork(latestForkName);
-    disableWhitelisting(rskTxHelper)
+    await disableWhitelisting(rskTxHelper)
 };
 
 describe('Lock using p2sh-p2wpkh address', () => {
@@ -26,28 +25,11 @@ describe('Lock using p2sh-p2wpkh address', () => {
 
         if(process.env.RUNNING_SINGLE_TEST_FILE) {
             await fulfillRequirementsToRunAsSingleTestFile(rskTxHelper);
-            // const latestActiveForkName = await getLatestActiveForkName();
-            // console.log(`latestActiveForkName: ${latestActiveForkName}`)
-            // bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
-            
-            // const addr = await rskTxHelper.importAccount(WHITELIST_CHANGE_PK)
-            // console.log(`addr: ${addr}`)
-            // expect(addr.slice(2)).to.equal(WHITELIST_CHANGE_ADDR);
-            // await rskTxHelper.unlockAccount(addr);
-
-            // await rskUtils.sendTxWithCheck(
-            //     rskTxHelper,
-            //     bridge.methods.setLockWhitelistDisableBlockDelay(1),
-            //     WHITELIST_CHANGE_ADDR),
-            //     (disableResult) => expect(Number(disableResult)).to.equal(1)();
-
-            // rskTxHelper.mine(1);
         }
     });
 
     it('should do a legacy pegin using p2sh-p2wpkh address', async () => {
         const latestActiveForkName = await getLatestActiveForkName();
-        console.log(`latestActiveForkName: ${latestActiveForkName}`)
         const bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
 
         const minimumPeginValueInSatoshis = await bridge.methods.getMinimumLockTxValue().call();
@@ -55,7 +37,6 @@ describe('Lock using p2sh-p2wpkh address', () => {
 
         const federationAddress = await bridge.methods.getFederationAddress().call();
         const federationAddressBalanceInitial = Number(await btcTxHelper.getAddressBalance(federationAddress));
-        console.log(`federationAddressBalanceInitial: ${federationAddressBalanceInitial}`)
 
         const senderAddressInfo = await btcTxHelper.generateBtcAddress('p2sh-segwit');
         const recipientRskAddressInfo = getDerivedRSKAddressInformation(senderAddressInfo.privateKey, btcTxHelper.btcConfig.network);
@@ -69,7 +50,6 @@ describe('Lock using p2sh-p2wpkh address', () => {
         await ensurePeginIsRegistered(rskTxHelper, btcPeginTxHash);
 
         const federationAddressBalanceAfterPegin = Number(await btcTxHelper.getAddressBalance(federationAddress));
-        console.log(`federationAddressBalanceAfterPegin: ${federationAddressBalanceAfterPegin}`)
         expect(federationAddressBalanceAfterPegin).to.be.equal(Number(federationAddressBalanceInitial + minimumPeginValueInBtc));
 
         const senderAddressBalanceAfterPegin = Number(await btcTxHelper.getAddressBalance(senderAddressInfo.address));
