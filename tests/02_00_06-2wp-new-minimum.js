@@ -16,7 +16,8 @@ describe('2wp after iris300, using new minimum values', () => {
     let federationAddress;
 
     const fulfillRequirementsToRunAsSingleTestFile = async () => {
-        await rskUtils.activateFork(Runners.common.forks.fingerroot500);
+        const latestForkName = rskUtils.getLatestForkName()
+        await rskUtils.activateFork(latestForkName);
     };
 
     before(async () => {
@@ -73,21 +74,21 @@ describe('2wp after iris300, using new minimum values', () => {
     });
 
     it('should not peg-in and not refund when sending below minimum value', async () => {
-        const PEGIN_VALUE_IN_BTC = minimumPeginValueInBTC - 0.001
+        const BELOW_MIN_PEGIN_VALUE_IN_BTC = minimumPeginValueInBTC - 0.001
 
         // Create legacy type address to use as sender
         const senderAddressInfo = await btcTxHelper.generateBtcAddress('legacy');
 
-        await btcTxHelper.fundAddress(senderAddressInfo.address, PEGIN_VALUE_IN_BTC + btcTxHelper.getFee());
+        await btcTxHelper.fundAddress(senderAddressInfo.address, BELOW_MIN_PEGIN_VALUE_IN_BTC + btcTxHelper.getFee());
 
         const federationAddressBalanceInitial = Number(await btcTxHelper.getAddressBalance(federationAddress));
         const bridgeAddressBalanceInitial = Number(await rskTxHelper.getBalance(BRIDGE_ADDRESS));
 
-        // Execute peg-in (pegin is not registered in the bridge -> Someone sent to the federation UTXOs amount less than 50000000 satoshis)
-        await sendPegin(rskTxHelper, btcTxHelper, senderAddressInfo, PEGIN_VALUE_IN_BTC);
+        // Execute peg-in (pegin is not registered in the bridge -> Someone sent to the federation UTXOs amount less than minimum peg-in value)
+        await sendPegin(rskTxHelper, btcTxHelper, senderAddressInfo, BELOW_MIN_PEGIN_VALUE_IN_BTC);
 
         const federationAddressBalanceAfterPegin = Number(await btcTxHelper.getAddressBalance(federationAddress));
-        expect(btcEthUnitConverter.btcToSatoshis(federationAddressBalanceAfterPegin)).to.be.equal(btcEthUnitConverter.btcToSatoshis(federationAddressBalanceInitial + PEGIN_VALUE_IN_BTC));
+        expect(btcEthUnitConverter.btcToSatoshis(federationAddressBalanceAfterPegin)).to.be.equal(btcEthUnitConverter.btcToSatoshis(federationAddressBalanceInitial + BELOW_MIN_PEGIN_VALUE_IN_BTC));
 
         const bridgeAddressBalanceAfterPegin = Number(await rskTxHelper.getBalance(BRIDGE_ADDRESS));
         expect(bridgeAddressBalanceAfterPegin).to.be.equal(bridgeAddressBalanceInitial);
@@ -101,7 +102,7 @@ describe('2wp after iris300, using new minimum values', () => {
         expect(senderAddressBalanceFinal).to.be.equal(0);
 
         const federationAddressBalanceFinal = Number(await btcTxHelper.getAddressBalance(federationAddress));
-        expect(federationAddressBalanceFinal).to.be.equal(Number(federationAddressBalanceInitial + PEGIN_VALUE_IN_BTC));
+        expect(federationAddressBalanceFinal).to.be.equal(Number(federationAddressBalanceInitial + BELOW_MIN_PEGIN_VALUE_IN_BTC));
 
         const bridgeAddressBalanceFinal = Number(await rskTxHelper.getBalance(BRIDGE_ADDRESS));
         expect(bridgeAddressBalanceFinal).to.be.equal(bridgeAddressBalanceInitial)
