@@ -1,117 +1,154 @@
 const { expect } = require('chai');
-const btcClientProvider = require('../lib/btc-client-provider');
-const _2wpUtilsLegacy = require('../lib/2wp-utils-legacy')
-const rsk = require('peglib').rsk;
-const keyUtils = require('peglib').keyUtils;
-const rskUtilsLegacy = require('../lib/rsk-utils-legacy');
-
-const MIN_PEGOUT_VALUE_IN_SATOSHIS = 250000;
-const BTC_TX_FEE_IN_SATOSHIS = 100000;
-
-let btcClient;
-let rskClient;
-let pegUtils;
-let minimumPeginValueInSatoshis;
+const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
+const { getBtcClient } = require('../lib/btc-client-provider');
+const rskUtils = require('../lib/rsk-utils');
+const { sendPegin, ensurePeginIsRegistered, sendTxToBridge, BRIDGE_ADDRESS, MIN_PEGOUT_VALUE_IN_RBTC } = require('../lib/2wp-utils');
+const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivation');
+const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const btcEthUnitConverter = require('btc-eth-unit-converter');
 
 describe('2wp after iris300, using new minimum values', () => {
+    let rskTxHelpers;
+    let btcTxHelper;
+    let rskTxHelper;
+    let minimumPeginValueInBTC;
+    let bridge;
+    let federationAddress;
+
+    const fulfillRequirementsToRunAsSingleTestFile = async () => {
+        const latestForkName = rskUtils.getLatestForkName()
+        await rskUtils.activateFork(latestForkName);
+    };
+
     before(async () => {
-        btcClient = btcClientProvider.getBtcClient();
-        rskClient = rsk.getClient(Runners.hosts.federate.host);
-        pegUtils = _2wpUtilsLegacy.with(btcClient, rskClient);
+        rskTxHelpers = getRskTransactionHelpers();
+        rskTxHelper = rskTxHelpers[0];
+        btcTxHelper = getBtcClient();
+  
+        if(process.env.RUNNING_SINGLE_TEST_FILE) {
+            await fulfillRequirementsToRunAsSingleTestFile();
+        };
 
         // Get the current peg-in minimum
-        minimumPeginValueInSatoshis = await rskClient.rsk.bridge.methods.getMinimumLockTxValue().call();
+        const latestActiveForkName = await getLatestActiveForkName();
+        bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
+        const minimumPeginValueInSatoshi = await bridge.methods.getMinimumLockTxValue().call();
+        minimumPeginValueInBTC = btcEthUnitConverter.satoshisToBtc(minimumPeginValueInSatoshi);
+
+        //get federation address
+        federationAddress = await bridge.methods.getFederationAddress().call();
     });
     
     it('should peg-in when sending minimum value', async () => {
-        const AMOUNT_TO_LOCK_IN_BTC = btcClient.nodeClient.satoshisToBtc(minimumPeginValueInSatoshis);
-
         // Create legacy type address to use as sender
-        let senderAddressInformation = await btcClient.generateBtcAddress('legacy');
-        let initialSenderBalance = await btcClient.getAddressBalance(senderAddressInformation.address);
+        const senderAddressInfo = await btcTxHelper.generateBtcAddress('legacy');
+        const senderAddressBalanceInitial = Number(await btcTxHelper.getAddressBalance(senderAddressInfo.address));
+        expect(senderAddressBalanceInitial).to.equal(0);
 
         // Get the RSK address where the funds should be locked to
-        let rskDerivedAddress = keyUtils.getRskAddress(senderAddressInformation.privateKey);
-        let initialDerivedAddressBalance = await rskClient.eth.getBalance(rskDerivedAddress);
+        const recipientRskAddressInfo = getDerivedRSKAddressInformation(senderAddressInfo.privateKey, btcTxHelper.btcConfig.network);
+        const recipientRskAddressBalanceInitial = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
+        expect(recipientRskAddressBalanceInitial).to.equal(0);
 
-        await btcClient.fundAddress(senderAddressInformation.address, AMOUNT_TO_LOCK_IN_BTC + btcClient.getFee());
+        await btcTxHelper.fundAddress(senderAddressInfo.address, minimumPeginValueInBTC + btcTxHelper.getFee());
+
+        const federationAddressBalanceInitial = Number(await btcTxHelper.getAddressBalance(federationAddress));
+        
+        const bridgeAddressBalanceInitial = Number(await rskTxHelper.getBalance(BRIDGE_ADDRESS));
 
         // Execute peg-in
-        const peginBtcTxHash = await _2wpUtilsLegacy.sendPegin(rskClient, btcClient, senderAddressInformation, AMOUNT_TO_LOCK_IN_BTC);
-        await _2wpUtilsLegacy.ensurePeginIsRegistered(rskClient, peginBtcTxHash);
-        // Assert
-        let finalSenderBalance = await btcClient.getAddressBalance(senderAddressInformation.address);
-        let finalDerivedAddressBalance = await rskClient.eth.getBalance(rskDerivedAddress);
+        const btcPeginTxHash = await sendPegin(rskTxHelper, btcTxHelper, senderAddressInfo, minimumPeginValueInBTC);
+        await ensurePeginIsRegistered(rskTxHelper, btcPeginTxHash);
 
-        expect(Number(initialSenderBalance)).to.equal(0);
-        expect(Number(finalSenderBalance)).to.equal(0);
-        expect(Number(initialDerivedAddressBalance)).to.equal(0);
-        expect(Number(finalDerivedAddressBalance)).to.equal(rsk.btcToWeis(AMOUNT_TO_LOCK_IN_BTC));
+        const federationAddressBalanceAfterPegin = Number(await btcTxHelper.getAddressBalance(federationAddress));
+        expect(federationAddressBalanceAfterPegin).to.be.equal(Number(federationAddressBalanceInitial + minimumPeginValueInBTC));
+
+        const bridgeAddressBalanceAfterPegin = Number(await rskTxHelper.getBalance(BRIDGE_ADDRESS));
+        expect(bridgeAddressBalanceAfterPegin).to.be.equal(bridgeAddressBalanceInitial - btcEthUnitConverter.btcToWeis(minimumPeginValueInBTC))
+
+        const senderAddressBalanceFinal = Number(await btcTxHelper.getAddressBalance(senderAddressInfo.address));
+        expect(senderAddressBalanceFinal).to.equal(0);
+
+        const recipientRskAddressBalanceFinal = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
+        expect(recipientRskAddressBalanceFinal).to.equal(btcEthUnitConverter.btcToWeis(minimumPeginValueInBTC));
     });
 
-    it('should not peg-in when sending below minimum value', async () => {
-        const AMOUNT_TO_LOCK_IN_BTC = btcClient.nodeClient.satoshisToBtc(minimumPeginValueInSatoshis - 1);
+    it('should not peg-in and not refund when sending below minimum value', async () => {
+        const BELOW_MIN_PEGIN_VALUE_IN_BTC = minimumPeginValueInBTC - 0.001
 
         // Create legacy type address to use as sender
-        let senderAddressInformation = await btcClient.generateBtcAddress('legacy');
-        let initialSenderBalance = await btcClient.getAddressBalance(senderAddressInformation.address);
+        const senderAddressInfo = await btcTxHelper.generateBtcAddress('legacy');
 
-        // Get the RSK address where the funds should be locked to
-        let rskDerivedAddress = keyUtils.getRskAddress(senderAddressInformation.privateKey);
-        let initialDerivedAddressBalance = await rskClient.eth.getBalance(rskDerivedAddress);
+        await btcTxHelper.fundAddress(senderAddressInfo.address, BELOW_MIN_PEGIN_VALUE_IN_BTC + btcTxHelper.getFee());
 
-        await btcClient.fundAddress(senderAddressInformation.address, AMOUNT_TO_LOCK_IN_BTC + btcClient.getFee());
+        const federationAddressBalanceInitial = Number(await btcTxHelper.getAddressBalance(federationAddress));
+        const bridgeAddressBalanceInitial = Number(await rskTxHelper.getBalance(BRIDGE_ADDRESS));
 
-        // Execute peg-in
-        await _2wpUtilsLegacy.sendPegin(rskClient, btcClient, senderAddressInformation, AMOUNT_TO_LOCK_IN_BTC);
-        const rskClients = Runners.hosts.federates.map(federate => rsk.getClient(federate.host));
-        await rskUtilsLegacy.triggerPegoutEvent(rskClients);
+        // Execute peg-in (pegin is not registered in the bridge -> Someone sent to the federation UTXOs amount less than minimum peg-in value)
+        await sendPegin(rskTxHelper, btcTxHelper, senderAddressInfo, BELOW_MIN_PEGIN_VALUE_IN_BTC);
 
-        // Assert
-        let finalSenderBalance = await btcClient.getAddressBalance(senderAddressInformation.address);
-        let finalDerivedAddressBalance = await rskClient.eth.getBalance(rskDerivedAddress);
+        const federationAddressBalanceAfterPegin = Number(await btcTxHelper.getAddressBalance(federationAddress));
+        expect(btcEthUnitConverter.btcToSatoshis(federationAddressBalanceAfterPegin)).to.be.equal(btcEthUnitConverter.btcToSatoshis(federationAddressBalanceInitial + BELOW_MIN_PEGIN_VALUE_IN_BTC));
 
-        expect(Number(initialSenderBalance)).to.equal(0);
-        expect(Number(finalSenderBalance)).to.equal(0);
-        expect(Number(initialDerivedAddressBalance)).to.equal(0);
-        expect(Number(finalDerivedAddressBalance)).to.equal(0);
+        const bridgeAddressBalanceAfterPegin = Number(await rskTxHelper.getBalance(BRIDGE_ADDRESS));
+        expect(bridgeAddressBalanceAfterPegin).to.be.equal(bridgeAddressBalanceInitial);
+
+        const senderAddressBalanceAfterPegin = Number(await btcTxHelper.getAddressBalance(senderAddressInfo.address));
+        expect(senderAddressBalanceAfterPegin).to.be.equal(0);
+        
+        await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
+
+        const senderAddressBalanceFinal = Number(await btcTxHelper.getAddressBalance(senderAddressInfo.address));
+        expect(senderAddressBalanceFinal).to.be.equal(0);
+
+        const federationAddressBalanceFinal = Number(await btcTxHelper.getAddressBalance(federationAddress));
+        expect(federationAddressBalanceFinal).to.be.equal(Number(federationAddressBalanceInitial + BELOW_MIN_PEGIN_VALUE_IN_BTC));
+
+        const bridgeAddressBalanceFinal = Number(await rskTxHelper.getBalance(BRIDGE_ADDRESS));
+        expect(bridgeAddressBalanceFinal).to.be.equal(bridgeAddressBalanceInitial)
     });
 
-    it('should peg-out when sending minimum value', async () => {
+    it('should peg-out successfully when sending exactly the minimum pegout value', async () => {
         // Do a peg-in first to ensure the federation has funds to do the peg-out
-        const AMOUNT_TO_LOCK_IN_BTC = 10;
-        let senderAddressInformation = await btcClient.generateBtcAddress('legacy');
+        const TX_FEE_IN_RBTC = 0.001;
 
-        await btcClient.fundAddress(senderAddressInformation.address, AMOUNT_TO_LOCK_IN_BTC + btcClient.getFee());
+        // Create legacy type address to use as sender
+        const senderAddressInfo = await btcTxHelper.generateBtcAddress('legacy');
 
-        const peginBtcTxHash = await _2wpUtilsLegacy.sendPegin(rskClient, btcClient, senderAddressInformation, AMOUNT_TO_LOCK_IN_BTC);
-        await _2wpUtilsLegacy.ensurePeginIsRegistered(rskClient, peginBtcTxHash);
-        let rskDerivedAddress = keyUtils.getRskAddress(senderAddressInformation.privateKey);
-        let rskPrivKey = keyUtils.privKeyToRskFormat(senderAddressInformation.privateKey);
-        await rskClient.eth.personal.importRawKey(rskPrivKey, "");
-        await rskClient.eth.personal.unlockAccount(rskDerivedAddress, '');
+        await btcTxHelper.fundAddress(senderAddressInfo.address, minimumPeginValueInBTC + btcTxHelper.getFee());
 
-        let finalDerivedAddressBalance = await rskClient.eth.getBalance(rskDerivedAddress);
-        expect(Number(finalDerivedAddressBalance)).to.equal(rsk.btcToWeis(AMOUNT_TO_LOCK_IN_BTC));
+        // Get the RSK address where the funds should be locked to
+        const recipientRskAddressInfo = getDerivedRSKAddressInformation(senderAddressInfo.privateKey, btcTxHelper.btcConfig.network);
+        await rskTxHelper.importAccount(recipientRskAddressInfo.privateKey);
+        const unlocked = await rskTxHelper.unlockAccount(recipientRskAddressInfo.address);
+        expect(unlocked, 'Account was not unlocked').to.be.true;
+        const recipientRskAddressBalanceInitial = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
+        expect(recipientRskAddressBalanceInitial).to.be.equal(0);
 
-        let txResult = await pegUtils.sendTxToBridge(rskDerivedAddress, rsk.satoshisToWeis(MIN_PEGOUT_VALUE_IN_SATOSHIS));
+        const federationAddressBalanceInitial = Number(await btcTxHelper.getAddressBalance(federationAddress));
 
-        let minExpectedValue = MIN_PEGOUT_VALUE_IN_SATOSHIS - BTC_TX_FEE_IN_SATOSHIS;
-        let callBackParams = { rskAddress: rskDerivedAddress, value: minExpectedValue };
-        await pegUtils.assertEventFound('release_request_received', _2wpUtilsLegacy.releaseRequestReceivedCallback, callBackParams, 1);
-        
-        const rskClients = Runners.hosts.federates.map(federate => rsk.getClient(federate.host));
-        await rskUtilsLegacy.triggerPegoutEvent(rskClients);
+        // Execute peg-in
+        const btcPeginTxHash = await sendPegin(rskTxHelper, btcTxHelper, senderAddressInfo, minimumPeginValueInBTC);
+        await ensurePeginIsRegistered(rskTxHelper, btcPeginTxHash);
 
-        callBackParams = { rskTxHash: txResult.transactionHash, minExpectedValue: minExpectedValue };
-        await pegUtils.assertEventFound('release_requested', _2wpUtilsLegacy.releaseRequestedCallback, callBackParams, 10);
-          
-        let finalSenderBalance = await btcClient.getAddressBalance(senderAddressInformation.address);
-        finalDerivedAddressBalance = await rskClient.eth.getBalance(rskDerivedAddress);
-        
-        let difference = AMOUNT_TO_LOCK_IN_BTC - finalSenderBalance;
-        expect(difference).to.be.at.most(BTC_TX_FEE_IN_SATOSHIS);
-        // Final rsk address balance should be less than locked value - released value, since a fee is payed when sending the tx to the bridge
-        expect(Number(finalDerivedAddressBalance)).to.be.lessThan(rsk.btcToWeis(AMOUNT_TO_LOCK_IN_BTC) - rsk.satoshisToWeis(MIN_PEGOUT_VALUE_IN_SATOSHIS));
+        const recipientRskAddressBalanceAfterPegin = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
+        expect(recipientRskAddressBalanceAfterPegin).to.be.equal(btcEthUnitConverter.btcToWeis(minimumPeginValueInBTC));
+
+        const federationAddressBalanceAfterPegin = Number(await btcTxHelper.getAddressBalance(federationAddress));
+        expect(federationAddressBalanceAfterPegin).to.be.equal(Number(federationAddressBalanceInitial + minimumPeginValueInBTC));
+
+        // Execute peg-out
+        await sendTxToBridge(rskTxHelper, MIN_PEGOUT_VALUE_IN_RBTC, recipientRskAddressInfo.address);
+        await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
+
+        const senderAddressBalanceFinal = Number(await btcTxHelper.getAddressBalance(senderAddressInfo.address));
+        expect(senderAddressBalanceFinal).to.be.above(MIN_PEGOUT_VALUE_IN_RBTC - TX_FEE_IN_RBTC).and.below(MIN_PEGOUT_VALUE_IN_RBTC);
+
+        const federationAddressBalanceFinal = Number(await btcTxHelper.getAddressBalance(federationAddress));
+        expect(federationAddressBalanceFinal).to.be.equal(Number(federationAddressBalanceAfterPegin - MIN_PEGOUT_VALUE_IN_RBTC));
+       
+        const recipientRskAddressBalanceFinal = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
+        expect(recipientRskAddressBalanceFinal).to.be.above(btcEthUnitConverter.btcToWeis(minimumPeginValueInBTC - MIN_PEGOUT_VALUE_IN_RBTC - TX_FEE_IN_RBTC)).and.below(btcEthUnitConverter.btcToWeis(minimumPeginValueInBTC - MIN_PEGOUT_VALUE_IN_RBTC));
     });
 });
+
