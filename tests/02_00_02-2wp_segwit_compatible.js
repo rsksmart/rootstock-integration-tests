@@ -11,10 +11,10 @@ let rskTxHelpers;
 let rskTxHelper;
 let btcTxHelper;
 
-const fulfillRequirementsToRunAsSingleTestFile = async (rskTxHelper) => {
+const fulfillRequirementsToRunAsSingleTestFile = async (rskTxHelper, btcTxHelper) => {
     const latestForkName = rskUtils.getLatestForkName()
     await rskUtils.activateFork(latestForkName);
-    await disableWhitelisting(rskTxHelper)
+    await disableWhitelisting(rskTxHelper, btcTxHelper)
 };
 
 describe('Lock using p2sh-p2wpkh address', () => {
@@ -24,7 +24,7 @@ describe('Lock using p2sh-p2wpkh address', () => {
         btcTxHelper = getBtcClient();
 
         if(process.env.RUNNING_SINGLE_TEST_FILE) {
-            await fulfillRequirementsToRunAsSingleTestFile(rskTxHelper);
+            await fulfillRequirementsToRunAsSingleTestFile(rskTxHelper, btcTxHelper);
         }
     });
 
