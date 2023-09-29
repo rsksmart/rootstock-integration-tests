@@ -12,9 +12,9 @@ let rskTxHelper;
 let btcTxHelper;
 
 const fulfillRequirementsToRunAsSingleTestFile = async (rskTxHelper, btcTxHelper) => {
-    const latestForkName = rskUtils.getLatestForkName()
+    const latestForkName = rskUtils.getLatestForkName();
     await rskUtils.activateFork(latestForkName);
-    await disableWhitelisting(rskTxHelper, btcTxHelper)
+    await disableWhitelisting(rskTxHelper, btcTxHelper);
 };
 
 describe('Lock using p2sh-p2wpkh address', () => {
