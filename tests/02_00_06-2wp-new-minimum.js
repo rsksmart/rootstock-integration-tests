@@ -102,7 +102,7 @@ describe('2wp after iris300, using new minimum values', () => {
         expect(senderAddressBalanceFinal).to.be.equal(0);
 
         const federationAddressBalanceFinal = Number(await btcTxHelper.getAddressBalance(federationAddress));
-        expect(federationAddressBalanceFinal).to.be.equal(Number(federationAddressBalanceInitial + BELOW_MIN_PEGIN_VALUE_IN_BTC));
+        expect(btcEthUnitConverter.btcToSatoshis(federationAddressBalanceFinal)).to.be.equal(btcEthUnitConverter.btcToSatoshis(federationAddressBalanceInitial + BELOW_MIN_PEGIN_VALUE_IN_BTC));
 
         const bridgeAddressBalanceFinal = Number(await rskTxHelper.getBalance(BRIDGE_ADDRESS));
         expect(bridgeAddressBalanceFinal).to.be.equal(bridgeAddressBalanceInitial)

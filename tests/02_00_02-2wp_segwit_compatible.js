@@ -3,7 +3,7 @@ const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivatio
 const btcEthUnitConverter = require('btc-eth-unit-converter');
 const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
-const { sendPegin, ensurePeginIsRegistered } = require('../lib/2wp-utils');
+const { sendPegin, ensurePeginIsRegistered, disableWhitelisting } = require('../lib/2wp-utils');
 const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
 const { getBtcClient } = require('../lib/btc-client-provider');
 
@@ -11,9 +11,10 @@ let rskTxHelpers;
 let rskTxHelper;
 let btcTxHelper;
 
-const fulfillRequirementsToRunAsSingleTestFile = async () => {
-    const latestForkName = rskUtils.getLatestForkName()
+const fulfillRequirementsToRunAsSingleTestFile = async (rskTxHelper, btcTxHelper) => {
+    const latestForkName = rskUtils.getLatestForkName();
     await rskUtils.activateFork(latestForkName);
+    await disableWhitelisting(rskTxHelper, btcTxHelper);
 };
 
 describe('Lock using p2sh-p2wpkh address', () => {
@@ -23,7 +24,7 @@ describe('Lock using p2sh-p2wpkh address', () => {
         btcTxHelper = getBtcClient();
 
         if(process.env.RUNNING_SINGLE_TEST_FILE) {
-            await fulfillRequirementsToRunAsSingleTestFile();
+            await fulfillRequirementsToRunAsSingleTestFile(rskTxHelper, btcTxHelper);
         }
     });
 
