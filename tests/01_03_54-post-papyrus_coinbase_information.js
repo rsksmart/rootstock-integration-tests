@@ -5,7 +5,7 @@ const { wait, ensure0x, retryWithCheck }  = require('../lib/utils');
 const CustomError = require('../lib/CustomError');
 const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
 const { getBtcClient } = require('../lib//btc-client-provider');
-const btcEthUnitConverter = require('btc-eth-unit-converter');
+const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 
 let rskTxHelpers;
@@ -26,7 +26,7 @@ describe('Calling coinbase information methods after papyrus', () => {
 
         const rskTxSenderAddress = await rskTxHelper.newAccountWithSeed('test'); 
         // Funding the `from` address to pay for fees
-        await rskUtils.sendFromCow(rskTxHelper, rskTxSenderAddress, btcEthUnitConverter.btcToWeis(0.1));
+        await rskUtils.sendFromCow(rskTxHelper, rskTxSenderAddress, Number(btcEthUnitConverter.btcToWeis(0.1)));
 
         const blockHash = await btcClient.mine(1);
         await wait(1000);

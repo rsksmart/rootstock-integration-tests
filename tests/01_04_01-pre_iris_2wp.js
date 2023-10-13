@@ -1,7 +1,7 @@
 const { expect } = require('chai');
 const { createPeginV1TxData } = require('../lib/2wp-utils');
 const { getRskTransactionHelper } = require('../lib/rsk-tx-helper-provider');
-const btcEthUnitConverter = require('btc-eth-unit-converter');
+const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivation');
 const { sendPegin, ensurePeginIsRegistered } = require('../lib/2wp-utils');
@@ -48,7 +48,7 @@ describe('Lock funds using peg-in protocol version 1 before iris300', () => {
         expect(Number(initialSenderBalance)).to.equal(0);
         expect(Number(finalSenderBalance)).to.equal(0);
         expect(Number(initialDerivedAddressBalance)).to.equal(0);
-        expect(Number(finalDerivedAddressBalance)).to.equal(btcEthUnitConverter.btcToWeis(AMOUNT_TO_LOCK_IN_BTC));
+        expect(Number(finalDerivedAddressBalance)).to.equal(Number(btcEthUnitConverter.btcToWeis(AMOUNT_TO_LOCK_IN_BTC)));
         expect(Number(initialDestinationAddressBalance)).to.equal(0);
         expect(Number(finalDestinationAddressBalance)).to.equal(0);
     });

@@ -1,5 +1,5 @@
 const expect = require('chai').expect
-const { satoshisToBtc } = require('btc-eth-unit-converter');
+const { satoshisToBtc } = require('@rsksmart/btc-eth-unit-converter');
 const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
@@ -31,7 +31,7 @@ describe('Lock p2sh-p2wpkh address', () => {
         const bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
 
         const minimumPeginValueInSatoshis = await bridge.methods.getMinimumLockTxValue().call();
-        const minimumPeginValueInBtc = satoshisToBtc(minimumPeginValueInSatoshis);
+        const minimumPeginValueInBtc = Number(satoshisToBtc(minimumPeginValueInSatoshis));
 
         const federationAddress = await bridge.methods.getFederationAddress().call();
         const federationAddressBalanceInitial = Number(await btcTxHelper.getAddressBalance(federationAddress));
