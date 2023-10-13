@@ -7,7 +7,7 @@ const { ERP_PUBKEYS, ERP_CSV_VALUE } = require("../lib/constants")
 const { sendTxWithCheck, triggerRelease, getFedsPubKeys } = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
-const btcEthUnitConverter = require('btc-eth-unit-converter');
+const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const { ensure0x, fundAddressAndGetData, wait } = require('../lib/utils');
 const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
 const { mineForPeginRegistration } = require('../lib/2wp-utils');
@@ -47,7 +47,7 @@ describe('Executing registerFastBtcTransaction after fed change - with release',
         liquidityProviderBtcAddressBytes
       ).call();
 
-      const amountForFlyoverInSatoshis = btcEthUnitConverter.btcToSatoshis(AMOUNT_TO_SEND_IN_BTC);
+      const amountForFlyoverInSatoshis = Number(btcEthUnitConverter.btcToSatoshis(AMOUNT_TO_SEND_IN_BTC));
 
       const fundingAmountInBtc = AMOUNT_TO_SEND_IN_BTC + 1;
 
@@ -89,9 +89,9 @@ describe('Executing registerFastBtcTransaction after fed change - with release',
       await triggerRelease(rskTxHelpers, btcTxHelper);
       await wait(500);
 
-      const finalBalanceInSatoshis = btcEthUnitConverter.btcToSatoshis(await btcTxHelper.getAddressBalance(userBtcRefundAddress));
+      const finalBalanceInSatoshis = Number(btcEthUnitConverter.btcToSatoshis(await btcTxHelper.getAddressBalance(userBtcRefundAddress)));
       const difference = amountForFlyoverInSatoshis - finalBalanceInSatoshis;
-      const FEE_IN_SATOSHIS = btcEthUnitConverter.btcToSatoshis(0.001);
+      const FEE_IN_SATOSHIS = Number(btcEthUnitConverter.btcToSatoshis(0.001));
 
       expect(difference).to.be.at.most(FEE_IN_SATOSHIS * 2);
 

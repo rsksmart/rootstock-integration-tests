@@ -1,6 +1,6 @@
 const expect = require('chai').expect
 const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivation');
-const btcEthUnitConverter = require('btc-eth-unit-converter');
+const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { sendPegin, ensurePeginIsRegistered, disableWhitelisting } = require('../lib/2wp-utils');
@@ -33,7 +33,7 @@ describe('Lock using p2sh-p2wpkh address', () => {
         const bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
 
         const minimumPeginValueInSatoshis = await bridge.methods.getMinimumLockTxValue().call();
-        const minimumPeginValueInBtc = btcEthUnitConverter.satoshisToBtc(minimumPeginValueInSatoshis);
+        const minimumPeginValueInBtc = Number(btcEthUnitConverter.satoshisToBtc(minimumPeginValueInSatoshis));
 
         const federationAddress = await bridge.methods.getFederationAddress().call();
         const federationAddressBalanceInitial = Number(await btcTxHelper.getAddressBalance(federationAddress));
@@ -56,6 +56,6 @@ describe('Lock using p2sh-p2wpkh address', () => {
         expect(senderAddressBalanceAfterPegin).to.be.equal(0);
 
         const recipientRskAddressBalanceAfterPegin = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
-        expect(recipientRskAddressBalanceAfterPegin).to.be.equal(btcEthUnitConverter.btcToWeis(minimumPeginValueInBtc));
+        expect(recipientRskAddressBalanceAfterPegin).to.be.equal(Number(btcEthUnitConverter.btcToWeis(minimumPeginValueInBtc)));
     });   
 });

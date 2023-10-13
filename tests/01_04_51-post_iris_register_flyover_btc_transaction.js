@@ -5,7 +5,7 @@ const lbc = require('../lib/liquidity-bridge-contract');
 const { sendTxWithCheck, getFedsPubKeys, activateFork } = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBridge } = require('../lib/precompiled-abi-forks-util');
-const btcEthUnitConverter = require('btc-eth-unit-converter');
+const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const CustomError = require('../lib/CustomError');
 const { mineForPeginRegistration } = require('../lib/2wp-utils');
@@ -58,7 +58,7 @@ describe('Calling registerFastBtcTransaction after iris', () => {
       const BTC_BALANCE_TO_TRANSFER_IN_BTC = 20;
       const AMOUNT_FOR_FUNDER_IN_BTC = 30;
 
-      const weisToTransfer = btcEthUnitConverter.btcToWeis(BTC_BALANCE_TO_TRANSFER_IN_BTC);
+      const weisToTransfer = Number(btcEthUnitConverter.btcToWeis(BTC_BALANCE_TO_TRANSFER_IN_BTC));
       const powpegRedeemScript = redeemScriptParser.getPowpegRedeemScript(FEDS_PUBKEYS_LIST);
       const flyoverRedeemScript = redeemScriptParser.getFlyoverRedeemScript(powpegRedeemScript, derivationHash.substring(2));
       const flyoverFedAddress = redeemScriptParser.getAddressFromRedeemScript('REGTEST', flyoverRedeemScript);
