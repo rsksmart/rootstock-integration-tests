@@ -267,6 +267,16 @@ before(async () => {
           latestBlock = await rskTransactionHelpers[0].getBlock('latest');
         }
 
+
+        // TODO: Remove this
+        const rskTransactionHelpers = getRskTransactionHelpers();
+
+        const rskTxHelper = rskTransactionHelpers[rskTransactionHelpers.length - 1];
+        const blockNumber = await rskTxHelper.getBlockNumber();
+        latestBlock = await rskTxHelper.getBlock(blockNumber - 100);
+
+        theCheckpointHash = latestBlock.hash;
+
         process.stdout.write(`\n Starting additional Federate nodes from block ${latestBlock.hash}. Height: ${latestBlock.number} \n\n`);
         return startFederates(
           federatesToStart.length + 1, 
