@@ -8,10 +8,54 @@ All private keys used in the library are for testing only and not used in any pr
 
 ## Prerequisites
 
-1. bitcoind
-2. A fatjar of the federate node
-2. [OPTIONAL] HSM signer. (only needed if an hsmConfigs configuration is specified)
-3. `node` and `npm` latest LTS version
+### bitcoind
+- download
+  Current pipeline in jenkins is running bitcoind 0.17, 0.18.1 works for local execution.
+  - Go to https://bitcoin.org/en/release/v0.18.1 in this page there is the link to the download sources
+  https://bitcoincore.org/bin/bitcoin-core-0.18.1/
+  Select the *.tar.gz file according to your OS (for MacOS sillicon [bitcoin-0.18.1-osx64.tar.gz](https://bitcoincore.org/bin/bitcoin-core-0.18.1/bitcoin-0.18.1-osx64.tar.gz))
+  - Decompress and copy the path to the folder.
+  - run in terminal `sudo cp <path to bitcoin-core folder>/bin/bitcoin* /usr/local/bin`
+  - create a folder called bitcoindata in your workspace
+  - run to test the bitcoind installation standalone `bitcoind -deprecatedrpc=generate -addresstype=legacy -regtest -printtoconsole -server -rpcuser=rsk -rpcpassword=rsk -rpcport=18332 -txindex -datadir=<path to bitcoindata> $@`
+
+### Federate node setup
+- install java 8 the x86 version to be used with rossetta in case of ARM arch.
+- A fatjar of the federate node can be used or follow the setup steps in the powpeg-node to run from scratch.
+
+
+### HSM 
+- Clone the HSM repository https://github.com/rootstock/hsm
+- Install python 2.7.16 from the python official site https://www.python.org/downloads/release/python-2716/
+- In terminal execute
+  - `pip install wheel`
+  - `pip install --no-cache secp256k1==0.13.2` (last version 0.14.0 is not working correctly with python 2)
+  - test the hsm1 by executing `python fedhm-mockup.py`
+  - follow the readme in hsm repository for hsm2 config.
+
+  The pipeline uses the same configuration as in `regtest.js` 
+### NODE.JS
+- Install node.js latest LTS version (recommendation use [nvm](https://formulae.brew.sh/formula/nvm))
+
+### OPTIONAL (LOGS)
+
+In order to keep a log of each federate node a logback can be setup from the `regtest.js` file per each federate.
+There is sample in the logbacks folder that can be copied into each of the federate nodes.
+The sample name is `logback-fed1.xml.sample` and inside the change is in the line
+```
+<file>/PATH/TO/LOGS/fed1.log</file>
+```
+to determine where the logs are going to be written.
+Inside the `regtest.js` file the logbacks per federate node can be setup and mapped as
+```
+const federatesLogbackPath = '/PATH/TO/logbacks/'
+const customLogbackFile1 = federatesLogbackPath + 'logback-fed1.xml';
+const customLogbackFile2 = federatesLogbackPath + 'logback-fed2.xml';
+const customLogbackFile3 = federatesLogbackPath + 'logback-fed3.xml';
+const customLogbackFile4 = federatesLogbackPath + 'logback-fed4.xml';
+const customLogbackFile5 = federatesLogbackPath + 'logback-fed5.xml';
+``` 
+(The names of the logback files are suggestions)
 
 ## Running the tests
 
@@ -24,6 +68,11 @@ All private keys used in the library are for testing only and not used in any pr
   - Optionally specify `federate.hsmConfigs.keyPath` to your local keys, if you happen to be testing different keys or your keys are located in a different path.
 4. 
 	-  Run `npm test` to run testcases without interruption or `npm run test-fail-fast` to stop execution at first testcase failure.
+  - `regtest.js` has by default not using the following mapping:
+    - federate1: no hsm signer
+    - federate2 and federate3: hsm1
+    - federate4 and federate5: hsm2 (modify using the same logic that in federate2 and 3 for changing to hsm1 in case of hsm2 not working).
+  
 
 ## Running the tests with a different configuration file
 
