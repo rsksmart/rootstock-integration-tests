@@ -34,6 +34,7 @@ All private keys used in the library are for testing only and not used in any pr
   - follow the readme in hsm repository for hsm2 config.
 
   The pipeline uses the same configuration as in `regtest.js` 
+  There is a `regtest.js.sample.hsm1only` that can be set as `regtest.js` to avoid usage of hsm2 if required.
 ### NODE.JS
 - Install node.js latest LTS version (recommendation use [nvm](https://formulae.brew.sh/formula/nvm))
 
