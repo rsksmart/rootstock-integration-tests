@@ -5,7 +5,7 @@ const { getBridge , getLatestActiveForkName} = require('../lib/precompiled-abi-f
 const { getBtcClient } = require('../lib/btc-client-provider');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivation');
-const btcEthUnitConverter = require('btc-eth-unit-converter');
+const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const { ensure0x } = require('../lib/utils');
 const { 
     PEGIN_REJECTION_REASONS: { PEGIN_CAP_SURPASSED_REASON, PEGIN_V1_INVALID_PAYLOAD_REASON }
@@ -40,7 +40,7 @@ describe('Lock funds using peg-in protocol version 1', () => {
         const bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
 
         // Get the current locking cap
-        lockingCapInBtc = btcEthUnitConverter.satoshisToBtc(Number(await bridge.methods.getLockingCap().call()));
+        lockingCapInBtc = Number(btcEthUnitConverter.satoshisToBtc(Number(await bridge.methods.getLockingCap().call())));
 
     });
     
@@ -72,7 +72,7 @@ describe('Lock funds using peg-in protocol version 1', () => {
         expect(Number(initialSenderBalance)).to.equal(0);
         expect(Number(finalSenderBalance)).to.equal(0);
         expect(Number(initialDestinationAddressBalance)).to.equal(0);
-        expect(Number(finalDestinationAddressBalance)).to.equal(btcEthUnitConverter.btcToWeis(AMOUNT_TO_LOCK_IN_BTC));
+        expect(Number(finalDestinationAddressBalance)).to.equal(Number(btcEthUnitConverter.btcToWeis(AMOUNT_TO_LOCK_IN_BTC)));
     });
 
     it('should lock using bech32 sender', async () => {
@@ -103,7 +103,7 @@ describe('Lock funds using peg-in protocol version 1', () => {
         expect(Number(initialSenderBalance)).to.equal(0);
         expect(Number(finalSenderBalance)).to.equal(0);
         expect(Number(initialDestinationAddressBalance)).to.equal(0);
-        expect(Number(finalDestinationAddressBalance)).to.equal(btcEthUnitConverter.btcToWeis(AMOUNT_TO_LOCK_IN_BTC));
+        expect(Number(finalDestinationAddressBalance)).to.equal(Number(btcEthUnitConverter.btcToWeis(AMOUNT_TO_LOCK_IN_BTC)));
     });
 
     it('should refund to indicated address when locking cap exceeded using bech32 sender', async () => {
@@ -378,7 +378,7 @@ describe('Lock funds using peg-in protocol version 1', () => {
         expect(Number(initialSenderBalance)).to.equal(0);
         expect(Number(finalSenderBalance)).to.equal(0);
         expect(Number(initialDestinationAddressBalance)).to.equal(0);
-        expect(Number(finalDestinationAddressBalance)).to.equal(btcEthUnitConverter.btcToWeis(AMOUNT_TO_LOCK_IN_BTC));
+        expect(Number(finalDestinationAddressBalance)).to.equal(Number(btcEthUnitConverter.btcToWeis(AMOUNT_TO_LOCK_IN_BTC)));
     });
 
     it('should refund lock with OP_RETURN output for RSK with invalid payload', async () => {

@@ -13,7 +13,7 @@ const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const { sendPegin, ensurePeginIsRegistered } = require('../lib/2wp-utils');
 const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivation');
-const { btcToWeis, btcToSatoshis, satoshisToBtc } = require('btc-eth-unit-converter');
+const { btcToWeis, btcToSatoshis, satoshisToBtc } = require('@rsksmart/btc-eth-unit-converter');
 const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
 
 let rskTxHelpers;
@@ -44,7 +44,7 @@ const fulfillRequirementsToRunAsSingleTestFile = async () => {
 
 const assertLockCreatingWhiteListAddress = async (rskTxHelper, btcTxHelper, useUnlimitedWhitelist) => {
     const minPeginValueInSatoshis = await bridge.methods.getMinimumLockTxValue().call();
-    const minPeginValueInBtc = satoshisToBtc(minPeginValueInSatoshis);
+    const minPeginValueInBtc = Number(satoshisToBtc(minPeginValueInSatoshis));
 
     const btcAddressInformation = await btcTxHelper.generateBtcAddress('legacy');
     const recipientRskAddressInfo = getDerivedRSKAddressInformation(btcAddressInformation.privateKey, btcTxHelper.btcConfig.network);
@@ -64,7 +64,7 @@ const assertLockCreatingWhiteListAddress = async (rskTxHelper, btcTxHelper, useU
     await assertWhitelistAddressPresence(rskTxHelper, btcAddressInformation.address, useUnlimitedWhitelist);
 
     const finalRskAddressBalanceInWeis = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
-    const peginValueInWeis = btcToWeis(minPeginValueInBtc);
+    const peginValueInWeis = Number(btcToWeis(minPeginValueInBtc));
     expect(finalRskAddressBalanceInWeis).to.equal(initialRskAddressBalanceInWeis + peginValueInWeis);
 };
 
@@ -159,10 +159,10 @@ describe('Lock whitelisting', () => {
           const peginBtcTxHash = await sendPegin(rskTxHelper, btcTxHelper, btcAddressInformation, testCaseAmounts);
           const peginBtcTx = await btcTxHelper.getTransaction(peginBtcTxHash);
           const btcBalanceAfterPegin = await btcTxHelper.getAddressBalance(btcAddressInformation.address);
-          expect(btcToSatoshis(btcBalanceAfterPegin)).to.equal(btcToSatoshis(INITIAL_PEGIN_BALANCE - AMOUNT_TO_TRY_TO_LOCK - MAX_EXPECTED_FEE), 'Lock BTC debit');
+          expect(Number(btcToSatoshis(btcBalanceAfterPegin))).to.equal(Number(btcToSatoshis(INITIAL_PEGIN_BALANCE - AMOUNT_TO_TRY_TO_LOCK - MAX_EXPECTED_FEE)), 'Lock BTC debit');
 
           const federationBalanceAfterPegin = await btcTxHelper.getAddressBalance(federationAddress);
-          expect(btcToSatoshis(federationBalanceAfterPegin)).to.equal(btcToSatoshis(initialFederationBalance + AMOUNT_TO_TRY_TO_LOCK), `Lock BTC federation ${federationAddress} credit`);
+          expect(Number(btcToSatoshis(federationBalanceAfterPegin))).to.equal(Number(btcToSatoshis(initialFederationBalance + AMOUNT_TO_TRY_TO_LOCK)), `Lock BTC federation ${federationAddress} credit`);
           
           await rskTxHelper.updateBridge();
           await rskUtils.mineAndSync(rskTxHelpers);
@@ -203,7 +203,7 @@ describe('Lock whitelisting', () => {
             const inputTxHash = txInput.hash.reverse().toString('hex');
             expect(inputTxHash).to.equal(peginBtcTxHash);
             const spentUtxo = peginBtcTx.outs[txInput.index];
-            const amountInBtc = satoshisToBtc(spentUtxo.value);
+            const amountInBtc = Number(satoshisToBtc(spentUtxo.value));
             nonMatchedAmounts = nonMatchedAmounts.filter(a => a !== amountInBtc);
           });
 
@@ -221,7 +221,7 @@ describe('Lock whitelisting', () => {
 
       const initialFederationBalance = await btcTxHelper.getAddressBalance(federationAddress);
 
-      await assertAddOneOffWhitelistAddress(rskTxHelper, btcAddressInformation.address, btcToSatoshis(WHITELISTED_MAX_VALUE));
+      await assertAddOneOffWhitelistAddress(rskTxHelper, btcAddressInformation.address, Number(btcToSatoshis(WHITELISTED_MAX_VALUE)));
 
       await sendPegin(rskTxHelper, btcTxHelper, btcAddressInformation, PEGIN_VALUE_IN_BTC);
 

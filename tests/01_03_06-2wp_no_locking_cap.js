@@ -5,7 +5,7 @@ const { getBtcClient } = require('../lib/btc-client-provider');
 const { sendPegin, ensurePeginIsRegistered, sendTxToBridge } = require('../lib/2wp-utils');
 const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
 const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivation');
-const btcEthUnitConverter = require('btc-eth-unit-converter');
+const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const whitelistingAssertions = require('../lib/assertions/whitelisting');
 
 describe('Transfer BTC to RBTC before papyrus200', function() {
@@ -35,7 +35,7 @@ describe('Transfer BTC to RBTC before papyrus200', function() {
 
   it('should do a multiple pegouts from the same rsk address after making a pegin', async () => {
     const btcAddressInfo = await btcTxHelper.generateBtcAddress('legacy');
-    await whitelistingAssertions.assertAddLimitedLockWhitelistAddress(rskTxHelper, btcAddressInfo.address, btcEthUnitConverter.btcToSatoshis(PEGIN_VALUE_IN_BTC));
+    await whitelistingAssertions.assertAddLimitedLockWhitelistAddress(rskTxHelper, btcAddressInfo.address, Number(btcEthUnitConverter.btcToSatoshis(PEGIN_VALUE_IN_BTC)));
     await rskUtils.mineAndSync(rskTxHelpers);
     
     const recipientRskAddressInfo = getDerivedRSKAddressInformation(btcAddressInfo.privateKey, btcTxHelper.btcConfig.network);
@@ -54,7 +54,7 @@ describe('Transfer BTC to RBTC before papyrus200', function() {
     const btcPeginTxHash = await sendPegin(rskTxHelper, btcTxHelper, btcAddressInfo, PEGIN_VALUE_IN_BTC);
     await ensurePeginIsRegistered(rskTxHelper, btcPeginTxHash);
     const recipientRskAddressBalanceAfterPegin = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
-    expect(Number(recipientRskAddressBalanceAfterPegin)).to.be.equal(btcEthUnitConverter.btcToWeis(PEGIN_VALUE_IN_BTC));
+    expect(Number(recipientRskAddressBalanceAfterPegin)).to.be.equal(Number(btcEthUnitConverter.btcToWeis(PEGIN_VALUE_IN_BTC)));
 
     await sendTxToBridge(rskTxHelper, PEGOUT_VALUE_IN_RBTC, recipientRskAddressInfo.address);
     await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
@@ -66,7 +66,7 @@ describe('Transfer BTC to RBTC before papyrus200', function() {
     expect(Number(senderAddressBalanceAfterFirstPegout)).to.be.above(PEGOUT_VALUE_IN_RBTC - btcTxHelper.getFee()).and.below(PEGOUT_VALUE_IN_RBTC);
 
     const recipientRskAddressBalanceAfterFirstPegout = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
-    expect(Number(recipientRskAddressBalanceAfterFirstPegout)).to.be.above(btcEthUnitConverter.btcToWeis(PEGIN_VALUE_IN_BTC - PEGOUT_VALUE_IN_RBTC - RSK_TX_FEE_IN_RBTC)).and.below(btcEthUnitConverter.btcToWeis(PEGIN_VALUE_IN_BTC - PEGOUT_VALUE_IN_RBTC));
+    expect(Number(recipientRskAddressBalanceAfterFirstPegout)).to.be.above(Number(btcEthUnitConverter.btcToWeis(PEGIN_VALUE_IN_BTC - PEGOUT_VALUE_IN_RBTC - RSK_TX_FEE_IN_RBTC))).and.below(Number(btcEthUnitConverter.btcToWeis(PEGIN_VALUE_IN_BTC - PEGOUT_VALUE_IN_RBTC)));
     
     await sendTxToBridge(rskTxHelper, PEGOUT_VALUE_IN_RBTC, recipientRskAddressInfo.address);
     await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
@@ -75,7 +75,7 @@ describe('Transfer BTC to RBTC before papyrus200', function() {
     expect(Number(senderAddressBalanceAfterSecondPegout)).to.be.above(senderAddressBalanceAfterFirstPegout + PEGOUT_VALUE_IN_RBTC - btcTxHelper.getFee()).and.below(senderAddressBalanceAfterFirstPegout + PEGOUT_VALUE_IN_RBTC);
 
     const recipientRskAddressBalanceAfterSecondPegout = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
-    expect(Number(recipientRskAddressBalanceAfterSecondPegout)).to.be.above(recipientRskAddressBalanceAfterFirstPegout - btcEthUnitConverter.btcToWeis(PEGOUT_VALUE_IN_RBTC + RSK_TX_FEE_IN_RBTC)).and.below(recipientRskAddressBalanceAfterFirstPegout - btcEthUnitConverter.btcToWeis(PEGOUT_VALUE_IN_RBTC));
+    expect(Number(recipientRskAddressBalanceAfterSecondPegout)).to.be.above(recipientRskAddressBalanceAfterFirstPegout - Number(btcEthUnitConverter.btcToWeis(PEGOUT_VALUE_IN_RBTC + RSK_TX_FEE_IN_RBTC))).and.below(recipientRskAddressBalanceAfterFirstPegout - Number(btcEthUnitConverter.btcToWeis(PEGOUT_VALUE_IN_RBTC)));
   });
 });
 

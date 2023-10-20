@@ -4,7 +4,7 @@ const rskUtils = require('../lib/rsk-utils');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivation');
-const btcEthUnitConverter = require('btc-eth-unit-converter');
+const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const { sendTxToBridge } = require('../lib/2wp-utils');
 const { ensure0x } = require('../lib/utils');
 
@@ -25,7 +25,7 @@ describe('pegout events improvements - pre fingerroot', () => {
 
       const INITIAL_RSK_BALANCE = 0.01;
       const PEGOUT_AMOUNT_IN_RBTC = 0.005;
-      const PEGOUT_AMOUNT_IN_SATOSHIS = btcEthUnitConverter.btcToSatoshis(PEGOUT_AMOUNT_IN_RBTC);
+      const PEGOUT_AMOUNT_IN_SATOSHIS = Number(btcEthUnitConverter.btcToSatoshis(PEGOUT_AMOUNT_IN_RBTC));
 
       const btcAddressInformation = await btcTxHelper.generateBtcAddress('legacy');
 
@@ -35,7 +35,7 @@ describe('pegout events improvements - pre fingerroot', () => {
       const unlocked = await rskTxHelper.unlockAccount(recipientRskAddressInfo.address);
       expect(unlocked, 'Account was not unlocked').to.be.true;
 
-      await rskUtils.sendFromCow(rskTxHelper, recipientRskAddressInfo.address, btcEthUnitConverter.btcToWeis(INITIAL_RSK_BALANCE));
+      await rskUtils.sendFromCow(rskTxHelper, recipientRskAddressInfo.address, Number(btcEthUnitConverter.btcToWeis(INITIAL_RSK_BALANCE)));
       
       await sendTxToBridge(rskTxHelper, PEGOUT_AMOUNT_IN_RBTC, recipientRskAddressInfo.address);
 
