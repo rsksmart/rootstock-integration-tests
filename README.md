@@ -14,13 +14,14 @@ All private keys used in the library are for testing only and not used in any pr
   - Go to https://bitcoin.org/en/release/v0.18.1 in this page there is the link to the download sources
   https://bitcoincore.org/bin/bitcoin-core-0.18.1/
   Select the *.tar.gz file according to your OS (for MacOS sillicon [bitcoin-0.18.1-osx64.tar.gz](https://bitcoincore.org/bin/bitcoin-core-0.18.1/bitcoin-0.18.1-osx64.tar.gz))
+    to use curl instead use `curl -O https://bitcoin.org/bin/bitcoin-core-0.18.1/bitcoin-0.18.1-osx64.tar.gz`
   - Decompress and copy the path to the folder.
   - run in terminal `sudo cp <path to bitcoin-core folder>/bin/bitcoin* /usr/local/bin`
-  - create a folder called bitcoindata in your workspace
+  - create a folder called bitcoindata in your workspace - this is the folder were the Bitcoin DB is going to be stored.
   - run to test the bitcoind installation standalone `bitcoind -deprecatedrpc=generate -addresstype=legacy -regtest -printtoconsole -server -rpcuser=rsk -rpcpassword=rsk -rpcport=18332 -txindex -datadir=<path to bitcoindata> $@`
 
 ### Federate node setup
-- install java 8 the x86 version to be used with rossetta in case of ARM arch.
+- install java the x86 version to be used with rossetta in case of ARM arch (1.8, 11 and 17 can be used).
 - A fatjar of the federate node can be used or follow the setup steps in the powpeg-node to run from scratch.
 
 
@@ -67,13 +68,14 @@ const customLogbackFile5 = federatesLogbackPath + 'logback-fed5.xml';
   - Set `federate.classpath` to your local federate node fatjar. Additionally you can set `federate.configFile` to your local configuration files, if you need to test special conditions or your configuration files are located in a different path.
   - Set `federate.hsmConfigs.serverPath` to your local HSM emulator script.
   - Optionally specify `federate.hsmConfigs.keyPath` to your local keys, if you happen to be testing different keys or your keys are located in a different path.
-4. 
-	-  Run `npm test` to run testcases without interruption or `npm run test-fail-fast` to stop execution at first testcase failure.
-  - `regtest.js` has by default not using the following mapping:
-    - federate1: no hsm signer
-    - federate2 and federate3: hsm1
-    - federate4 and federate5: hsm2 (modify using the same logic that in federate2 and 3 for changing to hsm1 in case of hsm2 not working).
+4. Run `npm test` to run testcases without interruption or `npm run test-fail-fast` to stop execution at first testcase failure.
   
+### Notes for regtest
+- `regtest.js` by default has the following mapping:
+    - federate1: key file (no hsm)
+    - federate2 and federate3: hsm1
+    - federate4 and federate5: hsm2 (modify using the same logic that in federate2 and 3 for changing to hsm1 in case of hsm2 not working as explained in the HSM setup section).
+
 
 ## Running the tests with a different configuration file
 
