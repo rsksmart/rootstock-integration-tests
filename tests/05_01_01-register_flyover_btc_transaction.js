@@ -8,7 +8,8 @@ const { getBridge } = require('../lib/precompiled-abi-forks-util');
 const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const CustomError = require('../lib/CustomError');
-const { mineForPeginRegistration } = require('../lib/2wp-utils');
+const { mineForPeginRegistration, disableWhitelisting } = require('../lib/2wp-utils');
+const rskUtils = require('../lib/rsk-utils');
 
 let rskTxHelpers;
 let rskTxHelper;
@@ -18,27 +19,31 @@ let bridge;
 /**
  * Takes the blockchain to the required state for this test file to run in isolation.
  */
-const fulfillRequirementsToRunAsSingleTestFile = async () => {
-  await activateFork(Runners.common.forks.iris300);
+const fulfillRequirementsToRunAsSingleTestFile = async (rskTxHelper, btcTxHelper) => {
+  const latestForkName = rskUtils.getLatestForkName();
+  await rskUtils.activateFork(latestForkName);
+  await disableWhitelisting(rskTxHelper, btcTxHelper);
 };
 
-describe('Calling registerFastBtcTransaction after iris', () => {
+describe('Calling registerFastBtcTransaction after last fork', () => {
   
   before(async () => {
     rskTxHelpers = getRskTransactionHelpers();
     rskTxHelper = rskTxHelpers[0];
     btcTxHelper = getBtcClient();
     if(process.env.RUNNING_SINGLE_TEST_FILE) {
-      await fulfillRequirementsToRunAsSingleTestFile();
+      await fulfillRequirementsToRunAsSingleTestFile(rskTxHelper, btcTxHelper);
     }
     bridge = getBridge(rskTxHelper.getClient(), Runners.common.forks.iris300.name);
+    // bridge = getBridge(rskTxHelper.getClient(), rskUtils.getLatestForkName());
   });
   
   it('should return value transferred when calling registerFastBtcTransaction method', async () => {
 
     try {
       const liquidityBridgeContract = await lbc.getLiquidityBridgeContract();
-      expect(Number(await rskTxHelper.getBalance(liquidityBridgeContract._address))).to.equal(0);
+      const initialBridgeBalance = Number(await rskTxHelper.getBalance(liquidityBridgeContract._address));
+      // expect(Number(await rskTxHelper.getBalance(liquidityBridgeContract._address))).to.equal(0);
 
       const FEDS_PUBKEYS_LIST = await getFedsPubKeys(bridge);
       
@@ -77,7 +82,11 @@ describe('Calling registerFastBtcTransaction after iris', () => {
         preHash
       );
 
-      const checkFunction = (result) => {
+      const checkFunction = async (result) => {
+        console.log('<->result', result);
+        const currentRskBalance = Number(await rskTxHelper.getBalance(liquidityBridgeContract._address));
+        console.log('<->currentRskBalance', currentRskBalance);
+        console.log("<->", weisToTransfer, currentRskBalance, Number(result))
         expect(Number(result)).to.be.equals(weisToTransfer);
       };
 
@@ -88,8 +97,8 @@ describe('Calling registerFastBtcTransaction after iris', () => {
         checkFunction
       );
 
-      const currentRskBalance = await rskTxHelper.getBalance(liquidityBridgeContract._address);
-      expect(Number(currentRskBalance)).to.equal(weisToTransfer);
+      const currentRskBalance = Number(await rskTxHelper.getBalance(liquidityBridgeContract._address));
+      expect(currentRskBalance).to.equal(weisToTransfer + initialBridgeBalance);
 
     } catch (err) {
       throw new CustomError('registerFastBridgeBtcTransaction call failure', err);
