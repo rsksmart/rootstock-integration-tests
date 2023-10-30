@@ -9,7 +9,6 @@ const bitcoin = peglib.bitcoin;
 const rsk = peglib.rsk;
 const pegUtils = peglib.pegUtils;
 const pegAssertions = require('../lib/assertions/2wp');
-const whitelistingAssertions = require('../lib/assertions/whitelisting');
 const whitelistingAssertionsLegacy = require('../lib/assertions/whitelisting-legacy');
 const rskUtilsLegacy = require('../lib/rsk-utils-legacy');
 const rskUtils = require('../lib/rsk-utils');
@@ -19,7 +18,7 @@ const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const removePrefix0x = require("../lib/utils").removePrefix0x;
 const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
-const { sendPegin, ensurePeginIsRegistered } = require('../lib/2wp-utils');
+const { sendPegin, ensurePeginIsRegistered, disableWhitelisting } = require('../lib/2wp-utils');
 const { 
     KEY_TYPE_BTC, 
     KEY_TYPE_RSK, 
@@ -84,8 +83,8 @@ let rskTxHelper;
  * Takes the blockchain to the required state for this test file to run in isolation.
  */
 const fulfillRequirementsToRunAsSingleTestFile = async (rskTxHelper, btcTxHelper) => {
-  await rskUtils.activateFork(Runners.common.forks.fingerroot500);
-  await whitelistingAssertions.disableWhitelisting(rskTxHelper, btcTxHelper);
+  await rskUtils.activateFork(rskUtils.getLatestForkName());
+  await disableWhitelisting(rskTxHelper, btcTxHelper);
 };
 
 describe('RSK Federation change', function() {
@@ -339,7 +338,8 @@ describe('RSK Federation change', function() {
         const utxosToGenerate = UTXOS_TO_TRANSFER + UTXOS_TO_PAY_FEES;
         const utxoValueInSatoshis = bitcoin.btcToSatoshis(1);
         const peginSenderAddressInfo = await btcTxHelper.generateBtcAddress('legacy');
-        const totalAmountToSendInSatoshis = (utxoValueInSatoshis * utxosToGenerate) + (utxosToGenerate * btcEthUnitConverter.btcToSatoshis(btcTxHelper.getFee()));
+        const totalFeesInSatoshis = (utxosToGenerate * btcEthUnitConverter.btcToSatoshis(btcTxHelper.getFee()));
+        const totalAmountToSendInSatoshis = (utxoValueInSatoshis * utxosToGenerate) + totalFeesInSatoshis;
         
         await btcTxHelper.fundAddress(peginSenderAddressInfo.address, btcEthUnitConverter.satoshisToBtc(totalAmountToSendInSatoshis));
 
