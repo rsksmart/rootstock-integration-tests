@@ -108,7 +108,7 @@ describe('RSK Federation change', function() {
       btcTxHelper = getBtcClient();
 
       if(process.env.RUNNING_SINGLE_TEST_FILE) {
-        await fulfillRequirementsToRunAsSingleTestFile(rskTxHelpers[0], btcTxHelper);
+        await fulfillRequirementsToRunAsSingleTestFile(rskTxHelper, btcTxHelper);
       }
 
       // Assume the last of the running federators belongs to the new federation
