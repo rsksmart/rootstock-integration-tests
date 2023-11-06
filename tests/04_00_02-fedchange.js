@@ -1,6 +1,6 @@
 const expect = require('chai').expect
 const BN = require('bn.js');
-var { sequentialPromise, wait, randomElement, randomNElements, additionalFederationAddresses } = require('../lib/utils');
+const { sequentialPromise, wait, randomElement, randomNElements, additionalFederationAddresses } = require('../lib/utils');
 const CustomError = require('../lib/CustomError');
 const peglib = require('peglib');
 const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
@@ -17,6 +17,8 @@ const libUtils = require('../lib/utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const removePrefix0x = require("../lib/utils").removePrefix0x;
+const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
+const { sendPegin, ensurePeginIsRegistered, disableWhitelisting } = require('../lib/2wp-utils');
 const { 
     KEY_TYPE_BTC, 
     KEY_TYPE_RSK, 
@@ -54,33 +56,44 @@ const PENDING_FEDERATION_RANDOM_HASH = '0x27da3e662acf8862ba5c42fbdcc023c4f81355
 const INITIAL_BTC_BALANCE = bitcoin.btcToSatoshis(200);
 const EXPECTED_UNSUCCESSFUL_RESULT = -10;
 
-var btcClient;
-var rskClientOldFed;
-var rskClientNewFed;
-var rskClients;
-var pegClient;
-var test;
-var testNewFed;
-var utils;
-var expectedNewFederationCreationTime, expectedNewFederationCreationBlockNumber;
-var oldFederation;
-var newFederationBtcPublicKeys;
-var newFederationPublicKeys;
-var newFederatorRskAddressesRsk;
-var expectedNewFederationAddress;
+let btcClient;
+let rskClientOldFed;
+let rskClientNewFed;
+let rskClients;
+let pegClient;
+let test;
+let testNewFed;
+let utils;
+let expectedNewFederationCreationTime, expectedNewFederationCreationBlockNumber;
+let oldFederation;
+let newFederationBtcPublicKeys;
+let newFederationPublicKeys;
+let newFederatorRskAddressesRsk;
+let expectedNewFederationAddress;
 let p2shErpFedRedeemScript;
-var expectedNewFederationThreshold;
+let expectedNewFederationThreshold;
 let amountOfUtxosToMigrate;
 let federationBalanceBeforeMigration;
 let whitelistingAssertionsTestLegacy;
 let rskTxHelpers;
 let btcTxHelper;
+let rskTxHelper;
+
+/**
+ * Takes the blockchain to the required state for this test file to run in isolation.
+ */
+const fulfillRequirementsToRunAsSingleTestFile = async (rskTxHelper, btcTxHelper) => {
+  await rskUtils.activateFork(rskUtils.getLatestForkName());
+  await disableWhitelisting(rskTxHelper, btcTxHelper);
+};
 
 describe('RSK Federation change', function() {
-  var addresses;
+  let addresses;
 
   before(async () => {
+
     try {
+
       rskClientOldFed = rsk.getClient(Runners.hosts.federate.host);
       await Runners.startAdditionalFederateNodes(await rskClientOldFed.eth.getBlock('latest'));
       btcClient = bitcoin.getClient(
@@ -90,6 +103,13 @@ describe('RSK Federation change', function() {
         NETWORK
       );
       rskClients = Runners.hosts.federates.map(federate => rsk.getClient(federate.host));
+      rskTxHelpers = getRskTransactionHelpers();
+      rskTxHelper = rskTxHelpers[0];
+      btcTxHelper = getBtcClient();
+
+      if(process.env.RUNNING_SINGLE_TEST_FILE) {
+        await fulfillRequirementsToRunAsSingleTestFile(rskTxHelper, btcTxHelper);
+      }
 
       // Assume the last of the running federators belongs to the new federation
       rskClientNewFed = rskClients[rskClients.length-1];
@@ -101,9 +121,7 @@ describe('RSK Federation change', function() {
       whitelistingAssertionstestNewFed = whitelistingAssertionsLegacy.with(btcClient, rskClientNewFed, pegClient);
       utils = rskUtilsLegacy.with(btcClient, rskClientOldFed, pegClient);
       utilsNewFed = rskUtilsLegacy.with(btcClient, rskClientNewFed, pegClient);
-      rskTxHelpers = getRskTransactionHelpers();
-      btcTxHelper = getBtcClient();
-
+      
       await rskUtilsLegacy.waitForSync(rskClients);
 
       // Grab the new federation public keys and calculate the federators addresses and expected federation
@@ -305,36 +323,35 @@ describe('RSK Federation change', function() {
 
   // this is not an actual test, this just modifies the blockchain state ensuring that the active federation contains several UTXOs
   it('generates several UTXOs in the active federation', async () => {
-    try{
+    try {
+
       const EXPECTED_UTXOS = 15;
-      let bridgeStatus = await getBridgeState(rskClientNewFed);
-      let existingUtxos = bridgeStatus.activeFederationUtxos.length;
-      amountOfUtxosToMigrate = existingUtxos < EXPECTED_UTXOS ? EXPECTED_UTXOS : existingUtxos;
+      const bridgeStatus = await getBridgeState(rskClientNewFed);
+      const existingUtxosCount = bridgeStatus.activeFederationUtxos.length;
+      amountOfUtxosToMigrate = existingUtxosCount < EXPECTED_UTXOS ? EXPECTED_UTXOS : existingUtxosCount;
 
       // Ensure there are enough UTXOs so that the migration need to be done in more than one transaction
-      if (existingUtxos < EXPECTED_UTXOS) {
+      if (existingUtxosCount < EXPECTED_UTXOS) {
+
         const UTXOS_TO_PAY_FEES = 1
-        const UTXOS_TO_TRANSFER = EXPECTED_UTXOS - existingUtxos;
-        var utxosToGenerate = UTXOS_TO_TRANSFER + UTXOS_TO_PAY_FEES;
-        var utxoValue = bitcoin.btcToSatoshis(1);
+        const UTXOS_TO_TRANSFER = EXPECTED_UTXOS - existingUtxosCount;
+        const utxosToGenerate = UTXOS_TO_TRANSFER + UTXOS_TO_PAY_FEES;
+        const utxoValueInSatoshis = bitcoin.btcToSatoshis(1);
+        const peginSenderAddressInfo = await btcTxHelper.generateBtcAddress('legacy');
+        const totalFeesInSatoshis = (utxosToGenerate * btcEthUnitConverter.btcToSatoshis(btcTxHelper.getFee()));
+        const totalAmountToSendInSatoshis = (utxoValueInSatoshis * utxosToGenerate) + totalFeesInSatoshis;
+        
+        await btcTxHelper.fundAddress(peginSenderAddressInfo.address, btcEthUnitConverter.satoshisToBtc(totalAmountToSendInSatoshis));
 
-        let activeFederationAddress = await getActiveFederationAddress();
-        var addresses = await pegClient.generateNewAddress('for_migration');
-        expect(addresses.inRSK).to.be.true;
-
-        await btcClient.sendToAddress(addresses.btc, utxoValue * utxosToGenerate);
-        await btcClient.generate(1);
-        await test.assertBitcoinBalance(addresses.btc, utxoValue * utxosToGenerate, "Wrong balance in account to migrate");
-        await wait(1000);
-        await sequentialPromise(
-          UTXOS_TO_TRANSFER, 
-          () => test.assertLock(addresses, [{ address: activeFederationAddress, amount: utxoValue }])
-        );
+        for(let i = 0; i < utxosToGenerate; i++) {
+          const peginBtcTxHash = await sendPegin(rskTxHelper, btcTxHelper, peginSenderAddressInfo, btcEthUnitConverter.satoshisToBtc(utxoValueInSatoshis));
+          await ensurePeginIsRegistered(rskTxHelper, peginBtcTxHash);
+        }
+        
       }
-      await rskUtilsLegacy.waitForSync(rskClients);
 
-      bridgeStatus = await getBridgeState(rskClientNewFed);
-      federationBalanceBeforeMigration = bridgeStatus.activeFederationUtxos.reduce(
+      const finalBridgeStatus = await getBridgeState(rskClientNewFed);
+      federationBalanceBeforeMigration = finalBridgeStatus.activeFederationUtxos.reduce(
         (previousValue, currentUtxo) => previousValue + currentUtxo.valueInSatoshis, 0
       );
     } catch (err) {
