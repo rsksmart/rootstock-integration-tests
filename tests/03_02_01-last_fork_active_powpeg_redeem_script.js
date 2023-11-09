@@ -7,6 +7,7 @@ const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
 const CustomError = require('../lib/CustomError');
 const removePrefix0x = require("../lib/utils").removePrefix0x;
 const { GENESIS_FEDERATION_ADDRESS, GENESIS_FEDERATION_REDEEM_SCRIPT } = require('../lib/constants');
+let rskClient;
 
 describe('Calling getActivePowpegRedeemScript method after last fork before fedchange', function() {
 
