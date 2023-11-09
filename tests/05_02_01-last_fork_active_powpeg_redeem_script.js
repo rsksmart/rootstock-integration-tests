@@ -21,6 +21,7 @@ const INITIAL_FEDERATION_SIZE = 3;
 let btcClient;
 let rskClientNewFed;
 let rskClients;
+let rskClient;
 let newFederationBtcPublicKeys;
 let newFederationPublicKeys;
 let rskTxHelpers;
@@ -71,7 +72,6 @@ describe("Calling getActivePowpegRedeemScript method after last fork after fed c
       rskClients = Runners.hosts.federates.map((federate) =>
         rsk.getClient(federate.host)
       );
-      // rskClientNewFed = rskClients[rskClients.length - 1];
       newFederationPublicKeys = Runners.hosts.federates
         .filter((federate, index) => index >= INITIAL_FEDERATION_SIZE)
         .map((federate) => ({
