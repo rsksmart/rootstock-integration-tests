@@ -690,24 +690,6 @@ describe('RSK Federation change', function() {
     }
   });
 
-
-  it.skip('should return the active powpeg redeem script', async () => {
-    try{
-      const activePowpegRedeemScript = await rskClientNewFed.rsk.bridge.methods.getActivePowpegRedeemScript().call();
-      const activeFederationAddressFromBridge = await rskClientNewFed.rsk.bridge.methods.getFederationAddress().call();
-      const addressFromRedeemScript = redeemScriptParser.getAddressFromRedeemScript(
-        'REGTEST', Buffer.from(removePrefix0x(activePowpegRedeemScript), 'hex')
-      );
-      
-      expect(activePowpegRedeemScript).to.eq('0x' + p2shErpFedRedeemScript.toString('hex'));
-      expect(addressFromRedeemScript).to.eq(expectedNewFederationAddress).to.eq(activeFederationAddressFromBridge);
-    } catch (err) {
-      throw new CustomError('getActivePowpegRedeemScript method validation failure', err);
-    }
-  })
-
-
-
 });
 
 const getActiveFederationAddress = async() => {

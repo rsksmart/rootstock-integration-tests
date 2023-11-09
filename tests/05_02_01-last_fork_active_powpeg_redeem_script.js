@@ -2,11 +2,7 @@ const chai = require("chai");
 chai.use(require("chai-as-promised"));
 const expect = chai.expect;
 const peglib = require('peglib');
-const pegUtils = peglib.pegUtils;
 const bitcoin = peglib.bitcoin;
-const pegAssertions = require('../lib/assertions/2wp');
-const rskUtilsLegacy = require('../lib/rsk-utils-legacy');
-const rskUtils = require('../lib/rsk-utils');
 const { compareFederateKeys } = require("../lib/federation-utils");
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const rsk = require("peglib").rsk;
@@ -22,6 +18,14 @@ const {
   KEY_TYPE_MST,
 } = require("../lib/constants");
 const INITIAL_FEDERATION_SIZE = 3;
+let btcClient;
+let rskClientNewFed;
+let rskClients;
+let newFederationBtcPublicKeys;
+let newFederationPublicKeys;
+let rskTxHelpers;
+let btcTxHelper;
+let rskTxHelper;
 describe("Calling getActivePowpegRedeemScript method after last fork after fed change", function () {
   before(() => {
     rskClient = rsk.getClient(Runners.hosts.federate.host);
@@ -39,8 +43,6 @@ describe("Calling getActivePowpegRedeemScript method after last fork after fed c
           "REGTEST",
           Buffer.from(removePrefix0x(activePowpegRedeemScript), "hex")
         );
-
-      rskClientOldFed = rsk.getClient(Runners.hosts.federate.host);
 
       const NETWORK = bitcoin.networks.testnet;
       btcClient = bitcoin.getClient(
