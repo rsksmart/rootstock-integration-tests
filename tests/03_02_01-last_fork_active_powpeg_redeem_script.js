@@ -1,32 +1,60 @@
 const chai = require('chai');
 chai.use(require('chai-as-promised'));
 const expect = chai.expect;
-
-const rsk = require('peglib').rsk;
 const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
+const {getRskTransactionHelpers} = require('../lib/rsk-tx-helper-provider');
+const {getBridge, getLatestActiveForkName} = require('../lib/precompiled-abi-forks-util');
 const CustomError = require('../lib/CustomError');
-const removePrefix0x = require("../lib/utils").removePrefix0x;
-const { GENESIS_FEDERATION_ADDRESS, GENESIS_FEDERATION_REDEEM_SCRIPT } = require('../lib/constants');
-let rskClient;
+const {disableWhitelisting} = require('../lib/2wp-utils');
+const removePrefix0x = require('../lib/utils').removePrefix0x;
+const {getBtcClient} = require('../lib/btc-client-provider');
+const rskUtils = require('../lib/rsk-utils');
+const {
+  GENESIS_FEDERATION_ADDRESS,
+  GENESIS_FEDERATION_REDEEM_SCRIPT,
+} = require('../lib/constants');
+
+const fulfillRequirementsToRunAsSingleTestFile = async (rskTxHelper, btcTxHelper) => {
+  const latestForkName = rskUtils.getLatestForkName();
+  await rskUtils.activateFork(latestForkName);
+  await disableWhitelisting(rskTxHelper, btcTxHelper);
+};
 
 describe('Calling getActivePowpegRedeemScript method after last fork before fedchange', function() {
+  let rskTxHelpers;
+  let rskTxHelper;
+  let bridge;
 
-    before(() => {
-      rskClient = rsk.getClient(Runners.hosts.federate.host);
-    });
-  
-    it('should return the active powpeg redeem script', async () => {
-      try{
-        const activePowpegRedeemScript = await rskClient.rsk.bridge.methods.getActivePowpegRedeemScript().call();
-        const activeFederationAddressFromBridge = await rskClient.rsk.bridge.methods.getFederationAddress().call();
-        const addressFromRedeemScript = redeemScriptParser.getAddressFromRedeemScript(
-          'REGTEST', Buffer.from(removePrefix0x(activePowpegRedeemScript), 'hex')
+  before(async () => {
+    const btcTxHelper = getBtcClient();
+
+    rskTxHelpers = getRskTransactionHelpers();
+    rskTxHelper = rskTxHelpers[0];
+    if (process.env.RUNNING_SINGLE_TEST_FILE) {
+      await fulfillRequirementsToRunAsSingleTestFile(rskTxHelper, btcTxHelper);
+    }
+    bridge = getBridge(rskTxHelper.getClient(), await getLatestActiveForkName());
+  });
+
+  it('should return the active powpeg redeem script', async () => {
+    try {
+      const activePowpegRedeemScript = await bridge.methods.getActivePowpegRedeemScript().call();
+      const activeFederationAddressFromBridge = await bridge.methods.getFederationAddress().call();
+      const addressFromRedeemScript =
+        redeemScriptParser.getAddressFromRedeemScript(
+            'REGTEST',
+            Buffer.from(removePrefix0x(activePowpegRedeemScript), 'hex'),
         );
-        
-        expect(activePowpegRedeemScript).to.eq(GENESIS_FEDERATION_REDEEM_SCRIPT);
-        expect(addressFromRedeemScript).to.eq(GENESIS_FEDERATION_ADDRESS).to.eq(activeFederationAddressFromBridge);
-      } catch (err) {
-        throw new CustomError('getActivePowpegRedeemScript method validation failure', err);
-      }
-    })
+
+      expect(activePowpegRedeemScript).to.eq(GENESIS_FEDERATION_REDEEM_SCRIPT);
+      expect(addressFromRedeemScript)
+          .to.eq(GENESIS_FEDERATION_ADDRESS)
+          .to.eq(activeFederationAddressFromBridge);
+    } catch (err) {
+      throw new CustomError(
+          'getActivePowpegRedeemScript method validation failure',
+          err,
+      );
+    }
+  });
 });
