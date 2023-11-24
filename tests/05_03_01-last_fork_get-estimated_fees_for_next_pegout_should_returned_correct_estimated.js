@@ -1,12 +1,15 @@
 const expect = require('chai').expect;
 const {getBridge, getLatestActiveForkName} = require('../lib/precompiled-abi-forks-util');
 const CustomError = require('../lib/CustomError');
-const {MAX_ESTIMATED_FEE_PER_PEGOUT, FEE_DIFFERENCE_PER_PEGOUT} = require('../lib/constants');
 const {getRskTransactionHelper} = require('../lib/rsk-tx-helper-provider');
+const {MAX_ESTIMATED_FEE_PER_PEGOUT, FEE_DIFFERENCE_PER_PEGOUT} = require('../lib/constants');
 
-let bridge;
+// in order to run this as a single test file, it requires a federation change so follow the following command
+// npm run run-single-test-file 04_00_02-fedchange.js,05_03_01-last_fork_get-estimated_fees_for_next_pegout_should_returned_correct_estimated.js
 
-describe('getEstimatedFeesForNextPegOutEvent - post fingerroot', () => {
+describe('getEstimatedFeesForNextPegOutEvent - last fork after fed change', () => {
+  let bridge;
+
   before(async () => {
     const rskTxHelper = getRskTransactionHelper();
     const latestActiveForkName = await getLatestActiveForkName();
