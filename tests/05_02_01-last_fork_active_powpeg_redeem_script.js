@@ -1,13 +1,12 @@
 const chai = require('chai');
 chai.use(require('chai-as-promised'));
 const expect = chai.expect;
-const peglib = require('peglib');
-const bitcoin = peglib.bitcoin;
 const {compareFederateKeys} = require('../lib/federation-utils');
 const {getRskTransactionHelpers} = require('../lib/rsk-tx-helper-provider');
 const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
 const CustomError = require('../lib/CustomError');
 const removePrefix0x = require('../lib/utils').removePrefix0x;
+const publicKeyToCompressed = require('../lib/utils').publicKeyToCompressed;
 const {getBridge, getLatestActiveForkName} = require('../lib/precompiled-abi-forks-util');
 
 // in order to run this as a single test file, it requires a federation change so follow the following command
@@ -46,15 +45,15 @@ describe('Calling getActivePowpegRedeemScript method after last fork after fed c
       const newFederationPublicKeys = Runners.hosts.federates
           .filter((federate, index) => index >= INITIAL_FEDERATION_SIZE)
           .map((federate) => ({
-            [KEY_TYPE_BTC]: bitcoin.keys.publicKeyToCompressed(
-                federate.publicKeys[KEY_TYPE_BTC],
-            ),
-            [KEY_TYPE_RSK]: bitcoin.keys.publicKeyToCompressed(
-                federate.publicKeys[KEY_TYPE_RSK],
-            ),
-            [KEY_TYPE_MST]: bitcoin.keys.publicKeyToCompressed(
-                federate.publicKeys[KEY_TYPE_MST],
-            ),
+            [KEY_TYPE_BTC]: publicKeyToCompressed(
+              federate.publicKeys[KEY_TYPE_BTC],
+          ),
+          [KEY_TYPE_RSK]: publicKeyToCompressed(
+              federate.publicKeys[KEY_TYPE_RSK],
+          ),
+          [KEY_TYPE_MST]: publicKeyToCompressed(
+              federate.publicKeys[KEY_TYPE_MST],
+          ),
           }))
           .sort(compareFederateKeys);
       const newFederationBtcPublicKeys = newFederationPublicKeys.map(
@@ -74,8 +73,11 @@ describe('Calling getActivePowpegRedeemScript method after last fork after fed c
       expect(activePowpegRedeemScript)
           .to.eq('0x' + p2shErpFedRedeemScript.toString('hex'),
           );
+
+      
       expect(addressFromRedeemScript)
-          .to.eq(expectedNewFederationAddress)
+          .to.eq(expectedNewFederationAddress);
+      expect(addressFromRedeemScript)    
           .to.eq(activeFederationAddressFromBridge);
     } catch (err) {
       throw new CustomError(
