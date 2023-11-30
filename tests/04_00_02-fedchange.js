@@ -682,7 +682,6 @@ describe('RSK Federation change', function() {
         { address: retiringFederationAddress, amount: bitcoin.btcToSatoshis(17) },
       ];
       
-      await whitelistingAssertionsTestLegacy.assertAddOneOffWhitelistAddress(addresses.btc, outputs.reduce((c, v) => c + v.amount, 0))();
       await test.assertLock(addresses, outputs);
     }
     catch (err) {

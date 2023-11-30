@@ -25,7 +25,6 @@ let rskTxHelpers;
 const NETWORK = bitcoin.networks.testnet;
 const BTC_TX_FEE = bitcoin.btcToSatoshis(0.001);
 
-    
   describe('Lock funds with locking cap', function() {
   
     before(async () => {
@@ -49,9 +48,7 @@ const BTC_TX_FEE = bitcoin.btcToSatoshis(0.001);
         await btcClient.importAddress(federationAddress, 'federations');
 
         var initialFedBalance = Number((await btcClient.getAddressBalance(federationAddress))[federationAddress]) || 0;
-
         var currentLockingCap = Number(await rskClient.rsk.bridge.methods.getLockingCap().call());
-
         // leave a 50% margin for these tests
         expectedLockingCap = initialFedBalance * 1.5;
         var authAddress = await rskClient.eth.personal.importRawKey("da6a5451bfd74829307ec6d4a8c55174d4859169f162a8ed8fcba8f7636e77cc", '');
@@ -93,7 +90,7 @@ const BTC_TX_FEE = bitcoin.btcToSatoshis(0.001);
         expect(initialFedBalance).to.be.lessThan(expectedLockingCap);
         
         const INITIAL_BTC_BALANCE = expectedLockingCap + bitcoin.btcToSatoshis(2);
-  
+
         var addresses = await pegClient.generateNewAddress('test');
         expect(addresses.inRSK).to.be.true;
   
@@ -124,6 +121,7 @@ const BTC_TX_FEE = bitcoin.btcToSatoshis(0.001);
         await rskUtils.mineAndSync(rskTxHelpers);
         
         var currentRskBalance = await rskClient.eth.getBalance(addresses.rsk);
+        
         expect(Number(currentRskBalance), 'Wrong RSK balance').to.equal(0);
         
         await rskUtilsLegacy.triggerRelease(rskClients, btcClient);
