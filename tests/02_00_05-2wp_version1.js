@@ -20,7 +20,7 @@ let rskTxHelpers;
  * Takes the blockchain to the required state for this test file to run in isolation.
  */
 const fulfillRequirementsToRunAsSingleTestFile = async () => {
-    await rskUtils.activateFork(Runners.common.forks.tbd600);
+    await rskUtils.activateFork(rskUtils.getLatestForkName());
 };
 
 describe('Lock funds using peg-in protocol version 1', () => {

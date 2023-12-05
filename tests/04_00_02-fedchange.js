@@ -9,7 +9,6 @@ const bitcoin = peglib.bitcoin;
 const rsk = peglib.rsk;
 const pegUtils = peglib.pegUtils;
 const pegAssertions = require('../lib/assertions/2wp');
-const whitelistingAssertionsLegacy = require('../lib/assertions/whitelisting-legacy');
 const rskUtilsLegacy = require('../lib/rsk-utils-legacy');
 const rskUtils = require('../lib/rsk-utils');
 const { compareFederateKeys } = require('../lib/federation-utils');
@@ -18,7 +17,7 @@ const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const removePrefix0x = require("../lib/utils").removePrefix0x;
 const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
-const { sendPegin, ensurePeginIsRegistered, disableWhitelisting } = require('../lib/2wp-utils');
+const { sendPegin, ensurePeginIsRegistered } = require('../lib/2wp-utils');
 const { 
     KEY_TYPE_BTC, 
     KEY_TYPE_RSK, 
@@ -74,7 +73,6 @@ let p2shErpFedRedeemScript;
 let expectedNewFederationThreshold;
 let amountOfUtxosToMigrate;
 let federationBalanceBeforeMigration;
-let whitelistingAssertionsTestLegacy;
 let rskTxHelpers;
 let btcTxHelper;
 let rskTxHelper;
@@ -84,7 +82,6 @@ let rskTxHelper;
  */
 const fulfillRequirementsToRunAsSingleTestFile = async (rskTxHelper, btcTxHelper) => {
   await rskUtils.activateFork(rskUtils.getLatestForkName());
-  await disableWhitelisting(rskTxHelper, btcTxHelper);
 };
 
 describe('RSK Federation change', function() {
@@ -116,9 +113,7 @@ describe('RSK Federation change', function() {
       pegClient = pegUtils.using(btcClient, rskClientOldFed);
       pegClientNewFed = pegUtils.using(btcClient, rskClientNewFed);
       test = pegAssertions.with(btcClient, rskClientOldFed, pegClient);
-      whitelistingAssertionsTestLegacy = whitelistingAssertionsLegacy.with(btcClient, rskClientOldFed, pegClient);
       testNewFed = pegAssertions.with(btcClient, rskClientNewFed, pegClient);
-      whitelistingAssertionstestNewFed = whitelistingAssertionsLegacy.with(btcClient, rskClientNewFed, pegClient);
       utils = rskUtilsLegacy.with(btcClient, rskClientOldFed, pegClient);
       utilsNewFed = rskUtilsLegacy.with(btcClient, rskClientNewFed, pegClient);
       
@@ -166,7 +161,7 @@ describe('RSK Federation change', function() {
       await btcClient.importAddress(expectedNewFederationAddress, 'federations');
       addresses = await pegClient.generateNewAddress('test');
       expect(addresses.inRSK).to.be.true;
-      await whitelistingAssertionsTestLegacy.assertAddOneOffWhitelistAddress(addresses.btc, INITIAL_BTC_BALANCE)();
+
       await btcClient.sendToAddress(addresses.btc, INITIAL_BTC_BALANCE);
       await btcClient.generate(1);
       await test.assertBitcoinBalance(addresses.btc, INITIAL_BTC_BALANCE, 'Initial BTC balance');
@@ -642,7 +637,6 @@ describe('RSK Federation change', function() {
       var valueToTransfer = bitcoin.btcToSatoshis(5);
       await sequentialPromise(FEDERATION_ACTIVATION_AGE, () => rskUtils.mineAndSync(rskTxHelpers));
       await rskUtilsLegacy.waitForSync(rskClients);
-      await whitelistingAssertionstestNewFed.assertAddOneOffWhitelistAddress(addresses.btc, valueToTransfer);
       await testNewFed.assertLock(
         addresses,
         [{ address: await getActiveFederationAddress(), amount: valueToTransfer}]
@@ -661,7 +655,6 @@ describe('RSK Federation change', function() {
 
       var valueToTransfer = bitcoin.btcToSatoshis(7);
       await rskUtilsLegacy.waitForSync(rskClients);
-      await whitelistingAssertionstestNewFed.assertAddOneOffWhitelistAddress(addresses.btc, valueToTransfer);
       await test.assertLock(
         addresses,
         [{ address: retiringFederationAddress, amount: valueToTransfer }]
