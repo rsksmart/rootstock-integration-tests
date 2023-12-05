@@ -7,7 +7,7 @@ const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivatio
 const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const { ensure0x } = require('../lib/utils');
 const { 
-    PEGIN_REJECTION_REASONS: { LEGACY_PEGIN_MULTISIG_SENDER_REASON }
+    PEGIN_REJECTION_REASONS: { PEGIN_V1_INVALID_PAYLOAD_REASON }
  } = require('../lib/constants');
 
 const AMOUNT_TO_LOCK_IN_BTC = 2;
@@ -154,7 +154,7 @@ describe('Lock funds using peg-in protocol version 1', () => {
 
         expect(rejectedPeginEvent).to.not.be.null;
         expect(rejectedPeginEvent.arguments.btcTxHash).to.equal(peginBtcTxHashWith0xPrefix);
-        expect(rejectedPeginEvent.arguments.reason).to.equal(LEGACY_PEGIN_MULTISIG_SENDER_REASON);
+        expect(rejectedPeginEvent.arguments.reason).to.equal(PEGIN_V1_INVALID_PAYLOAD_REASON);
 
     });
 
@@ -230,7 +230,7 @@ describe('Lock funds using peg-in protocol version 1', () => {
 
         expect(rejectedPeginEvent).to.not.be.null;
         expect(rejectedPeginEvent.arguments.btcTxHash).to.equal(peginBtcTxHashWith0xPrefix);
-        expect(rejectedPeginEvent.arguments.reason).to.equal(LEGACY_PEGIN_MULTISIG_SENDER_REASON);
+        expect(rejectedPeginEvent.arguments.reason).to.equal(PEGIN_V1_INVALID_PAYLOAD_REASON);
 
     });
 
@@ -284,7 +284,7 @@ describe('Lock funds using peg-in protocol version 1', () => {
 
         expect(rejectedPeginEvent).to.not.be.null;
         expect(rejectedPeginEvent.arguments.btcTxHash).to.equal(peginBtcTxHashWith0xPrefix);
-        expect(rejectedPeginEvent.arguments.reason).to.equal(LEGACY_PEGIN_MULTISIG_SENDER_REASON);
+        expect(rejectedPeginEvent.arguments.reason).to.equal(PEGIN_V1_INVALID_PAYLOAD_REASON);
 
     });
 });
