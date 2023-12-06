@@ -64,12 +64,12 @@ describe('Lock funds using peg-in protocol version 1', () => {
         data.push(createPeginV1TxData(rskDestinationAddress, refundAddressInformation.address));
 
         // Execute peg-in
-        const AMOUNT_TO_LOCK_EXCEEDING_LOCKIN_CAP = AMOUNT_TO_LOCK_IN_BTC + lockingCapInBtc;
-        await btcTxHelper.fundAddress(senderAddressInformation.address, AMOUNT_TO_LOCK_EXCEEDING_LOCKIN_CAP + btcTxHelper.getFee());
+        const AMOUNT_TO_LOCK_EXCEEDING_LOCKING_CAP = AMOUNT_TO_LOCK_IN_BTC + lockingCapInBtc;
+        await btcTxHelper.fundAddress(senderAddressInformation.address, AMOUNT_TO_LOCK_EXCEEDING_LOCKING_CAP + btcTxHelper.getFee());
 
         const searchRejectedPeginEventFromBlock = await rskTxHelper.getBlockNumber();
 
-        const peginBtcTxHash = await sendPegin(rskTxHelper, btcTxHelper, senderAddressInformation, AMOUNT_TO_LOCK_EXCEEDING_LOCKIN_CAP, data);
+        const peginBtcTxHash = await sendPegin(rskTxHelper, btcTxHelper, senderAddressInformation, AMOUNT_TO_LOCK_EXCEEDING_LOCKING_CAP, data);
 
         await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
 
@@ -77,7 +77,7 @@ describe('Lock funds using peg-in protocol version 1', () => {
         const finalSenderBalance = await btcTxHelper.getAddressBalance(senderAddressInformation.address);
         const finalDestinationAddressBalance = await rskTxHelper.getBalance(rskDestinationAddress);
         const finalRefundAddressBalance = await btcTxHelper.getAddressBalance(refundAddressInformation.address);
-        const refundAddressBalanceDifference = AMOUNT_TO_LOCK_EXCEEDING_LOCKIN_CAP - Number(finalRefundAddressBalance);
+        const refundAddressBalanceDifference = AMOUNT_TO_LOCK_EXCEEDING_LOCKING_CAP - Number(finalRefundAddressBalance);
 
         expect(Number(initialSenderBalance)).to.equal(0);
         expect(Number(finalSenderBalance)).to.equal(0);
@@ -108,17 +108,17 @@ describe('Lock funds using peg-in protocol version 1', () => {
         const initialSenderBalance = await btcTxHelper.getAddressBalance(senderAddressInformation.address);
 
         // Execute peg-in
-        const AMOUNT_TO_LOCK_EXCEEDING_LOCKIN_CAP = AMOUNT_TO_LOCK_IN_BTC + lockingCapInBtc;
-        await btcTxHelper.fundAddress(senderAddressInformation.address, AMOUNT_TO_LOCK_EXCEEDING_LOCKIN_CAP + btcTxHelper.getFee());
+        const AMOUNT_TO_LOCK_EXCEEDING_LOCKING_CAP = AMOUNT_TO_LOCK_IN_BTC + lockingCapInBtc;
+        await btcTxHelper.fundAddress(senderAddressInformation.address, AMOUNT_TO_LOCK_EXCEEDING_LOCKING_CAP + btcTxHelper.getFee());
 
         const searchRejectedPeginEventFromBlock = await rskTxHelper.getBlockNumber();
 
-        const peginBtcTxHash = await sendPegin(rskTxHelper, btcTxHelper, senderAddressInformation, AMOUNT_TO_LOCK_EXCEEDING_LOCKIN_CAP, null);
+        const peginBtcTxHash = await sendPegin(rskTxHelper, btcTxHelper, senderAddressInformation, AMOUNT_TO_LOCK_EXCEEDING_LOCKING_CAP, null);
         await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
 
         // Assert
         const finalSenderBalance = await btcTxHelper.getAddressBalance(senderAddressInformation.address);
-        const senderBalanceDifference = AMOUNT_TO_LOCK_EXCEEDING_LOCKIN_CAP - Number(finalSenderBalance);
+        const senderBalanceDifference = AMOUNT_TO_LOCK_EXCEEDING_LOCKING_CAP - Number(finalSenderBalance);
 
         expect(Number(initialSenderBalance)).to.equal(0);
         expect(Number(senderBalanceDifference)).to.be.at.most(btcTxHelper.getFee());
@@ -157,19 +157,19 @@ describe('Lock funds using peg-in protocol version 1', () => {
         data.push(createPeginV1TxData(rskDestinationAddress));
 
         // Execute peg-in
-        const AMOUNT_TO_LOCK_EXCEEDING_LOCKIN_CAP = AMOUNT_TO_LOCK_IN_BTC + lockingCapInBtc;
+        const AMOUNT_TO_LOCK_EXCEEDING_LOCKING_CAP = AMOUNT_TO_LOCK_IN_BTC + lockingCapInBtc;
 
-        await btcTxHelper.fundAddress(senderAddressInformation.address, AMOUNT_TO_LOCK_EXCEEDING_LOCKIN_CAP + btcTxHelper.getFee());
+        await btcTxHelper.fundAddress(senderAddressInformation.address, AMOUNT_TO_LOCK_EXCEEDING_LOCKING_CAP + btcTxHelper.getFee());
 
         const searchRejectedPeginEventFromBlock = await rskTxHelper.getBlockNumber();
 
-        const peginBtcTxHash = await sendPegin(rskTxHelper, btcTxHelper, senderAddressInformation, AMOUNT_TO_LOCK_EXCEEDING_LOCKIN_CAP, data);
+        const peginBtcTxHash = await sendPegin(rskTxHelper, btcTxHelper, senderAddressInformation, AMOUNT_TO_LOCK_EXCEEDING_LOCKING_CAP, data);
         await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
 
         // Assert
         const finalSenderBalance = await btcTxHelper.getAddressBalance(senderAddressInformation.address);
         const finalDestinationAddressBalance = await rskTxHelper.getBalance(rskDestinationAddress);
-        const senderBalanceDifference = AMOUNT_TO_LOCK_EXCEEDING_LOCKIN_CAP - Number(finalSenderBalance);
+        const senderBalanceDifference = AMOUNT_TO_LOCK_EXCEEDING_LOCKING_CAP - Number(finalSenderBalance);
 
         expect(Number(initialSenderBalance)).to.equal(0);
         expect(Number(senderBalanceDifference)).to.be.at.most(btcTxHelper.getFee());
