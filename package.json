@@ -34,6 +34,7 @@
     "mocha-junit-reporter": "^1.17.0",
     "pegin-address-verificator": "git+https://git@github.com/rsksmart/pegin-address-verifier#v0.2.1",
     "peglib": "git+https://github.com/rsksmart/rsk-peglib#v1.4.15",
+    "precompiled-arrowhead600": "git+https://github.com/rsksmart/precompiled-abis#6.0.0-ARROWHEAD",
     "precompiled-fingerroot500": "npm:@rsksmart/rsk-precompiled-abis@^5.0.0-FINGERROOT",
     "precompiled-hop400": "npm:@rsksmart/rsk-precompiled-abis@^5.0.0-HOP",
     "precompiled-iris300": "npm:@rsksmart/rsk-precompiled-abis@^4.0.0-IRIS",

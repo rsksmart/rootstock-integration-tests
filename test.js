@@ -87,7 +87,7 @@ global.Runners = {
       hop400: createForkObject('hop', 1000),
       hop401: createForkObject('hop401', 1010),
       fingerroot500: createForkObject('fingerroot', 1350),
-      tbd600: createForkObject('tbd600', 1600)
+      arrowhead600: createForkObject('arrowhead', 1600)
     },
     additionalFederationAddresses: []
   }
