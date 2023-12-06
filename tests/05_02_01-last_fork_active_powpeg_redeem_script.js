@@ -70,9 +70,7 @@ describe('Calling getActivePowpegRedeemScript method after last fork after fed c
             p2shErpFedRedeemScript,
         );
 
-      expect(activePowpegRedeemScript)
-          .to.eq('0x' + p2shErpFedRedeemScript.toString('hex'),
-          );
+      expect(removePrefix0x(activePowpegRedeemScript)).to.eq(p2shErpFedRedeemScript.toString('hex'));
 
       
       expect(addressFromRedeemScript)
