@@ -689,6 +689,7 @@ describe('RSK Federation change', function() {
       throw new CustomError('Transfer BTC to RBTC with outputs both federations failure', err);
     }
   });
+
 });
 
 const getActiveFederationAddress = async() => {
