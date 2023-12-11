@@ -31,7 +31,7 @@ describe('Calling coinbase information methods after papyrus', () => {
         const blockHash = await btcClient.mine(1);
         await wait(1000);
         await rskTxHelper.updateBridge();
-        await rskUtils.waitForRskMempoolToGetTxs(rskTxHelper);
+        await rskUtils.waitForRskMempoolToGetNewTxs(rskTxHelper);
 
         const blockData = await btcClient.nodeClient.getBlock(blockHash[0], false);
         const block = bitcoinJs.Block.fromHex(blockData);
