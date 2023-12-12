@@ -15,6 +15,7 @@ const { sendPegin, ensurePeginIsRegistered } = require('../lib/2wp-utils');
 const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivation');
 const { btcToWeis, btcToSatoshis, satoshisToBtc } = require('@rsksmart/btc-eth-unit-converter');
 const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const { waitAndUpdateBridge } = require('../lib/rsk-utils');
 
 let rskTxHelpers;
 let btcTxHelper;
@@ -164,8 +165,7 @@ describe('Lock whitelisting', () => {
           const federationBalanceAfterPegin = await btcTxHelper.getAddressBalance(federationAddress);
           expect(Number(btcToSatoshis(federationBalanceAfterPegin))).to.equal(Number(btcToSatoshis(initialFederationBalance + AMOUNT_TO_TRY_TO_LOCK)), `Lock BTC federation ${federationAddress} credit`);
           
-          await rskTxHelper.updateBridge();
-          await rskUtils.mineAndSync(rskTxHelpers);
+          await waitAndUpdateBridge(rskTxHelper);
           
           const initialBlockNumber = await rskTxHelper.getBlockNumber();
           await rskUtils.mineAndSync(rskTxHelpers);
@@ -231,8 +231,8 @@ describe('Lock whitelisting', () => {
       const federationBalanceAfterPegin = await btcTxHelper.getAddressBalance(federationAddress);
       expect(federationBalanceAfterPegin).to.equal(initialFederationBalance + PEGIN_VALUE_IN_BTC, 'The federation address should have its balance increased by the pegin amount');
 
-      await rskTxHelper.updateBridge();
-      await rskUtils.mineAndSync(rskTxHelpers);
+      // Update the bridge to sync
+      await waitAndUpdateBridge(rskTxHelper);
 
       const recipientRskAddressBalance = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
       expect(recipientRskAddressBalance).to.equal(0, 'The recipient rsk address should not have any balance');

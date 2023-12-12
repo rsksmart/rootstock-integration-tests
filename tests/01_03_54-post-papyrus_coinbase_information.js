@@ -31,6 +31,7 @@ describe('Calling coinbase information methods after papyrus', () => {
         const blockHash = await btcClient.mine(1);
         await wait(1000);
         await rskTxHelper.updateBridge();
+        await rskUtils.waitForRskMempoolToGetNewTxs(rskTxHelper);
 
         const blockData = await btcClient.nodeClient.getBlock(blockHash[0], false);
         const block = bitcoinJs.Block.fromHex(blockData);
@@ -63,10 +64,14 @@ describe('Calling coinbase information methods after papyrus', () => {
 
         const hash = ensure0x(blockHash[0]);
 
-        const hasBtcBlockCoinbaseInformation = await retryWithCheck(bridge.methods.hasBtcBlockCoinbaseTransactionInformation(hash).call, (resultSoFar, currentAttempts) => {
+        const hasBtcBlockCoinbaseTransactionInformationMethod = bridge.methods.hasBtcBlockCoinbaseTransactionInformation(hash).call;
+
+        const check = (resultSoFar, currentAttempts) => {
           console.log(`Attempting to get the btc block coinbase information in the bridge for hash: ${hash}, attempt: ${currentAttempts}.`);
           return resultSoFar;
-        });
+        };
+
+        const { result: hasBtcBlockCoinbaseInformation } = await retryWithCheck(hasBtcBlockCoinbaseTransactionInformationMethod, check);
 
         expect(hasBtcBlockCoinbaseInformation).to.be.true;
 
