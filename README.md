@@ -330,3 +330,9 @@ The command `run-single-test-file` will execute the file `singleTestFileRunner.j
 The test file should have a `fulfillRequirementsToRunAsSingleTestFile` function to be called in the `before` function because each test file has different requirements to be able to run. Some will need to mine blocks, fund the bridge, activate 1 or more forks, etc. Some will be able to run without any prior preparation.
 
 Another advantage of this is that it will allow us to understand exactly what each test really needs in order to run, reducing uncertainties.
+
+To indicate a fork name to be used in the `fulfillRequirementsToRunAsSingleTestFile` function, you can specify it as the last argument of the command like this, passing the fork name `fingerroot500`:
+
+> npm run run-single-test-file 02_00_01-2wp.js fingerroot500
+
+This is when the `fulfillRequirementsToRunAsSingleTestFile` function needs a fork name that needs to be dynamically passed. For example, the `2wp.js` file is run multiple times with different forks. We cannot simply hardcode which fork to use or to use the latest, because sometimes we will need to run it with a fork passed dynamically.
