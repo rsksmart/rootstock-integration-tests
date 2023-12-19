@@ -6,7 +6,7 @@ const {getRskTransactionHelpers} = require('../lib/rsk-tx-helper-provider');
 const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
 const CustomError = require('../lib/CustomError');
 const removePrefix0x = require('../lib/utils').removePrefix0x;
-const publicKeyToCompressed = require('../lib/utils').publicKeyToCompressed;
+const publicKeyToCompressed = require('../lib/rsk-utils').publicKeyToCompressed;
 const {getBridge, getLatestActiveForkName} = require('../lib/precompiled-abi-forks-util');
 
 // in order to run this as a single test file, it requires a federation change so follow the following command
