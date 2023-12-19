@@ -6,10 +6,10 @@ const { activateFork, sendTxWithCheck } = require('../lib/rsk-utils');
 const { ensure0x } = require('../lib/utils');
 
 const fulfillRequirementsToRunAsSingleTestFile = async () => {
-  await activateFork(Runners.common.forks.iris300);
+  await activateFork(Runners.common.forks.arrowhead600);
 };
 
-describe('Calling receiveHeaders after iris300', function() {
+describe('Calling receiveHeaders after arrowhead600', function() {
   
     before(async () => {
       rskTxHelpers = getRskTransactionHelpers();

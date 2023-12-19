@@ -5,20 +5,13 @@ const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-f
 const { activateFork, sendTxWithCheck } = require('../lib/rsk-utils');
 const { ensure0x } = require('../lib/utils');
 
-const fulfillRequirementsToRunAsSingleTestFile = async () => {
-  await activateFork(Runners.common.forks.iris300);
-};
-
-describe('Calling receiveHeaders after iris300', function() {
+describe('Calling receiveHeaders after federation change', function() {
   
     before(async () => {
       rskTxHelpers = getRskTransactionHelpers();
       rskTxHelper = rskTxHelpers[0];
       btcTxHelper = getBtcClient();
 
-      if(process.env.RUNNING_SINGLE_TEST_FILE) {
-        await fulfillRequirementsToRunAsSingleTestFile();
-      }
     });
   
     it('Calling receiveHeaders method with regular user should not increment BTC blockchain size', async () => {
