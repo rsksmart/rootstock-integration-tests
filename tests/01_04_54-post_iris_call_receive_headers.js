@@ -5,9 +5,9 @@ const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-f
 const { activateFork, sendTxWithCheck } = require('../lib/rsk-utils');
 const { ensure0x } = require('../lib/utils');
 
-// let rskTxHelpers;
-// let rskTxHelper;
-// let btcTxHelper;
+let rskTxHelpers;
+let rskTxHelper;
+let btcTxHelper;
 
 const fulfillRequirementsToRunAsSingleTestFile = async () => {
   await activateFork(Runners.common.forks.iris300);
