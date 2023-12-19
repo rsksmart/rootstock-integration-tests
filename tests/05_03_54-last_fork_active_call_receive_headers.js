@@ -2,7 +2,7 @@ const expect = require('chai').expect;
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
-const { activateFork, sendTxWithCheck } = require('../lib/rsk-utils');
+const { sendTxWithCheck } = require('../lib/rsk-utils');
 const { ensure0x } = require('../lib/utils');
 
 let rskTxHelpers;
