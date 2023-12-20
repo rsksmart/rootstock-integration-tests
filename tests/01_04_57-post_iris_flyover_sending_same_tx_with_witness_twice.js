@@ -1,13 +1,14 @@
 const expect = require('chai').expect
 const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
+const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const { UNPROCESSABLE_TX_ALREADY_PROCESSED_ERROR } = require("../lib/flyover-pegin-response-codes");
 const CustomError = require('../lib/CustomError');
 const lbc = require('../lib/liquidity-bridge-contract');
 const { sendTxWithCheck, getFedsPubKeys, activateFork } = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
-const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
-const { ensure0x, fundAddressAndGetData } = require('../lib/utils');
+const { ensure0x } = require('../lib/utils');
+const { fundAddressAndGetData } = require('../lib/btc-utils');
 const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
 const { mineForPeginRegistration } = require('../lib/2wp-utils');
 

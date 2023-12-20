@@ -1,6 +1,7 @@
 const expect = require('chai').expect;
-const { ensure0x, fundAddressAndGetData, additionalFederationAddresses, } = require('../lib/utils');
 const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
+const { ensure0x, additionalFederationAddresses, } = require('../lib/utils');
+const { fundAddressAndGetData } = require('../lib/btc-utils');
 const lbc = require('../lib/liquidity-bridge-contract');
 const { sendTxWithCheck, getFedsPubKeys, activateFork } = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
