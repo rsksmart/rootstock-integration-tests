@@ -1,13 +1,13 @@
 const chai = require('chai');
 chai.use(require('chai-as-promised'));
 const expect = chai.expect;
-const {compareFederateKeys} = require('../lib/federation-utils');
-const {getRskTransactionHelpers} = require('../lib/rsk-tx-helper-provider');
 const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
+const { compareFederateKeys } = require('../lib/federation-utils');
+const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const CustomError = require('../lib/CustomError');
-const removePrefix0x = require('../lib/utils').removePrefix0x;
-const publicKeyToCompressed = require('../lib/utils').publicKeyToCompressed;
-const {getBridge, getLatestActiveForkName} = require('../lib/precompiled-abi-forks-util');
+const { removePrefix0x } = require('../lib/utils');
+const { publicKeyToCompressed } = require('../lib/btc-utils');
+const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
 
 // in order to run this as a single test file, it requires a federation change so follow the following command
 // npm run run-single-test-file 04_00_02-fedchange.js,05_02_01-last_fork_active_powpeg_redeem_script.js

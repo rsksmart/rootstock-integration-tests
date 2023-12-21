@@ -7,7 +7,8 @@ const { sendTxWithCheck, triggerRelease, getFedsPubKeys, activateFork } = requir
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
-const { ensure0x, fundAddressAndGetData, wait } = require('../lib/utils');
+const { ensure0x, wait } = require('../lib/utils');
+const { fundAddressAndGetData } = require('../lib/btc-utils');
 const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
 const { mineForPeginRegistration } = require('../lib/2wp-utils');
 
