@@ -3,8 +3,9 @@ const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
-const { satoshisToBtc, btcToSatoshis } = require('@rsksmart/btc-eth-unit-converter');
+const { satoshisToBtc, btcToSatoshis, satoshisToWeis } = require('@rsksmart/btc-eth-unit-converter');
 const { sendPegin, ensurePeginIsRegistered } = require('../lib/2wp-utils');
+const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivation');
 
 const { WHITELIST_CHANGE_PK, WHITELIST_CHANGE_ADDR} = require('../lib/assertions/whitelisting')
 
@@ -98,5 +99,9 @@ describe('Disable whitelisting', function() {
 
     const federationAddressBalanceAfterPegin = Number(await btcTxHelper.getAddressBalance(federationAddress));
     expect(Number(federationAddressBalanceAfterPegin)).to.be.equal(Number(federationAddressBalanceInitial + MINIMUM_PEGIN_VALUE_IN_BTC));
+
+    const recipientRskAddressInfo = getDerivedRSKAddressInformation(btcAddressInfo.privateKey, btcTxHelper.btcConfig.network);
+    const recipientRskAddressBalance = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
+    expect(recipientRskAddressBalance).to.be.equal(Number(satoshisToWeis(MINIMUM_PEGIN_VALUE_IN_SATS)));
   });
 });
