@@ -1,121 +1,108 @@
 const expect = require('chai').expect
-var { sequentialPromise, wait } = require('../lib/utils');
-const CustomError = require('../lib/CustomError');
-const peglib = require('peglib');
-
-const bitcoin = peglib.bitcoin;
-const rsk = peglib.rsk;
-const pegUtils = peglib.pegUtils;
-const pegAssertions = require('../lib/assertions/2wp');
-const rskUtilsLegacy = require('../lib/rsk-utils-legacy');
 const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
+const { getBtcClient } = require('../lib/btc-client-provider');
+const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const { satoshisToBtc, btcToSatoshis, satoshisToWeis } = require('@rsksmart/btc-eth-unit-converter');
+const { sendPegin, ensurePeginIsRegistered } = require('../lib/2wp-utils');
+const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivation');
 
-var federationAddress;
-var btcClient;
-var rskClient;
-var rskClients;
-var pegClient;
-var test;
-var utils;
+const { WHITELIST_CHANGE_PK, WHITELIST_CHANGE_ADDR} = require('../lib/assertions/whitelisting')
+
 let rskTxHelpers;
+let rskTxHelper;
+let btcTxHelper;
+let bridge;
+let federationAddress;
+let MINIMUM_PEGIN_VALUE_IN_BTC;
+let MINIMUM_PEGIN_VALUE_IN_SATS;
+let WHITELIST_DISABLE_BLOCK_DELAY;
+let FEE_IN_SATOSHI;
+const DELAY_SET_SUCCSSFULY = 1;
 
-const NETWORK = bitcoin.networks.testnet;
-
-const INITIAL_BTC_BALANCE = bitcoin.btcToSatoshis(10);
-
-const WHITELIST_CHANGE_PK = '3890187a3071327cee08467ba1b44ed4c13adb2da0d5ffcc0563c371fa88259c';
-const WHITELIST_CHANGE_ADDR = '87d2a0f33744929da08b65fd62b627ea52b25f8e';
+const fulfillRequirementsToRunAsSingleTestFile = async () => {
+  await rskUtils.activateFork(Runners.common.forks.papyrus200);
+};
 
 describe('Disable whitelisting', function() {
-  var addresses;
 
   before(async () => {
-    try{
-      btcClient = bitcoin.getClient(
-        Runners.hosts.bitcoin.rpcHost,
-        Runners.hosts.bitcoin.rpcUser,
-        Runners.hosts.bitcoin.rpcPassword,
-        NETWORK
-      );
-      rskClient = rsk.getClient(Runners.hosts.federate.host);
-      rskClients = Runners.hosts.federates.map(federate => rsk.getClient(federate.host));
-      pegClient = pegUtils.using(btcClient, rskClient);
-      test = pegAssertions.with(btcClient, rskClient, pegClient, rskClients);
-      utils = rskUtilsLegacy.with(btcClient, rskClient, pegClient);
-      rskTxHelpers = getRskTransactionHelpers();
+    if(process.env.RUNNING_SINGLE_TEST_FILE) {
+      await fulfillRequirementsToRunAsSingleTestFile();
+    }
+    
+    rskTxHelpers = getRskTransactionHelpers();
+    rskTxHelper = rskTxHelpers[0];
+    btcTxHelper = getBtcClient();
 
-      // Grab the federation address
-      federationAddress = await rskClient.rsk.bridge.methods.getFederationAddress().call();
-      await btcClient.importAddress(federationAddress, 'federations');
-      
-      addresses = await pegClient.generateNewAddress('test');
-      expect(addresses.inRSK).to.be.true;
-      
-      await btcClient.sendToAddress(addresses.btc, INITIAL_BTC_BALANCE);
-      await btcClient.generate(1);
-      await test.assertBitcoinBalance(addresses.btc, INITIAL_BTC_BALANCE, 'Initial BTC balance');
-      
-      var addr = await rskClient.eth.personal.importRawKey(WHITELIST_CHANGE_PK, '');
-      expect(addr.slice(2)).to.equal(WHITELIST_CHANGE_ADDR);
-      
-      await rskClient.eth.personal.unlockAccount(addr, '');
-      await sequentialPromise(10, () => rskUtils.mineAndSync(rskTxHelpers));
-    }
-    catch (err) {
-      throw new CustomError('Lock whitelisting failure', err);
-    }
+    const latestActiveForkName = await getLatestActiveForkName();
+    bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
+    federationAddress = await bridge.methods.getFederationAddress().call();
+    MINIMUM_PEGIN_VALUE_IN_SATS = await bridge.methods.getMinimumLockTxValue().call();
+    MINIMUM_PEGIN_VALUE_IN_BTC = Number(satoshisToBtc(MINIMUM_PEGIN_VALUE_IN_SATS));
+    WHITELIST_DISABLE_BLOCK_DELAY = 20;
+    FEE_IN_SATOSHI = btcToSatoshis(btcTxHelper.getFee())
   });
 
   it('should disable lock whitelist', async () => {
-    const INITIAL_BTC_BALANCE = bitcoin.btcToSatoshis(40);
-    const INITIAL_RSK_BALANCE = bitcoin.btcToSatoshis(10);
+    const btcAddressInfo = await btcTxHelper.generateBtcAddress('legacy');
+    const btcAmountToFund = 2 * MINIMUM_PEGIN_VALUE_IN_BTC + 2 * btcTxHelper.getFee();
+    await btcTxHelper.fundAddress(btcAddressInfo.address, btcAmountToFund);
+    const btcAddressBalanceInitial = Number(btcToSatoshis(await btcTxHelper.getAddressBalance(btcAddressInfo.address)));
+    expect(btcAddressBalanceInitial).to.be.equal(Number(btcToSatoshis(btcAmountToFund)));
 
-    const addresses = await pegClient.generateNewAddress('test');
-    expect(addresses.inRSK).to.be.true;
-
-    await btcClient.sendToAddress(addresses.btc, INITIAL_BTC_BALANCE);
-    await btcClient.generate(1);
-    await test.assertBitcoinBalance(addresses.btc, INITIAL_BTC_BALANCE, "Wrong initial BTC balance");
-    await wait(1000);
+    const federationAddressBalanceInitial = Number(await btcTxHelper.getAddressBalance(federationAddress));
 
     // address is not whitelisted
-    await test.assertLock(addresses, [{ address: federationAddress, amount: INITIAL_RSK_BALANCE }], { fails: true });
-    // wait for the btc to come back so we can use the assertLock method again
-    await utils.waitForBtcToReturn(addresses.btc);
+    await sendPegin(rskTxHelper, btcTxHelper, btcAddressInfo, MINIMUM_PEGIN_VALUE_IN_BTC);
+    const btcAddressBalanceAfterFirstPegin = Number(btcToSatoshis(await btcTxHelper.getAddressBalance(btcAddressInfo.address)));
+    expect(btcAddressBalanceAfterFirstPegin).to.be.equal(btcAddressBalanceInitial - MINIMUM_PEGIN_VALUE_IN_SATS - FEE_IN_SATOSHI);
+    const federationAddressBalanceAfterFirstPegin = Number(await btcTxHelper.getAddressBalance(federationAddress));
+    expect(federationAddressBalanceAfterFirstPegin).to.be.equal(federationAddressBalanceInitial + MINIMUM_PEGIN_VALUE_IN_BTC)
+    
+    // wait for the btc to come back so we can use the sendPegin method again
+    await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
+    const btcAddressBalanceAfterFirstTriggerRelease = Number(btcToSatoshis(await btcTxHelper.getAddressBalance(btcAddressInfo.address)));
+    expect(btcAddressBalanceInitial - btcAddressBalanceAfterFirstTriggerRelease).to.be.at.most(FEE_IN_SATOSHI * 2)
+    const federationAddressBalanceAfterFirstTriggerRelease = Number(await btcTxHelper.getAddressBalance(federationAddress));
+    expect(federationAddressBalanceAfterFirstTriggerRelease).to.be.equal(federationAddressBalanceInitial)
 
-    const addr = await rskClient.eth.personal.importRawKey(WHITELIST_CHANGE_PK, '');
-    expect(addr.slice(2)).to.equal(WHITELIST_CHANGE_ADDR);
-    await rskClient.eth.personal.unlockAccount(addr, '');
-    // can disable the whitelist
-    await utils.sendTxWithCheck(
-      rskClient.rsk.bridge.methods.setLockWhitelistDisableBlockDelay(200),
-      (disableResult) => expect(Number(disableResult)).to.equal(1),
-      WHITELIST_CHANGE_ADDR)();
+    // disable whitelisting after 20 blocks
+    const unlocked = await rskUtils.getUnlockedAddress(rskTxHelper, WHITELIST_CHANGE_PK, WHITELIST_CHANGE_ADDR);
+    expect(unlocked).to.be.true;
+    const disableLockWhitelistMethod = bridge.methods.setLockWhitelistDisableBlockDelay(WHITELIST_DISABLE_BLOCK_DELAY);
+    const disableResultCallback = (disableResult) => expect(Number(disableResult)).to.equal(DELAY_SET_SUCCSSFULY);
+    await rskUtils.sendTxWithCheck(rskTxHelper, disableLockWhitelistMethod, WHITELIST_CHANGE_ADDR, disableResultCallback);
 
-    // disable whitelist doesn't work the second time
-    await utils.sendTxWithCheck(
-      rskClient.rsk.bridge.methods.setLockWhitelistDisableBlockDelay(10),
-      (disableResult) => expect(Number(disableResult)).to.equal(-1),
-      WHITELIST_CHANGE_ADDR)();
+    await btcTxHelper.mine(WHITELIST_DISABLE_BLOCK_DELAY / 2);
+    await rskUtils.waitAndUpdateBridge(rskTxHelper);
 
-    await btcClient.generate(100);
-    await wait(500);
-    await rskClient.fed.updateBridge();
-    await rskUtils.mineAndSync(rskTxHelpers);
-    await wait(500);
+    // address is still not able to send btc to bridge after 10 blocks
+    await sendPegin(rskTxHelper, btcTxHelper, btcAddressInfo, MINIMUM_PEGIN_VALUE_IN_BTC);
+    const btcAddressBalanceAfterSecondPegin = Number(btcToSatoshis(await btcTxHelper.getAddressBalance(btcAddressInfo.address)));
+    expect(btcAddressBalanceAfterFirstTriggerRelease - btcAddressBalanceAfterSecondPegin).to.be.at.most(Number(MINIMUM_PEGIN_VALUE_IN_SATS + FEE_IN_SATOSHI * 2))
+    const federationAddressBalanceAfterSecondPegin = Number(await btcTxHelper.getAddressBalance(federationAddress));
+    expect(federationAddressBalanceAfterSecondPegin).to.be.equal(federationAddressBalanceInitial + MINIMUM_PEGIN_VALUE_IN_BTC)
+    
+    await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
+    const btcAddressBalanceAfterSecondTriggerRelease = Number(btcToSatoshis(await btcTxHelper.getAddressBalance(btcAddressInfo.address)));
+    expect(btcAddressBalanceAfterFirstTriggerRelease - btcAddressBalanceAfterSecondTriggerRelease).to.be.at.most(FEE_IN_SATOSHI * 2)
+    const federationAddressBalanceAfterSecondTriggerRelease = Number(await btcTxHelper.getAddressBalance(federationAddress));
+    expect(federationAddressBalanceAfterSecondTriggerRelease).to.be.equal(federationAddressBalanceInitial)
 
-    // address is still not able to send btc to bridge after 100 blocks
-    await test.assertLock(addresses, [{ address: federationAddress, amount: INITIAL_RSK_BALANCE }], { fails: true });
-    await utils.waitForBtcToReturn(addresses.btc);
+    await btcTxHelper.mine(WHITELIST_DISABLE_BLOCK_DELAY / 2);
+    await rskUtils.waitAndUpdateBridge(rskTxHelper);
 
-    await btcClient.generate(100);
-    await wait(500);
-    await rskClient.fed.updateBridge();
-    await rskUtils.mineAndSync(rskTxHelpers);
-    await wait(500);
+    // after 20 blocks the whitelist period has ended and we can send money to the bridge
+    const peginBtcTxHash = await sendPegin(rskTxHelper, btcTxHelper, btcAddressInfo, MINIMUM_PEGIN_VALUE_IN_BTC);
+    await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
+    await ensurePeginIsRegistered(rskTxHelper, peginBtcTxHash);
 
-    // after 200 blocks the whitelist period has ended and we can send money to the bridge
-    await test.assertLock(addresses, [{ address: federationAddress, amount: INITIAL_RSK_BALANCE }]);
+    const federationAddressBalanceAfterPegin = Number(await btcTxHelper.getAddressBalance(federationAddress));
+    expect(Number(federationAddressBalanceAfterPegin)).to.be.equal(Number(federationAddressBalanceInitial + MINIMUM_PEGIN_VALUE_IN_BTC));
+
+    const recipientRskAddressInfo = getDerivedRSKAddressInformation(btcAddressInfo.privateKey, btcTxHelper.btcConfig.network);
+    const recipientRskAddressBalance = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
+    expect(recipientRskAddressBalance).to.be.equal(Number(satoshisToWeis(MINIMUM_PEGIN_VALUE_IN_SATS)));
   });
 });
