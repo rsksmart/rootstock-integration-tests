@@ -1,6 +1,7 @@
 const { expect } = require('chai');
+const peginVerifier = require('pegin-address-verificator');
 const rskUtils = require('../lib/rsk-utils');
-const { createPeginV1TxData, sendPegin, ensurePeginIsRegistered, assertRefundUtxosSameAsPeginUtxos } = require('../lib/2wp-utils');
+const { sendPegin, ensurePeginIsRegistered, assertRefundUtxosSameAsPeginUtxos } = require('../lib/2wp-utils');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivation');
@@ -50,7 +51,10 @@ describe('Lock funds using peg-in protocol version 1', () => {
 
         // Create peg-in data
         const data = [];
-        data.push(createPeginV1TxData(rskDestinationAddress));
+
+        const peginV1DataString = peginVerifier.createPeginV1TxData(rskDestinationAddress);
+        
+        data.push(Buffer.from(peginV1DataString, 'hex'));
 
         await btcTxHelper.fundAddress(senderAddressInformation.address, AMOUNT_TO_LOCK_IN_BTC + btcTxHelper.getFee());
 
@@ -80,7 +84,10 @@ describe('Lock funds using peg-in protocol version 1', () => {
 
         // Create peg-in data
         const data = [];
-        data.push(createPeginV1TxData(rskDestinationAddress));
+
+        const peginV1DataString = peginVerifier.createPeginV1TxData(rskDestinationAddress);
+
+        data.push(Buffer.from(peginV1DataString, 'hex'));
 
         await btcTxHelper.fundAddress(senderAddressInformation.address, AMOUNT_TO_LOCK_IN_BTC + btcTxHelper.getFee());
 
@@ -116,8 +123,8 @@ describe('Lock funds using peg-in protocol version 1', () => {
 
         // Create peg-in data
         const data = [];
-        data.push(createPeginV1TxData(rskDestinationAddress1));
-        data.push(createPeginV1TxData(rskDestinationAddress2));
+        data.push(Buffer.from(peginVerifier.createPeginV1TxData(rskDestinationAddress1), 'hex'));
+        data.push(Buffer.from(peginVerifier.createPeginV1TxData(rskDestinationAddress2), 'hex'));
 
         await btcTxHelper.fundAddress(senderAddressInformation.address, AMOUNT_TO_LOCK_IN_BTC + btcTxHelper.getFee());
 
@@ -172,7 +179,7 @@ describe('Lock funds using peg-in protocol version 1', () => {
         // Create peg-in data
         const data = [];
         data.push(Buffer.from('some random data', 'hex'));
-        data.push(createPeginV1TxData(rskDestinationAddress));
+        data.push(Buffer.from(peginVerifier.createPeginV1TxData(rskDestinationAddress), 'hex'));
         data.push(Buffer.from('some more random data', 'hex'));
 
         await btcTxHelper.fundAddress(senderAddressInformation.address, AMOUNT_TO_LOCK_IN_BTC + btcTxHelper.getFee());

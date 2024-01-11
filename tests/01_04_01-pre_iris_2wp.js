@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const { createPeginV1TxData } = require('../lib/2wp-utils');
+const peginVerifier = require('pegin-address-verificator');
 const { getRskTransactionHelper } = require('../lib/rsk-tx-helper-provider');
 const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const { getBtcClient } = require('../lib/btc-client-provider');
@@ -33,7 +33,10 @@ describe('Lock funds using peg-in protocol version 1 before iris300', () => {
 
         // Create peg-in data
         const data = [];
-        data.push(createPeginV1TxData(rskDestinationAddress));
+
+        const peginV1DataString = peginVerifier.createPeginV1TxData(rskDestinationAddress);
+
+        data.push(Buffer.from(peginV1DataString, 'hex'));
 
         await btcTxHelper.fundAddress(senderAddressInformation.address, AMOUNT_TO_LOCK_IN_BTC + btcTxHelper.getFee());
 
