@@ -18,6 +18,7 @@ let MINIMUM_PEGIN_VALUE_IN_BTC;
 let MINIMUM_PEGIN_VALUE_IN_SATS;
 let WHITELIST_DISABLE_BLOCK_DELAY;
 let FEE_IN_SATOSHI;
+const DELAY_SET_SUCCSSFULY = 1;
 
 const fulfillRequirementsToRunAsSingleTestFile = async () => {
   await rskUtils.activateFork(Runners.common.forks.papyrus200);
@@ -70,7 +71,7 @@ describe('Disable whitelisting', function() {
     const unlocked = await rskUtils.getUnlockedAddress(rskTxHelper, WHITELIST_CHANGE_PK, WHITELIST_CHANGE_ADDR);
     expect(unlocked).to.be.true;
     const disableLockWhitelistMethod = bridge.methods.setLockWhitelistDisableBlockDelay(WHITELIST_DISABLE_BLOCK_DELAY);
-    const disableResultCallback = (disableResult) => expect(Number(disableResult)).to.equal(1);
+    const disableResultCallback = (disableResult) => expect(Number(disableResult)).to.equal(DELAY_SET_SUCCSSFULY);
     await rskUtils.sendTxWithCheck(rskTxHelper, disableLockWhitelistMethod, WHITELIST_CHANGE_ADDR, disableResultCallback);
 
     await btcTxHelper.mine(WHITELIST_DISABLE_BLOCK_DELAY / 2);
