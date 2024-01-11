@@ -1,6 +1,7 @@
 const { expect } = require('chai');
+const peginVerifier = require('pegin-address-verificator');
 const rskUtils = require('../lib/rsk-utils');
-const { createPeginV1TxData, sendPegin, assertRefundUtxosSameAsPeginUtxos } = require('../lib/2wp-utils');
+const { sendPegin, assertRefundUtxosSameAsPeginUtxos } = require('../lib/2wp-utils');
 const { getBridge , getLatestActiveForkName} = require('../lib/precompiled-abi-forks-util');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
@@ -61,7 +62,10 @@ describe('Lock funds using peg-in protocol version 1', () => {
 
         // Create peg-in data
         const data = [];
-        data.push(createPeginV1TxData(rskDestinationAddress, refundAddressInformation.address));
+
+        const peginV1TxDataString = peginVerifier.createPeginV1TxData(rskDestinationAddress, refundAddressInformation.address);
+
+        data.push(Buffer.from(peginV1TxDataString, 'hex'));
 
         // Execute peg-in
         const AMOUNT_TO_LOCK_EXCEEDING_LOCKING_CAP = AMOUNT_TO_LOCK_IN_BTC + lockingCapInBtc;
@@ -154,7 +158,10 @@ describe('Lock funds using peg-in protocol version 1', () => {
 
         // Create peg-in data
         const data = [];
-        data.push(createPeginV1TxData(rskDestinationAddress));
+
+        const peginV1DataString = peginVerifier.createPeginV1TxData(rskDestinationAddress);
+
+        data.push(Buffer.from(peginV1DataString, 'hex'));
 
         // Execute peg-in
         const AMOUNT_TO_LOCK_EXCEEDING_LOCKING_CAP = AMOUNT_TO_LOCK_IN_BTC + lockingCapInBtc;
