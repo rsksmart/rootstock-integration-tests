@@ -1,42 +1,70 @@
 const chai = require('chai');
 chai.use(require('chai-as-promised'));
 const expect = chai.expect;
-const { bitcoin, rsk, pegUtils } = require('peglib');
-const NETWORK = bitcoin.networks.testnet;
 const CustomError = require('../lib/CustomError');
-const rskUtilsLegacy = require('../lib/rsk-utils-legacy');
-const _2wpUtilsLegacy = require('../lib/2wp-utils-legacy');
-const pegAssertions = require('../lib/assertions/2wp');
 const { NUMBER_OF_BLOCKS_BTW_PEGOUTS } = require('../lib/constants');
 const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
+const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const _2wpUtils = require('../lib/2wp-utils');
+const { activateFork, waitAndUpdateBridge } = require('../lib/rsk-utils');
+const { getBtcClient } = require('../lib/btc-client-provider');
+
+/**
+ * Takes the blockchain to the required state for this test file to run in isolation.
+ */
+const fulfillRequirementsToRunAsSingleTestFile = async () => {
+    await activateFork(Runners.common.forks.hop401);
+};
 
 let pegoutCount = 0;
-let currentBlockNumber;
-let assertCallToBridgeMethodsRunner;
 let rskTxHelpers;
+let rskTxHelper;
+let bridge;
+let btcTxHelper;
 
 describe('Pegout Batching - Execute Pegout Transaction And Call New Bridge Methods', function () {
 
-    before(() => {
-        rskClients = Runners.hosts.federates.map(federate => rsk.getClient(federate.host));
-        rskClient = rsk.getClient(Runners.hosts.federate.host);
-        btcClient = bitcoin.getClient(
-            Runners.hosts.bitcoin.rpcHost,
-            Runners.hosts.bitcoin.rpcUser,
-            Runners.hosts.bitcoin.rpcPassword,
-            NETWORK
-        );
-        assertCallToBridgeMethodsRunner = pegAssertions.assertCallToPegoutBatchingBridgeMethods(rskClient);
-        pegClient = pegUtils.using(btcClient, rskClient);
+    before(async () => {
+
         rskTxHelpers = getRskTransactionHelpers();
+        rskTxHelper = rskTxHelpers[0];
+        btcTxHelper = getBtcClient();
+
+        if(process.env.RUNNING_SINGLE_TEST_FILE) {
+            await fulfillRequirementsToRunAsSingleTestFile();
+        }
+
+        bridge = getBridge(rskTxHelper.getClient(), await getLatestActiveForkName());
+        
     });
 
     it('Execute Pegout Transaction and Call new bridge methods after successful pegout transaction', async () => {
         try {
-            await rskUtilsLegacy.triggerPegoutEvent(rskClients, async () => currentBlockNumber = await rskClient.eth.getBlockNumber());
 
-            await assertCallToBridgeMethodsRunner(0, currentBlockNumber + NUMBER_OF_BLOCKS_BTW_PEGOUTS);
+            let blockNumberWhenPegoutsWhereReleased;
+
+            const pegoutCreatedValidations = async (localRskTxHelper) => {
+                blockNumberWhenPegoutsWhereReleased = await localRskTxHelper.getBlockNumber();
+            };
+    
+            const callbacks = {
+                pegoutCreatedCallback: pegoutCreatedValidations,
+            };
+
+            await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper, callbacks);
+
+            const pendingPegoutCount = await bridge.methods.getQueuedPegoutsCount().call();
+            expect(0).to.equal(pendingPegoutCount);
+
+            const expectedEstimatedFee = _2wpUtils.getPegoutEstimatedFees(pegoutCount);
+            const estimatedFees = await bridge.methods.getEstimatedFeesForNextPegOutEvent().call();
+            expect(Number(estimatedFees)).to.equal(expectedEstimatedFee);
+
+            const newExpectedNextPegoutsCreationBlockNumber = blockNumberWhenPegoutsWhereReleased + NUMBER_OF_BLOCKS_BTW_PEGOUTS;
+            const nextPegoutCreationBlockNumber = await bridge.methods.getNextPegoutCreationBlockNumber().call();
+            expect(Number(nextPegoutCreationBlockNumber)).to.equal(newExpectedNextPegoutsCreationBlockNumber);
+
         } catch (error) {
             throw new CustomError('new bridge methods call failure', error);
         }
@@ -44,30 +72,43 @@ describe('Pegout Batching - Execute Pegout Transaction And Call New Bridge Metho
 
     it('should create pegout requests, execute pegout transaction when height is not reached and when height is reached', async () => {
         try {
-            await _2wpUtilsLegacy.createPegoutRequest(rskClient, pegClient, 0.5);
-            pegoutCount++;
+            await _2wpUtils.createPegoutRequest(rskTxHelper, 0.5);
+            await _2wpUtils.createPegoutRequest(rskTxHelper, 0.8);
+            await _2wpUtils.createPegoutRequest(rskTxHelper, 0.6, 2);
 
-            await _2wpUtilsLegacy.createPegoutRequest(rskClient, pegClient, 0.8);
-            pegoutCount++;
-
-            await _2wpUtilsLegacy.createPegoutRequest(rskClient, pegClient, 0.6, 2);
-            pegoutCount += 2;
+            pegoutCount += 4;
 
             // Execute pegout transaction when height is not reached
-            await rskClient.fed.updateBridge();
-            await rskUtils.mineAndSync(rskTxHelpers);
+            await waitAndUpdateBridge(rskTxHelpers, 500);
 
-            // Call new bridge methods after failed pegout transaction because height is not reached
-            const count = await rskClient.rsk.bridge.methods.getQueuedPegoutsCount().call();
-            expect(Number(count)).to.equal(pegoutCount);
+            const initialPegoutCount = await bridge.methods.getQueuedPegoutsCount().call();
+            expect(Number(initialPegoutCount)).to.equal(pegoutCount);
 
-            currentBlockNumber = await rskClient.eth.getBlockNumber();
-            const nextPegoutCreationBlockNumber = await rskClient.rsk.bridge.methods.getNextPegoutCreationBlockNumber().call();
-            expect(Number(nextPegoutCreationBlockNumber)).to.be.greaterThan(currentBlockNumber);
+            let blockNumberWhenPegoutsWhereReleased = await rskTxHelper.getBlockNumber();
+            const nextPegoutCreationBlockNumber = await bridge.methods.getNextPegoutCreationBlockNumber().call();
+            expect(Number(nextPegoutCreationBlockNumber)).to.be.greaterThan(blockNumberWhenPegoutsWhereReleased);
 
-            await rskUtilsLegacy.triggerPegoutEvent(rskClients, async () => currentBlockNumber = await rskClient.eth.getBlockNumber());
+            const pegoutCreatedCallback = async (localRskTxHelper) => {
+                blockNumberWhenPegoutsWhereReleased = await localRskTxHelper.getBlockNumber();
+            };
+    
+            const callbacks = {
+                pegoutCreatedCallback,
+            };
 
-            await assertCallToBridgeMethodsRunner(0, currentBlockNumber + NUMBER_OF_BLOCKS_BTW_PEGOUTS);
+            await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper, callbacks);
+            
+            const pendingPegoutCount = await bridge.methods.getQueuedPegoutsCount().call();
+            expect(pendingPegoutCount).to.equal(0);
+
+            const expectedEstimatedFee = _2wpUtils.getPegoutEstimatedFees(pegoutCount);
+            const estimatedFees = await bridge.methods.getEstimatedFeesForNextPegOutEvent().call();
+            expect(Number(estimatedFees)).to.equal(expectedEstimatedFee);
+ 
+            const newExpectedNextPegoutsCreationBlockNumber = blockNumberWhenPegoutsWhereReleased + NUMBER_OF_BLOCKS_BTW_PEGOUTS;
+            const finalNextPegoutCreationBlockNumber = await bridge.methods.getNextPegoutCreationBlockNumber().call();
+            expect(Number(finalNextPegoutCreationBlockNumber)).to.equal(newExpectedNextPegoutsCreationBlockNumber);
+
         } catch (error) {
             throw new CustomError('pegout request creation failure', error);
         }
