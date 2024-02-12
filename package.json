@@ -7,7 +7,10 @@
     "test": "mocha --timeout 600000",
     "test-fail-fast": "mocha -b --timeout 600000",
     "run-tests-multiple-times": "node multipleTestExecutionsRunner.js",
-    "run-single-test-file": "node singleTestFileRunner.js"
+    "run-single-test-file": "node singleTestFileRunner.js",
+    "test-fail-fast:info": "LOG_LEVEL=info mocha -b --timeout 600000",
+    "test-fail-fast:debug": "LOG_LEVEL=debug mocha -b --timeout 600000",
+    "test-fail-fast:trace": "LOG_LEVEL=trace mocha -b --timeout 600000"
   },
   "author": "",
   "license": "GPL3",
@@ -30,6 +33,7 @@
     "fs-extra": "^4.0.2",
     "glob": "^7.1.2",
     "lodash": "^4.17.5",
+    "log4js": "^6.9.1",
     "mocha": "^10.1.0",
     "mocha-junit-reporter": "^1.17.0",
     "pegin-address-verificator": "git+https://git@github.com/rsksmart/pegin-address-verifier#v0.4.0",

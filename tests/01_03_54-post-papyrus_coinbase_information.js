@@ -8,12 +8,14 @@ const { getBtcClient } = require('../lib//btc-client-provider');
 const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 
-let rskTxHelpers;
+const { getLogger } = require('../logger');
 
 describe('Calling coinbase information methods after papyrus', () => {
 
+    const logger = getLogger();
     let btcClient;
     let rskTxHelper;
+    let rskTxHelpers;
     
     before(() => {
       btcClient = getBtcClient();
