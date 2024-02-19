@@ -7,10 +7,7 @@
     "test": "mocha --timeout 600000",
     "test-fail-fast": "mocha -b --timeout 600000",
     "run-tests-multiple-times": "node multipleTestExecutionsRunner.js",
-    "run-single-test-file": "node singleTestFileRunner.js",
-    "test-fail-fast:info": "LOG_LEVEL=info mocha -b --timeout 600000",
-    "test-fail-fast:debug": "LOG_LEVEL=debug mocha -b --timeout 600000",
-    "test-fail-fast:trace": "LOG_LEVEL=trace mocha -b --timeout 600000"
+    "run-single-test-file": "node singleTestFileRunner.js"
   },
   "author": "",
   "license": "GPL3",
