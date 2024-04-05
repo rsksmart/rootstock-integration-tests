@@ -32,7 +32,7 @@ describe('Lock using p2sh-p2wpkh address', () => {
         const latestActiveForkName = await getLatestActiveForkName();
         const bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
 
-        const minimumPeginValueInSatoshis = await bridge.methods.getMinimumLockTxValue().call();
+        const minimumPeginValueInSatoshis = Number(await bridge.methods.getMinimumLockTxValue().call());
         const minimumPeginValueInBtc = Number(btcEthUnitConverter.satoshisToBtc(minimumPeginValueInSatoshis));
 
         const federationAddress = await bridge.methods.getFederationAddress().call();
@@ -52,7 +52,7 @@ describe('Lock using p2sh-p2wpkh address', () => {
 
         const federationAddressBalanceInBtcAfterPegin = Number(await btcTxHelper.getAddressBalance(federationAddress));
         const federationAddressBalanceInSatoshisAfterPegin = Number(btcEthUnitConverter.btcToSatoshis(federationAddressBalanceInBtcAfterPegin));
-        expect(federationAddressBalanceInSatoshisAfterPegin).to.be.equal(Number(federationAddressBalanceInSatoshisInitial + minimumPeginValueInSatoshis));
+        expect(federationAddressBalanceInSatoshisAfterPegin).to.be.equal(federationAddressBalanceInSatoshisInitial + minimumPeginValueInSatoshis);
 
         const senderAddressBalanceAfterPegin = Number(await btcTxHelper.getAddressBalance(senderAddressInfo.address));
         expect(senderAddressBalanceAfterPegin).to.be.equal(0);
