@@ -32,11 +32,12 @@ describe('Lock using p2sh-p2wpkh address', () => {
         const latestActiveForkName = await getLatestActiveForkName();
         const bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
 
-        const minimumPeginValueInSatoshis = await bridge.methods.getMinimumLockTxValue().call();
+        const minimumPeginValueInSatoshis = Number(await bridge.methods.getMinimumLockTxValue().call());
         const minimumPeginValueInBtc = Number(btcEthUnitConverter.satoshisToBtc(minimumPeginValueInSatoshis));
 
         const federationAddress = await bridge.methods.getFederationAddress().call();
-        const federationAddressBalanceInitial = Number(await btcTxHelper.getAddressBalance(federationAddress));
+        const federationAddressBalanceInBtcInitial = Number(await btcTxHelper.getAddressBalance(federationAddress));
+        const federationAddressBalanceInSatoshisInitial = Number(btcEthUnitConverter.btcToSatoshis(federationAddressBalanceInBtcInitial));
 
         const senderAddressInfo = await btcTxHelper.generateBtcAddress('p2sh-segwit');
         const recipientRskAddressInfo = getDerivedRSKAddressInformation(senderAddressInfo.privateKey, btcTxHelper.btcConfig.network);
@@ -49,13 +50,15 @@ describe('Lock using p2sh-p2wpkh address', () => {
         const btcPeginTxHash = await sendPegin(rskTxHelper, btcTxHelper, senderAddressInfo, minimumPeginValueInBtc);
         await ensurePeginIsRegistered(rskTxHelper, btcPeginTxHash);
 
-        const federationAddressBalanceAfterPegin = Number(await btcTxHelper.getAddressBalance(federationAddress));
-        expect(federationAddressBalanceAfterPegin).to.be.equal(Number(federationAddressBalanceInitial + minimumPeginValueInBtc));
+        const federationAddressBalanceInBtcAfterPegin = Number(await btcTxHelper.getAddressBalance(federationAddress));
+        const federationAddressBalanceInSatoshisAfterPegin = Number(btcEthUnitConverter.btcToSatoshis(federationAddressBalanceInBtcAfterPegin));
+        const expectedFederationAddressBalanceInSatoshisAfterPegin = federationAddressBalanceInSatoshisInitial + minimumPeginValueInSatoshis;
+        expect(federationAddressBalanceInSatoshisAfterPegin).to.be.equal(expectedFederationAddressBalanceInSatoshisAfterPegin);
 
         const senderAddressBalanceAfterPegin = Number(await btcTxHelper.getAddressBalance(senderAddressInfo.address));
         expect(senderAddressBalanceAfterPegin).to.be.equal(0);
 
-        const recipientRskAddressBalanceAfterPegin = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
-        expect(recipientRskAddressBalanceAfterPegin).to.be.equal(Number(btcEthUnitConverter.btcToWeis(minimumPeginValueInBtc)));
+        const recipientRskAddressBalanceInWeisAfterPegin = Number(await rskTxHelper.getBalance(recipientRskAddressInfo.address));
+        expect(recipientRskAddressBalanceInWeisAfterPegin).to.be.equal(Number(btcEthUnitConverter.btcToWeis(minimumPeginValueInBtc)));
     });   
 });
