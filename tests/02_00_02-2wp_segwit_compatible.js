@@ -52,7 +52,8 @@ describe('Lock using p2sh-p2wpkh address', () => {
 
         const federationAddressBalanceInBtcAfterPegin = Number(await btcTxHelper.getAddressBalance(federationAddress));
         const federationAddressBalanceInSatoshisAfterPegin = Number(btcEthUnitConverter.btcToSatoshis(federationAddressBalanceInBtcAfterPegin));
-        expect(federationAddressBalanceInSatoshisAfterPegin).to.be.equal(federationAddressBalanceInSatoshisInitial + minimumPeginValueInSatoshis);
+        const expectedFederationAddressBalanceInSatoshisAfterPegin = federationAddressBalanceInSatoshisInitial + minimumPeginValueInSatoshis;
+        expect(federationAddressBalanceInSatoshisAfterPegin).to.be.equal(expectedFederationAddressBalanceInSatoshisAfterPegin);
 
         const senderAddressBalanceAfterPegin = Number(await btcTxHelper.getAddressBalance(senderAddressInfo.address));
         expect(senderAddressBalanceAfterPegin).to.be.equal(0);
