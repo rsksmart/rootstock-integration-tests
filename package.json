@@ -7,7 +7,9 @@
     "test": "mocha --timeout 600000",
     "test-fail-fast": "mocha -b --timeout 600000",
     "run-tests-multiple-times": "node multipleTestExecutionsRunner.js",
-    "run-single-test-file": "node singleTestFileRunner.js"
+    "run-single-test-file": "node singleTestFileRunner.js",
+    "sync_tests_testomat": "npx check-tests@latest Mocha '**/*.js' -d tests",
+    "testomat_test": "npx mocha -R ./node_modules/@testomatio/reporter/lib/adapter/mocha.js --timeout 600000"
   },
   "author": "",
   "license": "GPL3",
@@ -39,9 +41,9 @@
     "precompiled-fingerroot500": "npm:@rsksmart/rsk-precompiled-abis@5.0.0-FINGERROOT",
     "precompiled-hop400": "npm:@rsksmart/rsk-precompiled-abis@5.0.0-HOP",
     "precompiled-iris300": "npm:@rsksmart/rsk-precompiled-abis@^4.0.0-IRIS",
+    "precompiled-orchid": "npm:@rsksmart/rsk-precompiled-abis@^1.0.0-ORCHID",
     "precompiled-papyrus200": "npm:@rsksmart/rsk-precompiled-abis@^3.0.0-PAPYRUS",
     "precompiled-wasabi100": "npm:@rsksmart/rsk-precompiled-abis@^2.0.0-WASABI",
-    "precompiled-orchid": "npm:@rsksmart/rsk-precompiled-abis@^1.0.0-ORCHID",
     "rsk-transaction-helper": "git+https://github.com/rsksmart/rootstock-transaction-helper#v3.1.0",
     "solc": "^0.7.5",
     "stream-line-wrapper": "^0.1.1",
@@ -49,6 +51,7 @@
     "wait-for-port": "0.0.2"
   },
   "devDependencies": {
+    "@testomatio/reporter": "^1.4.1",
     "shelljs": "^0.8.5"
   }
 }
