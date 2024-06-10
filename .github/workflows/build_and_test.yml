@@ -1,0 +1,39 @@
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  building-rskj-and-powpeg-node:
+    runs-on: ubuntu-latest
+    container:
+      image: openjdk:8-jdk
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup System Tools
+        run: |
+          apt update -y
+          apt install -y curl
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+      - name: Pull rskj
+        run: |
+          git clone https://github.com/rsksmart/rskj.git rskj
+          cd rskj
+          ./configure.sh && chmod +x gradlew
+          ./gradlew --no-daemon clean build -x test
+
+      - uses: actions/checkout@v4
+      - name: Pull powpeg-node
+        run: |
+          git clone https://github.com/rsksmart/powpeg-node.git powpeg-node
+          mkdir -p powpeg-node/rskj
+          cp ./rskj/rskj-core/build/libs/rskj-core-*-all.jar powpeg-node/rskj
+#          cd powpeg-node
+#          ./configure.sh && chmod +x gradlew
+#          ./gradlew --no-daemon clean build
