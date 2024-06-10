@@ -8,8 +8,9 @@ const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivatio
 const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const { ensure0x } = require('../lib/utils');
 const { 
-    PEGIN_REJECTION_REASONS: { PEGIN_V1_INVALID_PAYLOAD_REASON }
- } = require('../lib/constants');
+    PEGIN_REJECTION_REASONS: { PEGIN_V1_INVALID_PAYLOAD_REASON }, PEGOUT_EVENTS
+} = require('../lib/constants');
+const {assertRejectedPeginEvent} = require("../lib/assertions/2wp");
 
 const AMOUNT_TO_LOCK_IN_BTC = 2;
 
@@ -134,6 +135,8 @@ describe('Lock funds using peg-in protocol version 1', () => {
         const peginBtcTxHash = await sendPegin(rskTxHelper, btcTxHelper, senderAddressInformation, AMOUNT_TO_LOCK_IN_BTC, data);
         await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
 
+        const amountSentInSatoshis = Number(btcEthUnitConverter.btcToSatoshis(AMOUNT_TO_LOCK_IN_BTC));
+
         // Assert
         const finalSenderBalance = await btcTxHelper.getAddressBalance(senderAddressInformation.address);
 
@@ -155,14 +158,18 @@ describe('Lock funds using peg-in protocol version 1', () => {
 
         const peginBtcTxHashWith0xPrefix = ensure0x(peginBtcTxHash);
 
-        const rejectedPeginEvent = await rskUtils.findEventInBlock(rskTxHelper, 'rejected_pegin', searchRejectedPeginEventFromBlock, latestBlock, (event) => {
-            return event.arguments.btcTxHash === peginBtcTxHashWith0xPrefix;
+        let rejectedPeginTx;
+
+        await rskUtils.findEventInBlock(rskTxHelper, 'rejected_pegin', searchRejectedPeginEventFromBlock, latestBlock, (event, tx) => {
+            const eventFound = event.arguments.btcTxHash === peginBtcTxHashWith0xPrefix;
+            if(eventFound) {
+                rejectedPeginTx = tx;
+            }
+            return eventFound;
         });
 
-        expect(rejectedPeginEvent).to.not.be.null;
-        expect(rejectedPeginEvent.arguments.btcTxHash).to.equal(peginBtcTxHashWith0xPrefix);
-        expect(rejectedPeginEvent.arguments.reason).to.equal(PEGIN_V1_INVALID_PAYLOAD_REASON);
-
+        expect(rejectedPeginTx).to.not.be.null;
+        assertRejectedPeginEvent(rejectedPeginTx, PEGIN_V1_INVALID_PAYLOAD_REASON, peginBtcTxHashWith0xPrefix, amountSentInSatoshis)
     });
 
     it('should lock with multiple OP_RETURN outputs but only one for RSK', async () => {
@@ -215,6 +222,9 @@ describe('Lock funds using peg-in protocol version 1', () => {
 
         // Execute peg-in
         const peginBtcTxHash = await sendPegin(rskTxHelper, btcTxHelper, senderAddressInformation, AMOUNT_TO_LOCK_IN_BTC, data);
+
+        const amountSentInSatoshis = Number(btcEthUnitConverter.btcToSatoshis(AMOUNT_TO_LOCK_IN_BTC));
+
         await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
 
         // Assert
@@ -231,14 +241,17 @@ describe('Lock funds using peg-in protocol version 1', () => {
 
         const peginBtcTxHashWith0xPrefix = ensure0x(peginBtcTxHash);
 
-        const rejectedPeginEvent = await rskUtils.findEventInBlock(rskTxHelper, 'rejected_pegin', searchRejectedPeginEventFromBlock, latestBlock, (event) => {
-            return event.arguments.btcTxHash === peginBtcTxHashWith0xPrefix;
+        let rejectedPeginTx;
+        await rskUtils.findEventInBlock(rskTxHelper, 'rejected_pegin', searchRejectedPeginEventFromBlock, latestBlock, (event, tx) => {
+            const eventFound = event.arguments.btcTxHash === peginBtcTxHashWith0xPrefix;
+            if(eventFound) {
+                rejectedPeginTx = tx;
+            }
+            return eventFound;
         });
 
-        expect(rejectedPeginEvent).to.not.be.null;
-        expect(rejectedPeginEvent.arguments.btcTxHash).to.equal(peginBtcTxHashWith0xPrefix);
-        expect(rejectedPeginEvent.arguments.reason).to.equal(PEGIN_V1_INVALID_PAYLOAD_REASON);
-
+        expect(rejectedPeginTx).to.not.be.null;
+        assertRejectedPeginEvent(rejectedPeginTx, PEGIN_V1_INVALID_PAYLOAD_REASON, peginBtcTxHashWith0xPrefix, amountSentInSatoshis)
     });
 
     it('should refund lock with OP_RETURN output for RSK with invalid version number', async () => {
@@ -268,6 +281,8 @@ describe('Lock funds using peg-in protocol version 1', () => {
         const peginBtcTxHash = await sendPegin(rskTxHelper, btcTxHelper, senderAddressInformation, AMOUNT_TO_LOCK_IN_BTC, data);
         await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
 
+        const amountSentInSatoshis = Number(btcEthUnitConverter.btcToSatoshis(AMOUNT_TO_LOCK_IN_BTC));
+
         // Assert
         const finalSenderBalance = await btcTxHelper.getAddressBalance(senderAddressInformation.address);
         const senderBalanceDifference = AMOUNT_TO_LOCK_IN_BTC - Number(finalSenderBalance);
@@ -284,14 +299,18 @@ describe('Lock funds using peg-in protocol version 1', () => {
         const latestBlock = await rskTxHelper.getBlockNumber();
 
         const peginBtcTxHashWith0xPrefix = ensure0x(peginBtcTxHash);
+
+        let rejectedPeginTx;
         
-        const rejectedPeginEvent = await rskUtils.findEventInBlock(rskTxHelper, 'rejected_pegin', searchRejectedPeginEventFromBlock, latestBlock, (event) => {
-            return event.arguments.btcTxHash === peginBtcTxHashWith0xPrefix;
+        await rskUtils.findEventInBlock(rskTxHelper, 'rejected_pegin', searchRejectedPeginEventFromBlock, latestBlock, (event, tx) => {
+            const eventFound = event.arguments.btcTxHash === peginBtcTxHashWith0xPrefix;
+            if(eventFound) {
+                rejectedPeginTx = tx;
+            }
+            return eventFound;
         });
 
-        expect(rejectedPeginEvent).to.not.be.null;
-        expect(rejectedPeginEvent.arguments.btcTxHash).to.equal(peginBtcTxHashWith0xPrefix);
-        expect(rejectedPeginEvent.arguments.reason).to.equal(PEGIN_V1_INVALID_PAYLOAD_REASON);
-
+        expect(rejectedPeginTx).to.not.be.null;
+        assertRejectedPeginEvent(rejectedPeginTx, PEGIN_V1_INVALID_PAYLOAD_REASON, peginBtcTxHashWith0xPrefix, amountSentInSatoshis);
     });
 });
