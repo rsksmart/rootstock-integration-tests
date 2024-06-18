@@ -1,30 +1,24 @@
 const path = require('path');
-// const version = 'FINGERROOT-5.2.0.0';
+
 const nodesConfigPath = 'config/node-configs/';
 const keysPathResolve = 'node-keys/';
 const keysPath = 'config/node-keys/';
-const classpath = 'PATH/TO/federate-node/build/libs/federate-node-' + version + '-all.jar';
-const hsmV1ServerPath = 'PATH/TO/hsm/hsm/fedhm-mockup.py';
-const hsmV2ServerPath = 'PATH/TO/hsm/hsm/v2/sim/0.1.3/sim';
-const federatesLogbackPath = '/PATH/TO/logbacks/'
-const customLogbackFile1 = federatesLogbackPath + 'logback-fed1.xml';
-const customLogbackFile2 = federatesLogbackPath + 'logback-fed2.xml';
-const customLogbackFile3 = federatesLogbackPath + 'logback-fed3.xml';
-const customLogbackFile4 = federatesLogbackPath + 'logback-fed4.xml';
-const customLogbackFile5 = federatesLogbackPath + 'logback-fed5.xml';
+const classpath = process.env.POWPEG_NODE_JAR_PATH;
+const hsmV1ServerPath = process.env.HSM1_FEDHM_MOCKUP_PATH;
+const federatesLogbackPath = path.resolve(__dirname, 'logback');
 
 module.exports = {
   init: {
     mineInitialBitcoin: true,
     federatesLogbackFile: federatesLogbackPath
   },
-  btc: { // Bitcoind configuration
+  btc: {
     rpcUser: 'test',
     rpcPassword: 'test'
   },
   federate: [
-    { // Federate node configuration, can be an array to start multiple federate nodes
-        logbackFile: customLogbackFile1,
+    {
+        logbackFile: `${federatesLogbackPath}/logback-fed-1.xml`,
         classpath: classpath,
         configFile: nodesConfigPath + 'rsk-reg-1.conf',
         publicKeys: {
@@ -42,8 +36,8 @@ module.exports = {
         },
         nodeId: '62634ab57dae9cb373a5d536e66a8c4f67468bbcfb063809bab643072d78a1243bd206c2c7a218d6ff4c9a185e71f066bd354e5267875b7683fbc70a1d455e87'
     },
-    { // Federate node configuration, can be an array to start multiple federate nodes
-        logbackFile: customLogbackFile2,
+    {
+        logbackFile: `${federatesLogbackPath}/logback-fed-2.xml`,
         classpath: classpath,
         configFile: nodesConfigPath + 'rsk-reg-2.conf',
         hsmConfigs: {
@@ -63,8 +57,8 @@ module.exports = {
         nodeId: 'c5946b3fbae03a654237da863c9ed534e0878657175b132b8ca630f245df04dbb0bde4f3854613b16032fb214f9cc00f75363976ee078cc4409cdc543036ccfd',
         customConfig: {}
     },
-    { // Federate node configuration, can be an array to start multiple federate nodes
-      logbackFile: customLogbackFile3,
+    {
+      logbackFile: `${federatesLogbackPath}/logback-fed-3.xml`,
       classpath: classpath,
        configFile: nodesConfigPath + 'rsk-reg-3.conf',
        hsmConfigs: {
@@ -86,7 +80,7 @@ module.exports = {
     }
   ],
   additionalFederateNodes: [
-    { // Federate node configuration, can be an array to start multiple federate nodes
+    {
       logbackFile: customLogbackFile4,
        classpath: classpath,
        configFile: nodesConfigPath + 'rsk-reg-4.conf',
@@ -107,7 +101,7 @@ module.exports = {
        nodeId: '72634ab57dae9cb373a5d536e76a8c4f67468bbcfb063809bab643072d78a1243bd206c2c7a218d6ff4c9a185e71f066bd354e5267875b7683fbc70a1d455e84',
        customConfig: {}
     },
-    { // Federate node configuration, can be an array to start multiple federate nodes
+    {
       logbackFile: customLogbackFile5,
        classpath: classpath,
        configFile: nodesConfigPath + 'rsk-reg-5.conf',
