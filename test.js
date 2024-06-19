@@ -21,7 +21,7 @@ if (global.describe == null || global.it == null) {
 }
 
 // Load the configuration, regtest by default
-const configFileName = process.env.CONFIG_FILE || 'regtest-all-keyfiles';
+const configFileName = process.env.CONFIG_FILE || 'regtest';
 const config = require(`./config/${configFileName}`);
 
 // Load cases to test, everything by default
