@@ -30,7 +30,7 @@ All private keys used in the library are for testing only and not used in any pr
   ### Download Bitcoind version 0.18.1
 
   - Visit https://bitcoincore.org/bin/bitcoin-core-0.18.1/ and download the one for your machine.
-  - Specify the path to it in the `.env` file for the `BITCOIND_BIN_PATH` variable (see `.env-example`)
+  - Install it in your system or simply specify the path to it in the `.env` file for the `BITCOIND_BIN_PATH` variable (see `.env-example`)
 
   ### Setup powpeg-node
 
