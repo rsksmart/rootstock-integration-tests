@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration INFO="false" scan="true" scanPeriod="3600 seconds">
+    <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+        <Target>System.out</Target>
+        <encoder>
+            <pattern>%date{yyyy-MM-dd-HH:mm:ss.SSSS} %p [%c{1}]  %m%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE-AUDIT"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_HOME}/rsk-fed-4.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>
+                %date{yyyy-MM-dd-HH:mm:ss.SSS} %p [%c{1}]  %m%n
+            </Pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/rsk-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>7</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <logger name="ReleaseTransactionBuilder" level="OFF"/>
+    <logger name="execute" level="WARN"/>
+    <logger name="blockvalidator" level="WARN"/>
+    <logger name="blockexecutor" level="WARN"/>
+    <logger name="general" level="INFO"/>
+    <logger name="gaspricetracker" level="WARN"/>
+    <logger name="web3" level="DEBUG"/>
+    <logger name="repository" level="WARN"/>
+    <logger name="VM" level="WARN"/>
+    <logger name="blockqueue" level="WARN"/>
+    <logger name="io.netty" level="WARN"/>
+    <logger name="block" level="WARN"/>
+    <logger name="minerserver" level="WARN"/>
+    <logger name="minerClient" level="WARN"/>
+    <logger name="txbuilderex" level="WARN"/>
+    <logger name="pendingstate" level="WARN"/>
+    <logger name="hsqldb.db" level="WARN"/>
+    <logger name="TCK-Test" level="WARN"/>
+    <logger name="db" level="WARN"/>
+    <logger name="net" level="ERROR"/>
+    <logger name="start" level="INFO"/>
+    <logger name="co.rsk.bitcoinj.core.CheckpointManager" level="WARN"/>
+    <logger name="co.rsk.bitcoinj.wallet.Wallet" level="WARN"/>
+    <logger name="co.rsk.net.discovery.UDPServer" level="WARN"/>
+    <logger name="co.rsk.bitcoinj.core.Context" level="WARN"/>
+    <logger name="co.rsk.bitcoinj.core.PeerGroup" level="WARN"/>
+    <logger name="co.rsk.bitcoinj.core.BtcAbstractBlockChain" level="WARN"/>
+    <logger name="co.rsk.federate.bitcoin.peerdetector.BitcoinPeerDetector" level="INFO"/>
+    <logger name="co.rsk.federate.bitcoin.peerdetector.Handshaker" level="INFO"/>
+    <logger name="co.rsk.federate.FederatorSupport" level="DEBUG"/>
+    <logger name="co.rsk.federate.FederateRunner" level="TRACE"/>
+    <logger name="co.rsk.federate.signing.hsm.HSMClientProtocol" level="TRACE"/>
+    <logger name="co.rsk.federate.BtcReleaseClient" level="TRACE"/>
+    <logger name="fullnoderunner" level="TRACE"/>
+    <logger name="FederationWatcher" level="WARN"/>
+    <logger name="cli" level="WARN"/>
+    <logger name="txs" level="WARN"/>
+    <logger name="gas" level="ERROR"/>
+    <logger name="main" level="INFO"/>
+    <logger name="trie" level="WARN"/>
+    <logger name="peermonitor" level="WARN"/>
+    <logger name="bridge" level="TRACE"/>
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="rlp" level="WARN"/>
+    <logger name="messagehandler" level="WARN"/>
+    <logger name="sync" level="WARN"/>
+    <logger name="BtcReleaseClient" level="TRACE"/>
+    <logger name="BtcToRskClient" level="DEBUG"/>
+    <logger name="ui" level="WARN"/>
+    <logger name="java.nio" level="WARN"/>
+    <logger name="org.eclipse.jetty" level="WARN"/>
+    <logger name="wire" level="WARN"/>
+    <logger name="BridgeSupport" level="TRACE"/>
+    <logger name="co.rsk.peg.BridgeStorageProvider" level="ERROR"/>
+    <logger name="jsonrpc" level="DEBUG"/>
+    <logger name="wallet" level="WARN"/>
+    <logger name="blockchain" level="WARN"/>
+    <logger name="blockprocessor" level="WARN"/>
+    <logger name="state" level="WARN"/>
+    <logger name="org.bitcoinj" level="WARN"/>
+    <logger name="metrics" level="WARN"/>
+    <logger name="messageProcess" level="WARN"/>
+    <logger name="co.rsk.federate.bitcoin.BitcoinWrapperImpl" level="DEBUG"/>
+
+    <root level="INFO">
+        <appender-ref ref="stdout"/>
+        <appender-ref ref="FILE-AUDIT"/>
+    </root>
+</configuration>
