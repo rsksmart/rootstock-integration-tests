@@ -11,7 +11,8 @@ module.exports = {
     },
     btc: {
         rpcUser: 'test',
-        rpcPassword: 'test'
+        rpcPassword: 'test',
+        dir: process.env.BITCOIN_DATA_DIR,
     },
     federate: [
         {
