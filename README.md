@@ -14,8 +14,70 @@ All private keys used in the library are for testing only and not used in any pr
 4) Powpeg-node
 5) HSM (Optional)
 
-## Set up
+<details open>
+  <summary>Quick Setup</summary>
 
+  ### Install Nodejs
+
+  - Install node.js latest LTS version (recommendation use [nvm](https://formulae.brew.sh/formula/nvm))
+
+  ### Install Java 8
+
+  - install java the x86 version to be used with rossetta in case of ARM arch (1.8, 11 and 17 can be used).
+  
+  - Or simply download it and update the `JAVA_BIN_PATH` variable in the `.env` file to point to the path of the `java` binary. See `.env-example`.  This is helpful when you don't want to fully install a specific version of Java in your system. This way, you can use any Java version downloaded without really installing it. If not specified, the `java` in the environment will be used.
+
+  ### Install Bitcoind version 0.18.1
+
+  - Visit https://bitcoincore.org/bin/bitcoin-core-0.18.1/ and download the one for your machine.
+  - Specify the path to it in the `.env` file for the `BITCOIND_BIN_PATH` variable (see `.env-example`)
+
+  ### Setup powpeg-node
+
+  - Clone the powpeg-node https://github.com/rsksmart/powpeg-node, follow the steps in its README to set it up and build it.
+
+  ### Setup environment varaibles in the `.env` file
+
+  Create a `.env` file. Use the `.env.example` as an example.
+
+  For the `POWPEG_NODE_JAR_PATH` variable, set the absolute path where the federate node `federate-node-<version>-all.jar` file will be located:
+
+  ```bash
+    POWPEG_NODE_JAR_PATH=<path_to_powpeg_repo>/powpeg-node/build/libs/federate-node-SNAPSHOT-6.3.0.0-all.jar
+  ```
+
+  For the `CONFIG_FILE` variable, set the config file you want to use. By default, `regtest-all-keyfiles.js` will be used, to make it easy to run the tests, since it will not require an HSM simulator:
+
+  ```bash
+  CONFIG_FILE=regtest-all-keyfiles
+  ```
+
+  For the `BITCOIND_BIN_PATH` variable, set the path of the `bitcoind` binary. This is helpful when you don't want to fully install bitcoind in your system. This way, you can use any bitcoind version downloaded without really installing it. If not specified, the `bitcoind` in the environment will be used.
+
+  ```bash
+  BITCOIND_BIN_PATH=/<path_to_bitcoind>/bitcoind/bin/bitcoind
+  ```
+
+  Set the `LOG_HOME` variable to where you want the logs to be put. See `.env-example`.
+
+  ```bash
+  LOG_HOME=/<path_to_logs_directory>/logs
+  ```
+
+  ### Run the tests
+
+   1. Clone this repo
+   2. Run `npm ci` or `npm instal`
+   3. Run `npm test` to run testcases without interruption
+   4. Run `npm run test-fail-fast` to stop execution at first testcase failure
+   5. You can also run them like this: `node testRunner.js`
+   6. Or clearing logs before running: `node testRunner.js --clearLogs`
+   7. Or run a test file individually like this `node testRunner.js --clearLogs --runSingleTestFile --testFileName=<test_file_name>.js`, like: `node testRunner.js --clearLogs --runSingleTestFile --testFileName=02_00_01-2wp.js`
+
+</details>
+
+<details>
+  <summary>Detailed Setup</summary>
 <details open>
   <summary>Nodejs</summary>
   - Install node.js latest LTS version (recommendation use [nvm](https://formulae.brew.sh/formula/nvm))
@@ -411,3 +473,5 @@ Both ways are valid, but keep in mind that the config files are controlled by gi
 - In case ```Sync ``` testcase fails, run command ``` ps aux | grep java ``` and check services. In case of having related processes running, kill them or reboot your system. It could also be related to having an instance of bitcoind running.
 
 </details> 
+
+</details>
