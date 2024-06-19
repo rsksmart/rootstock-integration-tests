@@ -24,6 +24,8 @@ All private keys used in the library are for testing only and not used in any pr
 <details open>
   <summary>Java 8</summary>
     - install java the x86 version to be used with rossetta in case of ARM arch (1.8, 11 and 17 can be used).
+  
+    - Or simply download it and update the `JAVA_BIN_PATH` variable in the `.env` file to point to the path of the `java` binary. See `.env-example`.  This is helpful when you don't want to fully install a specific version of Java in your system. This way, you can use any Java version downloaded without really installing it. If not specified, the `java` in the environment will be used.
 </details>
 
 <details open>
@@ -75,7 +77,7 @@ All private keys used in the library are for testing only and not used in any pr
 
   TODO: add more config files with HSM4 and HSM5 nodes.
 
-  For the `BITCOIND_BIN_PATH` variable, set the path of the `bitcoind` binary. This is helpful when you don't want to fully install bitcoind in your system. This way, you can use any bitcoind version downloaded without really installing it. If not specified, the `bitcoind` in the environment will try to be used.
+  For the `BITCOIND_BIN_PATH` variable, set the path of the `bitcoind` binary. This is helpful when you don't want to fully install bitcoind in your system. This way, you can use any bitcoind version downloaded without really installing it. If not specified, the `bitcoind` in the environment will be used.
 
 
   ```bash
@@ -204,17 +206,21 @@ runners {
 NODE_ENV=mynewenv npm test
 ```
 
+## Clearing the logs automatically before running tests
+
+To clear the logs before running new tests, run the following command:
+
+```
+node testRunner.js --clearLogs
+```
+
 ## Running the tests multiple times
 
 ### Running all tests multiple times from scratch
 
 To run all tests multiple times from scratch, right after all tests finished running, run:
 
-> node testRunner.js
-
-Or with npm:
-
-> npm run run-tests-multiple-times
+> node testRunner.js --clearLogs --runTestsMultipleTimes
 
 You can specify how many times to run all tests from scratch by adding the times to run them in the `RUN_ALL_TESTS_THESE_TIMES` property in the `.env` file.
 
@@ -222,9 +228,9 @@ Remember to copy the `.env-example` file and rename it as `.env` file.
 
 Or, you can pass te times you want to run the tests from scratch using the `--times` flag, like this:
 
-> npm run run-tests-multiple-times --times 3
+> node testRunner.js --clearLogs --runTestsMultipleTimes --times=3
 
-The `npm run run-tests-multiple-times` command is executing the file `testRunner.js`, which uses `shelljs` to execute the script `npm run test-fail-fast` in a loop and counts the failures and print some information to the console.
+The `node testRunner.js --clearLogs --runTestsMultipleTimes` command is executing the file `multipleTestExecutionsRunner.js`, which uses `shelljs` to execute the script `npm run test-fail-fast` in a loop and counts the failures and print some information to the console.
 
 ### Running a specific test file multiple times
 
@@ -250,7 +256,7 @@ Remember that with this approach we are not running the test file from scratch e
 
 To run specific test files from scratch, use the same setup described in this section, and for the script instead run:
 
-> npm run run-tests-multiple-times
+> node testRunner.js --runTestsMultipleTimes
 
 This will run specific test files from scratch.
 
@@ -273,13 +279,13 @@ If our test is one of the last tests, then we will potentially wait more than 15
 
 To run a test file that has the `fulfillRequirementsToRunAsSingleTestFile` function, simply run the following `npm` command:
 
-> npm run run-single-test-file <filename.js>
+> node testRunner.js --clearLogs --runSingleTestFile --testFileName=<filename.js>
 
 For example:
 
-> npm run run-single-test-file 01_02_51-post_wasabi_fed_pubkeys_fork.js
+> node testRunner.js --clearLogs --runSingleTestFile --testFileName=01_02_51-post_wasabi_fed_pubkeys_fork.js
 
-The command `run-single-test-file` will execute the file `singleTestFileRunner.js` which has some simple logic:
+The command `--runSingleTestFile` will execute the `runSingleTestFile` function declared in file `singleTestFileRunner.js` which has some simple logic:
 
 1 - It will assign the `01_02_51-post_wasabi_fed_pubkeys_fork.js` test file name to the `process.env.INCLUDE_CASES` variable. Since it will be the one in that `INCLUDE_CASES` variable, then only that test file will be run.
 
@@ -289,9 +295,15 @@ The test file should have a `fulfillRequirementsToRunAsSingleTestFile` function 
 
 Another advantage of this is that it will allow us to understand exactly what each test really needs in order to run, reducing uncertainties.
 
-To indicate a fork name to be used in the `fulfillRequirementsToRunAsSingleTestFile` function, you can specify it as the last argument of the command like this, passing the fork name `fingerroot500`:
+To indicate a fork name to be used in the `fulfillRequirementsToRunAsSingleTestFile` function, you can specify a `--forkName=<forkName>` parameter, for example, passing the fork name `fingerroot500`:
 
-> npm run run-single-test-file 02_00_01-2wp.js fingerroot500
+> node testRunner.js --runSingleTestFile --testFileName=02_00_01-2wp.js --forkName=fingerroot500
+
+Clearing logs:
+
+> node testRunner.js --clearLogs --runSingleTestFile --testFileName=02_00_01-2wp.js --forkName=fingerroot500
+
+> The parameters can be passed in any order. The `--forkName` param is optional.
 
 This is when the `fulfillRequirementsToRunAsSingleTestFile` function needs a fork name that needs to be dynamically passed. For example, the `2wp.js` file is run multiple times with different forks. We cannot simply hardcode which fork to use or to use the latest, because sometimes we will need to run it with a fork passed dynamically.
 

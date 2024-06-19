@@ -4,8 +4,6 @@ const keysPathResolve = 'node-keys';
 const classpath = process.env.POWPEG_NODE_JAR_PATH;
 const federatesLogbackPath = path.resolve(__dirname, 'logback');
 
-console.log('log file: ', `${federatesLogbackPath}/logback-fed-1.xml`)
-
 module.exports = {
     init: {
         mineInitialBitcoin: true,
