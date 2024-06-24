@@ -36,15 +36,10 @@ done < "src/main/resources/version.properties"
 
 # Concatenate modifier and versionNumber
 FED_VERSION="$modifier-$versionNumber"
-echo "Federator version: $FED_VERSION"
+echo "$FED_VERSION"
 
-echo "Configuring Federator in Gradle"
 if [[ $FED_VERSION == SNAPSHOT* || $FED_VERSION == RC* ]]; then
-  echo "Adding the settings gradle content script"
   echo -e "$SETTINGS_GRADLE_CONTENT_LOCAL" > DONT-COMMIT-settings.gradle
 else
   echo "Settings gradle script local not necessary"
 fi
-
-# Export the FED_VERSION
-echo $FED_VERSION

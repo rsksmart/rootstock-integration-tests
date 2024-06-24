@@ -4,7 +4,7 @@ LABEL Description="Custom RSK node image to execute Rootstock Integration Tests"
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-    wget gnupg2 curl git ca-certificates \
+    wget gnupg2 curl git ca-certificates mocha \
     && apt clean
 
 # -- nodeJs ---------------------------------------------------------
@@ -65,13 +65,15 @@ RUN cd /tmp \
     && rm -v /opt/bitcoin/bin/test_bitcoin /opt/bitcoin/bin/bitcoin-qt \
     && ln -sv /opt/bitcoin/bin/* /usr/local/bin
 
-# -- configure entrypoint --------------------------------------------
+# -- configure entrypoint to run RIT--------------------------------------------
 
-RUN mkdir -p /usr/src
+RUN mkdir -p /usr/src/logbacks
 
 WORKDIR /usr/src
 
 COPY entrypoint.sh /usr/src/entrypoint.sh
+COPY rit-local-configs/regtest-all-keys.js /usr/src/regtest.js
+COPY rit-local-configs/logbacks/* /usr/src/logbacks/
 COPY scripts/* /usr/src/
 
 RUN chmod +x /usr/src/entrypoint.sh  \
