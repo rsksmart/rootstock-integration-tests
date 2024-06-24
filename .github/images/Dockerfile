@@ -1,7 +1,11 @@
-FROM kylemanna/bitcoind:latest AS builder
+FROM ubuntu:24.04 AS builder
+
+LABEL Description="Custom RSK node image to execute Rootstock Integration Tests"
 
 RUN apt-get update \
-    && apt-get install -y wget gnupg2 curl git
+    && apt-get install -y --no-install-recommends \
+    wget gnupg2 curl git ca-certificates \
+    && apt clean
 
 # -- nodeJs ---------------------------------------------------------
 ENV NODE_VERSION  v20.14.0
@@ -22,8 +26,11 @@ ENV JAVA_VERSION 11
 
 RUN apt-get  -y install "openjdk-$JAVA_VERSION-jdk"
 
-ENV JAVA_HOME=/opt/java/openjdk \
-    PATH="/opt/java/openjdk/bin:$PATH"
+ENV JAVA_HOME="/usr/lib/jvm/java-$JAVA_VERSION-openjdk-amd64" \
+    PATH="$JAVA_HOME:$PATH"
+
+RUN export JAVA_HOME=$JAVA_HOME  \
+    && export PATH="$JAVA_HOME:$PATH"
 
 # -- python ---------------------------------------------------------
 ENV PYTHON_VERSION=2.7.16
@@ -33,29 +40,47 @@ RUN apt-get update \
   && apt-get install -y  gcc make openssl libffi-dev libgdbm-dev libsqlite3-dev libssl-dev zlib1g-dev \
   && apt-get clean
 
-RUN export PREVIOUS_PATH=$(pwd)
-RUN cd /tmp
+RUN export PREVIOUS_PATH=$(pwd) \
+    && cd /tmp
 
-# Build Python from source
+#Build Python from source
 RUN wget https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz \
   && tar --extract -f Python-$PYTHON_VERSION.tgz \
   && cd ./Python-$PYTHON_VERSION/ \
   && ./configure --with-ensurepip=install --enable-optimizations --prefix=/usr/local \
   && make && make install \
   && cd ../ \
-  && rm -r ./Python-$PYTHON_VERSION*
-
-RUN python --version \
-  && pip --version
-
-RUN cd $PREVIOUS_PATH
+  && rm -r ./Python-$PYTHON_VERSION* \
+  && python --version \
+  && pip --version \
+  && cd $PREVIOUS_PATH
 
 # -- bitcoind ---------------------------------------------------------
-COPY entrypoint_bitcoind.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["31591", "http://localhost:31592", "0.0.0.0:32591", "0.0.0.0/0", "admin", "admin"]
+ENV BITCOIN_VERSION 0.18.1
 
-FROM builder AS rit-tests
-LABEL Description="Custom RSK node image to execute Rootstock Integration Tests"
+RUN cd /tmp \
+    && wget https://bitcoincore.org/bin/bitcoin-core-${BITCOIN_VERSION}/bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz \
+    && tar -xzvf bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz -C /opt \
+    && mv  /opt/bitcoin-${BITCOIN_VERSION} /opt/bitcoin \
+    && rm -v /opt/bitcoin/bin/test_bitcoin /opt/bitcoin/bin/bitcoin-qt \
+    && ln -sv /opt/bitcoin/bin/* /usr/local/bin
 
+# -- configure entrypoint --------------------------------------------
+
+RUN mkdir -p /usr/src
+
+WORKDIR /usr/src
+
+COPY entrypoint.sh /usr/src/entrypoint.sh
+COPY scripts/* /usr/src/
+
+RUN chmod +x /usr/src/entrypoint.sh  \
+    && chmod +x /usr/src/configure_gradle_federator.sh \
+    && chmod +x /usr/src/configure_rit_locally.sh \
+    && mkdir -p /usr/src/bitcoindata \
+    && chmod -R 755 /usr/src/bitcoindata \
+    && ls -la /usr/src
+
+ENTRYPOINT ["/usr/src/entrypoint.sh"]
+
+EXPOSE 18332

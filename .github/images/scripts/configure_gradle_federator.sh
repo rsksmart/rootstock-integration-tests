@@ -1,7 +1,7 @@
 #!/bin/bash
 
 read -r -d '' SETTINGS_GRADLE_CONTENT_LOCAL <<EOF
-includeBuild('../rskj') {
+includeBuild('/usr/src/rskj') {
    dependencySubstitution {
         all { DependencySubstitution dependency ->
            if (dependency.requested instanceof ModuleComponentSelector
@@ -45,3 +45,6 @@ if [[ $FED_VERSION == SNAPSHOT* || $FED_VERSION == RC* ]]; then
 else
   echo "Settings gradle script local not necessary"
 fi
+
+# Export the FED_VERSION
+echo $FED_VERSION
