@@ -40,6 +40,4 @@ echo "$FED_VERSION"
 
 if [[ $FED_VERSION == SNAPSHOT* || $FED_VERSION == RC* ]]; then
   echo -e "$SETTINGS_GRADLE_CONTENT_LOCAL" > DONT-COMMIT-settings.gradle
-else
-  echo "Settings gradle script local not necessary"
 fi

@@ -9,10 +9,9 @@ CONFIG_FILE=/usr/src/rit/config/regtest.js
 LOG_HOME=/usr/src/rit/logs
 BITCOIND_BIN_PATH=/usr/local/bin/bitcoind
 BITCOIN_DATA_DIR=/usr/src/bitcoindata
+WAIT_FOR_BLOCK_ATTEMPT_TIME_MILLIS=600
+WAIT_FOR_BLOCK_MAX_ATTEMPTS=1000
 EOF
 
 echo -e  "\n\n---------- Configuring RIT to run the tests locally -----------\n\n"
 echo -e "$SETTINGS_RIT" > .env
-
-
-

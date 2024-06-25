@@ -2,7 +2,7 @@ const path = require('path');
 const nodesConfigPath = 'config/node-configs';
 const keysPathResolve = 'node-keys';
 const classpath = process.env.POWPEG_NODE_JAR_PATH;
-const federatesLogbackPath = path.resolve(__dirname, 'logback');
+const federatesLogbackPath = path.resolve(__dirname, 'logbacks');
 
 module.exports = {
     init: {

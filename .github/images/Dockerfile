@@ -4,7 +4,7 @@ LABEL Description="Custom RSK node image to execute Rootstock Integration Tests"
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-    wget gnupg2 curl git ca-certificates mocha \
+    wget gnupg2 curl git ca-certificates mocha  \
     && apt clean
 
 # -- nodeJs ---------------------------------------------------------
@@ -31,29 +31,6 @@ ENV JAVA_HOME="/usr/lib/jvm/java-$JAVA_VERSION-openjdk-amd64" \
 
 RUN export JAVA_HOME=$JAVA_HOME  \
     && export PATH="$JAVA_HOME:$PATH"
-
-# -- python ---------------------------------------------------------
-ENV PYTHON_VERSION=2.7.16
-
-# Install dependencies
-RUN apt-get update \
-  && apt-get install -y  gcc make openssl libffi-dev libgdbm-dev libsqlite3-dev libssl-dev zlib1g-dev \
-  && apt-get clean
-
-RUN export PREVIOUS_PATH=$(pwd) \
-    && cd /tmp
-
-#Build Python from source
-RUN wget https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz \
-  && tar --extract -f Python-$PYTHON_VERSION.tgz \
-  && cd ./Python-$PYTHON_VERSION/ \
-  && ./configure --with-ensurepip=install --enable-optimizations --prefix=/usr/local \
-  && make && make install \
-  && cd ../ \
-  && rm -r ./Python-$PYTHON_VERSION* \
-  && python --version \
-  && pip --version \
-  && cd $PREVIOUS_PATH
 
 # -- bitcoind ---------------------------------------------------------
 ENV BITCOIN_VERSION 0.18.1

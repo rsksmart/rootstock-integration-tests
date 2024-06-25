@@ -7,5 +7,3 @@ config/*.js
 logs
 .env
 .DS_Store
-.idea/
-.secrets
