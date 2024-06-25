@@ -2,10 +2,6 @@
 
 set -e
 
-RSKJ_BRANCH="master"
-POWPEG_BRANCH="master"
-
-
 echo -e "\n\n--------- Starting the configuration of rskj ---------\n\n"
 
 git clone https://github.com/rsksmart/rskj.git rskj
@@ -18,7 +14,7 @@ cd ..
 echo -e  "\n\n--------- Starting the configuration of powpeg ---------\n\n"
 git clone https://github.com/rsksmart/powpeg-node.git powpeg
 cp configure_gradle_federator.sh powpeg
-cd powpeg && git checkout $POWPEG_BRANCH
+cd powpeg && git checkout $FEDERATOR_BRANCH
 chmod +x ./configure.sh && chmod +x gradlew
 ./configure_gradle_federator.sh
 ./configure.sh
@@ -31,9 +27,11 @@ mv configure_rit_locally.sh rit
 mv regtest.js rit/config/regtest.js
 mv /usr/src/logbacks/* /usr/src/rit/logbacks/
 cd rit
+git checkout $RIT_BRANCH
 chmod +x ./configure.sh
 ./configure.sh
 ./configure_rit_locally.sh "$FED_VERSION"
+export LOG_LEVEL=$RIT_LOG_LEVEL
 
 echo -e "\n\n--------- Executing Rootstock Integration Tests ---------\n\n"
 npm install -y
