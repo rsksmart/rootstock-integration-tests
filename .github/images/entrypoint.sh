@@ -36,6 +36,16 @@ export LOG_LEVEL=$RIT_LOG_LEVEL
 echo -e "\n\n--------- Executing Rootstock Integration Tests ---------\n\n"
 npm install -y
 npm run test-fail-fast
+STATUS=$?
 
-# Keep the container running
-tail -f /dev/null
+if [ $STATUS -ne 0 ]; then
+  echo -e "\n\n--------- RIT Tests failed ---------\n\n"
+  MESSAGE="Rootstock Integration Tests Result: FAILED"
+else
+  echo -e "\n\n--------- RIT Tests passed ---------\n\n"
+  MESSAGE="Rootstock Integration Tests Result: PASSED"
+fi
+
+# Write Results to the $GITHUB_OUTPUT file
+echo "STATUS=$STATUS" >>"$GITHUB_OUTPUT"
+echo "MESSAGE=$MESSAGE" >>"$GITHUB_OUTPUT"
