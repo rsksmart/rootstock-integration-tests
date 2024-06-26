@@ -70,7 +70,7 @@ jobs:
 
       - name: Test Local RIT Action
         id: test-rit-action
-        uses: ./.github/action.yml
+        uses: ./.github/
         with:
           rskj-branch: master
           federator-branch: master
