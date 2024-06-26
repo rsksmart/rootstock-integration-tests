@@ -1,4 +1,4 @@
-name: Continuous Integration Tests
+name: RIT Action Continuous Integration Test
 
 on:
   pull_request:
@@ -11,8 +11,9 @@ permissions:
 
 jobs:
   test-rit-docker:
-    name: Test  Rootstock Integration Tests docker image
+    name: Test  RIT Action docker image
     runs-on: ubuntu-latest
+    timeout-minutes: 120
 
     services:
       registry:
@@ -36,7 +37,7 @@ jobs:
           driver-opts: network=host
           platforms: linux/amd64
 
-      - name: Build the RIT Container
+      - name: Build the RIT Action Container
         id: build
         uses: docker/build-push-action@v6
         with:
@@ -44,7 +45,7 @@ jobs:
           push: true
           tags: ${{ env.TEST_TAG }}
 
-      - name: Run the RIT Container
+      - name: Run the RIT Container Action
         id: run
         env:
           RSKJ_BRANCH: 'master'
