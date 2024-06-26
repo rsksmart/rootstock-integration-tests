@@ -13,7 +13,7 @@ jobs:
   test-rit-docker:
     name: Test  RIT Action docker image
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 60
 
     services:
       registry:
@@ -55,3 +55,28 @@ jobs:
             --env RSKJ_BRANCH="${{ env.RSKJ_BRANCH }}" \
             --env FEDERATOR_BRANCH="${{ env.FEDERATOR_BRANCH }}" \
             --rm ${{ env.TEST_TAG }}
+
+  test-rit-action:
+    name: GitHub Actions Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Test Local RIT Action
+        id: test-rit-action
+        uses: ./.github/action.yml
+        with:
+          rskj-branch: master
+          federator-branch: master
+
+      - name: Print RIT Status and Message
+        id: output
+        run: |
+          echo "RIT Status = ${{ steps.test-action.outputs.status }}"
+          echo "RIT Message = ${{ steps.test-action.outputs.message }}"

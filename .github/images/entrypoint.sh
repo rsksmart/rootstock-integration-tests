@@ -40,8 +40,8 @@ STATUS=$?
 
 echo -e "\n\n--------- RIT Tests Result ---------\n\n"
 if [ $STATUS -ne 0 ]; then
-  MESSAGE="Rootstock Integration Tests Result: FAILED"
+  MESSAGE="Rootstock Integration Tests Status: FAILED"
 else
-  MESSAGE="Rootstock Integration Tests Result: PASSED"
+  MESSAGE="Rootstock Integration Tests Status: PASSED"
 fi
 echo -e "$MESSAGE"
