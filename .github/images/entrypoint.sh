@@ -38,14 +38,10 @@ npm install -y
 npm run test-fail-fast
 STATUS=$?
 
+echo -e "\n\n--------- RIT Tests Result ---------\n\n"
 if [ $STATUS -ne 0 ]; then
-  echo -e "\n\n--------- RIT Tests failed ---------\n\n"
   MESSAGE="Rootstock Integration Tests Result: FAILED"
 else
-  echo -e "\n\n--------- RIT Tests passed ---------\n\n"
   MESSAGE="Rootstock Integration Tests Result: PASSED"
 fi
-
-# Write Results to the $GITHUB_OUTPUT file
-echo "STATUS=$STATUS" >>"$GITHUB_OUTPUT"
-echo "MESSAGE=$MESSAGE" >>"$GITHUB_OUTPUT"
+echo -e "$MESSAGE"
