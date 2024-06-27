@@ -62,15 +62,9 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      - name: Checkout
-        id: checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-
-      - name: Test Local RIT Action
+      - name: Test  RIT Action
         id: test-rit-action
-        uses: ./.github/
+        uses: docker://ghcr.io/rsksmart/rootstock-integration-tests/rit-action:latest
         with:
           rskj-branch: master
           federator-branch: master
