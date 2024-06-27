@@ -29,6 +29,12 @@ jobs:
         id: checkout
         uses: actions/checkout@v4
 
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.GHCR_REPO }}
+
       - name: Setup Docker BuildX
         id: setup-buildx
         uses: docker/setup-buildx-action@v3
@@ -37,13 +43,21 @@ jobs:
           driver-opts: network=host
           platforms: linux/amd64
 
-      - name: Build the RIT Action Container
-        id: build
+      - name: GitHub container registry login
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push the RIT Action Container Image
         uses: docker/build-push-action@v6
         with:
           context: .github/images
-          push: true
-          tags: ${{ env.TEST_TAG }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
       - name: Run the RIT Container Action
         id: run
@@ -60,13 +74,15 @@ jobs:
     name: GitHub Actions Test
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    container:
-      image: ghcr.io/rsksmart/rootstock-integration-tests/rit-action
-      credentials:
-        username: ${{ secrets.GH_IMAGE_USERNAME }}
-        password: ${{ secrets.GH_IMAGE_TOKEN }}
 
     steps:
+      - name: GitHub container registry login
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Test  RIT Action
         id: test-rit-action
         uses: docker://ghcr.io/rsksmart/rootstock-integration-tests/rit-action:latest
