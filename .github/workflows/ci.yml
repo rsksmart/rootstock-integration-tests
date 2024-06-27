@@ -8,21 +8,13 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
-  test-rit-docker:
+  build-push-rit-action-image:
     name: Test  RIT Action docker image
     runs-on: ubuntu-latest
     timeout-minutes: 60
-
-    services:
-      registry:
-        image: registry:2
-        ports:
-          - 5001:5000
-
-    env:
-      TEST_TAG: localhost:5001/actions/container-action:latest
 
     steps:
       - name: Checkout
@@ -33,7 +25,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.GHCR_REPO }}
+          images: ${{ github.event.repository.name }}/rit-action
 
       - name: Setup Docker BuildX
         id: setup-buildx
@@ -55,22 +47,12 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .github/images
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Run the RIT Container Action
-        id: run
-        env:
-          RSKJ_BRANCH: 'master'
-          FEDERATOR_BRANCH:  'master'
-        run: |
-          docker run \
-            --env RSKJ_BRANCH="${{ env.RSKJ_BRANCH }}" \
-            --env FEDERATOR_BRANCH="${{ env.FEDERATOR_BRANCH }}" \
-            --rm ${{ env.TEST_TAG }}
-
   test-rit-action:
+    needs:  build-push-rit-action-image
     name: GitHub Actions Test
     runs-on: ubuntu-latest
     timeout-minutes: 60
