@@ -60,6 +60,11 @@ jobs:
     name: GitHub Actions Test
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    container:
+      image: ghcr.io/rsksmart/rootstock-integration-tests/rit-action
+      credentials:
+        username: ${{ secrets.GH_IMAGE_USERNAME }}
+        password: ${{ secrets.GH_IMAGE_TOKEN }}
 
     steps:
       - name: Test  RIT Action
