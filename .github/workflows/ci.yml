@@ -90,7 +90,7 @@ jobs:
 
       - name: Test  RIT Action
         id: test-rit-action
-        uses: docker://${{ env.LATEST_TAG }}
+        uses: docker://ghcr.io/rsksmart/rootstock-integration-tests/rit-action:latest
         with:
           rskj-branch: master
           federator-branch: master
