@@ -47,16 +47,16 @@ jobs:
           load: true
           tags: ${{ env.TEST_TAG }}
 
-#      - name: Test the RIT Container Action
-#        id: test-container
-#        env:
-#          RSKJ_BRANCH: 'master'
-#          FEDERATOR_BRANCH: 'master'
-#        run: |
-#          docker run \
-#            --env RSKJ_BRANCH="${{ env.RSKJ_BRANCH }}" \
-#            --env FEDERATOR_BRANCH="${{ env.FEDERATOR_BRANCH }}" \
-#            --rm ${{ env.TEST_TAG }}
+      - name: Test the RIT Container Action
+        id: test-container
+        env:
+          RSKJ_BRANCH: 'master'
+          FEDERATOR_BRANCH: 'master'
+        run: |
+          docker run \
+            --env RSKJ_BRANCH="${{ env.RSKJ_BRANCH }}" \
+            --env FEDERATOR_BRANCH="${{ env.FEDERATOR_BRANCH }}" \
+            --rm ${{ env.TEST_TAG }}
 
       - name: Build the RIT Action Container Image
         uses: docker/build-push-action@v6
@@ -102,5 +102,5 @@ jobs:
       - name: Print RIT Status and Message
         id: output
         run: |
-          echo "RIT Status = ${{ steps.test-action.outputs.status }}"
-          echo "RIT Message = ${{ steps.test-action.outputs.message }}"
+          echo "RIT Status = ${{ steps.test-rit-action.outputs.status }}"
+          echo "RIT Message = ${{ steps.test-rit-action.outputs.message }}"

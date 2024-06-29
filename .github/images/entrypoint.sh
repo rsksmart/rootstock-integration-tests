@@ -46,3 +46,6 @@ else
   MESSAGE="Rootstock Integration Tests Status: PASSED"
 fi
 echo -e "$MESSAGE"
+
+echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+echo "message=$MESSAGE" >> "$GITHUB_OUTPUT"
