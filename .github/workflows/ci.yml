@@ -10,8 +10,8 @@ permissions:
   contents: read
   packages: write
 env:
-  TEST_TAG:  ${{ github.event.repository.name }}/rit-action:test
-  LATEST_TAG: ghcr.io/rsksmart/${{ github.event.repository.name }}/rit-action:latest
+  TEST_TAG:  ${{ github.event.repository.name }}/rit:test
+  LATEST_TAG: ghcr.io/rsksmart/${{ github.event.repository.name }}/rit
 
 jobs:
   build-push-rit-action-image:
@@ -58,17 +58,25 @@ jobs:
 #            --env FEDERATOR_BRANCH="${{ env.FEDERATOR_BRANCH }}" \
 #            --rm ${{ env.TEST_TAG }}
 
-      - name: Build and Push  the RIT Action Container Image
+      - name: Build the RIT Action Container Image
         uses: docker/build-push-action@v6
         with:
           context: .github/images
-          tags:  ${{ env.LATEST_TAG }}
+          tags: ${{ env.LATEST_TAG }}
           labels: ${{ steps.meta.outputs.labels }}
-          registry: ghcr.io
           platforms: linux/amd64
-          username: ${{ github.actor }}
+          load: true
+
+      - name: GitHub container registry login
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          push: true
+
+      - name: Push Images
+        run: |
+          docker push ${{ env.LATEST_TAG }}
 
   test-rit-action:
     needs:  build-push-rit-action-image
@@ -86,7 +94,7 @@ jobs:
 
       - name: Test  RIT Action
         id: test-rit-action
-        uses: docker://ghcr.io/rsksmart/rootstock-integration-tests/rit-action:latest
+        uses: docker://ghcr.io/rsksmart/rootstock-integration-tests/rit:latest
         with:
           rskj-branch: master
           federator-branch: master
