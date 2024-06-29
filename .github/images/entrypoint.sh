@@ -2,16 +2,17 @@
 
 set -e
 
-echo -e "\n\n--------- Starting the configuration of rskj ---------\n\n"
 
+echo -e "\n\n--------- Starting the configuration of rskj ---------\n\n"
+cd /usr/src/
 git clone https://github.com/rsksmart/rskj.git rskj
 cd rskj && git checkout $RSKJ_BRANCH
 chmod +x ./configure.sh && chmod +x gradlew
 ./configure.sh
 ./gradlew --no-daemon clean build -x test
-cd ..
 
 echo -e  "\n\n--------- Starting the configuration of powpeg ---------\n\n"
+cd /usr/src/
 git clone https://github.com/rsksmart/powpeg-node.git powpeg
 cp configure_gradle_federator.sh powpeg
 cd powpeg && git checkout $FEDERATOR_BRANCH
