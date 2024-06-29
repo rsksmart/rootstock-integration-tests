@@ -28,7 +28,9 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ github.event.repository.name }}/rit-action
+          images: |
+            ${{ env.LATEST_TAG }}
+            ${{ env.TEST_TAG }}
 
       - name: Setup Docker BuildX
         id: setup-buildx
