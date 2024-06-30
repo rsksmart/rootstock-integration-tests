@@ -47,5 +47,5 @@ else
 fi
 echo -e "$MESSAGE"
 
-echo "status=$STATUS" >> "$GITHUB_OUTPUT"
-echo "message=$MESSAGE" >> "$GITHUB_OUTPUT"
+echo "status=$STATUS" >> $env:GITHUB_OUTPUT
+echo "message=$MESSAGE" >> $env:GITHUB_OUTPUT
