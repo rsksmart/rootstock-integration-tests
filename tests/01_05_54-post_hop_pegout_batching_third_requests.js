@@ -5,26 +5,33 @@ const { bitcoin, rsk, pegUtils } = require('peglib');
 const NETWORK = bitcoin.networks.testnet;
 const CustomError = require('../lib/CustomError');
 const rskUtilsLegacy = require('../lib/rsk-utils-legacy');
-const _2wpUtilsLegacy = require('../lib/2wp-utils-legacy');
-const { sequentialPromise, wait } = require('../lib/utils');
+const { wait } = require('../lib/utils');
 const pegAssertions = require('../lib/assertions/2wp');
 const { NUMBER_OF_BLOCKS_BTW_PEGOUTS } = require('../lib/constants');
 const { getBridgeState } = require('@rsksmart/bridge-state-data-parser');
 const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
+const _2wpUtils = require('../lib/2wp-utils');
 
-let currentBlockNumber;
-let test;
-let federationAddress;
-let assertCallToBridgeMethodsRunner;
-let pegoutCount = 0;
-let rskClients;
-let rskClient;
-let btcClient;
-let pegClient;
-let rskTxHelpers;
+/**
+ * Takes the blockchain to the required state for this test file to run in isolation.
+ */
+const fulfillRequirementsToRunAsSingleTestFile = async () => {
+    await activateFork(Runners.common.forks.hop401);
+};
 
 describe('Pegout Batching - Execute Pegout Transaction And Call New Bridge Methods', function () {
+
+    let currentBlockNumber;
+    let test;
+    let federationAddress;
+    let assertCallToBridgeMethodsRunner;
+    let pegoutCount = 0;
+    let rskClients;
+    let rskClient;
+    let btcClient;
+    let pegClient;
+    let rskTxHelpers;
 
     before(async () => {
         rskClients = Runners.hosts.federates.map(federate => rsk.getClient(federate.host));
@@ -44,15 +51,10 @@ describe('Pegout Batching - Execute Pegout Transaction And Call New Bridge Metho
         federationAddress = await rskClient.rsk.bridge.methods.getFederationAddress().call();
         await btcClient.importAddress(federationAddress, 'federations');
 
-        // Mine a few rsk blocks to prevent being at the beginning of the chain,
-        // which could trigger border cases we're not interested in
-        await sequentialPromise(10, () => rskUtils.mineAndSync(rskTxHelpers));
+        if(process.env.RUNNING_SINGLE_TEST_FILE) {
+            await fulfillRequirementsToRunAsSingleTestFile();
+        }
 
-        // Update the bridge to sync btc blockchains
-        await rskClient.fed.updateBridge();
-        await rskUtils.mineAndSync(rskTxHelpers);
-
-        return federationAddress;
     });
 
     describe('Corner cases', function () {
@@ -77,10 +79,10 @@ describe('Pegout Batching - Execute Pegout Transaction And Call New Bridge Metho
                 }
                 await test.assertLock(addresses, outputs);
 
-                await _2wpUtilsLegacy.createPegoutRequest(rskClient, pegClient, 1);
+                await _2wpUtils.createPegoutRequest(rskTxHelper, 1);
                 pegoutCount++;
 
-                await _2wpUtilsLegacy.createPegoutRequest(rskClient, pegClient, 1, 2);
+                await _2wpUtils.createPegoutRequest(rskTxHelper, 1, 2);
                 pegoutCount += 2;
                 
                 const nextPegoutCreationBlockNumber = await rskClient.rsk.bridge.methods.getNextPegoutCreationBlockNumber().call();
@@ -106,7 +108,7 @@ describe('Pegout Batching - Execute Pegout Transaction And Call New Bridge Metho
                 const bridgeState = await getBridgeState(rskClient);
                 const utxosListSum = bridgeState.activeFederationUtxos.reduce((previousValue, currentValue) => previousValue + currentValue.valueInSatoshis, 0);
 
-                await _2wpUtilsLegacy.createPegoutRequest(rskClient, pegClient, bitcoin.satoshisToBtc(utxosListSum) + 1);
+                await _2wpUtils.createPegoutRequest(rskTxHelper, bitcoin.satoshisToBtc(utxosListSum) + 1);
                 pegoutCount++;
 
                 await rskUtilsLegacy.increaseBlockToNextPegoutHeight(rskClient);
