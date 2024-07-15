@@ -69,6 +69,19 @@ const assertLockCreatingWhiteListAddress = async (rskTxHelper, btcTxHelper, useU
     expect(finalRskAddressBalanceInWeis).to.equal(initialRskAddressBalanceInWeis + peginValueInWeis);
 };
 
+const assertNonMatchedAmountsExist = (testCaseAmounts, peginBtcTx, returnTx) => {
+  const peginBtcTxHash = peginBtcTx.getHash(false).reverse().toString('hex');
+  let nonMatchedAmounts = testCaseAmounts.slice(0);
+  returnTx.ins.forEach((txInput) => {
+    const inputTxHash = txInput.hash.reverse().toString('hex');
+    expect(inputTxHash).to.equal(peginBtcTxHash);
+    const spentUtxo = peginBtcTx.outs[txInput.index];
+    const amountInBtc = Number(satoshisToBtc(spentUtxo.value));
+    nonMatchedAmounts = nonMatchedAmounts.filter(a => a !== amountInBtc);
+  });
+  expect(nonMatchedAmounts.length).to.equal(0);
+}
+
 describe('Lock whitelisting', () => {
     before(async () => {
       if(process.env.RUNNING_SINGLE_TEST_FILE) {
@@ -197,17 +210,7 @@ describe('Lock whitelisting', () => {
           expect(returnTx.ins.length).to.equal(peginBtcTx.outs.length - 1); // Don't consider the change output
           expect(returnTx.ins.length).to.equal(testCaseAmounts.length); // Don't consider the change output
 
-          let nonMatchedAmounts = testCaseAmounts.slice(0);
-          
-          returnTx.ins.forEach((txInput) => {
-            const inputTxHash = txInput.hash.reverse().toString('hex');
-            expect(inputTxHash).to.equal(peginBtcTxHash);
-            const spentUtxo = peginBtcTx.outs[txInput.index];
-            const amountInBtc = Number(satoshisToBtc(spentUtxo.value));
-            nonMatchedAmounts = nonMatchedAmounts.filter(a => a !== amountInBtc);
-          });
-
-          expect(nonMatchedAmounts.length).to.equal(0);
+          assertNonMatchedAmountsExist(testCaseAmounts, peginBtcTx, returnTx);
       });
     });
 
