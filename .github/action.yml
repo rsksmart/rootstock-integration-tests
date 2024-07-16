@@ -7,8 +7,8 @@ inputs:
     description: 'The rskj branch to checkout'
     required: false
     default: 'master'
-  federator-branch:
-    description: 'The federate-node branch to checkout'
+  powpeg-node-branch:
+    description: 'The powpeg-node branch to checkout'
     required: false
     default: 'master'
   rit-branch:
@@ -31,6 +31,6 @@ runs:
   image: ./images/Dockerfile
   env:
     RSKJ_BRANCH: ${{ inputs.rskj-branch }}
-    FEDERATOR_BRANCH: ${{ inputs.federator-branch }}
+    POWPEG_NODE_BRANCH: ${{ inputs.powpeg-node-branch }}
     RIT_BRANCH: ${{ inputs.rit-branch }}
     RIT_LOG_LEVEL: ${{ inputs.rit-log-level }}

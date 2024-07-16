@@ -57,14 +57,6 @@ jobs:
             -v "$GITHUB_OUTPUT:/github-output" \
             --rm ${{ env.TEST_TAG }}
 
-      - name: Build the RIT Action Container Image
-        uses: docker/build-push-action@v6
-        with:
-          context: .github/images
-          tags: ${{ env.LATEST_TAG }}
-          labels: ${{ steps.meta.outputs.labels }}
-          load: true
-
       - name: GitHub container registry login
         uses: docker/login-action@v3
         with:
@@ -72,9 +64,14 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push Images
-        run: |
-          docker push ${{ env.LATEST_TAG }}
+      - name: Build the RIT Action Container Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .github/images
+          tags: ${{ env.LATEST_TAG }}
+          labels: ${{ steps.meta.outputs.labels }}
+          load: true
+          push: true
 
   test-rit-action:
     needs:  build-push-rit-action-image
@@ -89,13 +86,13 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-#
+
       - name: Test RIT Action
         id: test-rit-action
         uses: docker://ghcr.io/rsksmart/rootstock-integration-tests/rit:latest
         with:
           rskj-branch: master
-          federator-branch: master
+          powpeg-node-branch: master
 
       - name: Print RIT Status and Message
         id: output
