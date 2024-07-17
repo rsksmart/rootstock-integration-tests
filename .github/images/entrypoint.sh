@@ -46,8 +46,8 @@ else
 fi
 echo -e "$MESSAGE"
 
-echo "status=${STATUS}" >> ${GITHUB_OUTPUT}
-echo "message=${MESSAGE}" >> ${GITHUB_OUTPUT}
+echo "status=${STATUS}" >> "${GITHUB_OUTPUT}"
+echo "message=${MESSAGE}" >> "${GITHUB_OUTPUT}"
 
 if [ $STATUS -ne 0 ]; then
   exit 1

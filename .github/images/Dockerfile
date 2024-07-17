@@ -4,7 +4,7 @@ LABEL Description="Custom RSK node image to execute Rootstock Integration Tests"
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-    wget gnupg2 curl git ca-certificates mocha  \
+    wget gnupg2 curl git ca-certificates mocha \
     && apt clean
 
 # -- nodeJs ---------------------------------------------------------
@@ -41,10 +41,6 @@ RUN cd /tmp \
     && rm -v /opt/bitcoin/bin/test_bitcoin /opt/bitcoin/bin/bitcoin-qt \
     && ln -sv /opt/bitcoin/bin/* /usr/local/bin
 
-# -- Create a non-root user and group --
-RUN groupadd -r rituser && useradd -r -g rituser -d /usr/src/ rituser
-RUN mkdir -p /usr/src/ && chown -R rituser:rituser /usr/src/
-
 # -- configure entrypoint to run RIT--------------------------------------------
 
 RUN mkdir -p /usr/src/logbacks
@@ -60,11 +56,7 @@ RUN chmod +x /usr/src/entrypoint.sh  \
     && chmod +x /usr/src/configure_gradle_powpeg.sh \
     && chmod +x /usr/src/configure_rit_locally.sh \
     && mkdir -p /usr/src/bitcoindata \
-    && chmod -R 755 /usr/src/bitcoindata \
-    && chown -R rituser:rituser /usr/src/
-
-# -- Switch to non-root user --
-USER rituser
+    && chmod -R 755 /usr/src/bitcoindata
 
 ENTRYPOINT ["/usr/src/entrypoint.sh"]
 
