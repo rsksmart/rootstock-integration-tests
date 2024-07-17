@@ -5,11 +5,11 @@ author: 'Rootstock Labs'
 inputs:
   rskj-branch:
     description: 'The rskj branch to checkout'
-    required: false
+    required: true
     default: 'master'
   powpeg-node-branch:
     description: 'The powpeg-node branch to checkout'
-    required: false
+    required: true
     default: 'master'
   rit-branch:
     description: 'The rootstock-integration-tests branch to checkout'
