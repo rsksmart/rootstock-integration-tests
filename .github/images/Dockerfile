@@ -26,10 +26,9 @@ ENV JAVA_VERSION 11
 
 RUN apt-get  -y install "openjdk-$JAVA_VERSION-jdk"
 
-ENV JAVA_HOME="/usr/lib/jvm/java-$JAVA_VERSION-openjdk-amd64" \
-    PATH="$JAVA_HOME:$PATH"
+ENV JAVA_HOME="/usr/lib/jvm/java-$JAVA_VERSION-openjdk-amd64"
 
-RUN export JAVA_HOME=$JAVA_HOME  \
+RUN export JAVA_HOME="$JAVA_HOME"  \
     && export PATH="$JAVA_HOME:$PATH"
 
 # -- bitcoind ---------------------------------------------------------
@@ -41,6 +40,10 @@ RUN cd /tmp \
     && mv  /opt/bitcoin-${BITCOIN_VERSION} /opt/bitcoin \
     && rm -v /opt/bitcoin/bin/test_bitcoin /opt/bitcoin/bin/bitcoin-qt \
     && ln -sv /opt/bitcoin/bin/* /usr/local/bin
+
+# -- Create a non-root user and group --
+RUN groupadd -r rituser && useradd -r -g rituser -d /usr/src/ rituser
+RUN mkdir -p /usr/src/ && chown -R rituser:rituser /usr/src/
 
 # -- configure entrypoint to run RIT--------------------------------------------
 
@@ -54,11 +57,14 @@ COPY rit-local-configs/logbacks/* /usr/src/logbacks/
 COPY scripts/* /usr/src/
 
 RUN chmod +x /usr/src/entrypoint.sh  \
-    && chmod +x /usr/src/configure_gradle_federator.sh \
+    && chmod +x /usr/src/configure_gradle_powpeg.sh \
     && chmod +x /usr/src/configure_rit_locally.sh \
     && mkdir -p /usr/src/bitcoindata \
     && chmod -R 755 /usr/src/bitcoindata \
-    && ls -la /usr/src
+    && chown -R rituser:rituser /usr/src/
+
+# -- Switch to non-root user --
+USER rituser
 
 ENTRYPOINT ["/usr/src/entrypoint.sh"]
 

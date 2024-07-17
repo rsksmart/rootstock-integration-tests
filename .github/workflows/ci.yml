@@ -52,7 +52,7 @@ jobs:
         run: |
           docker run  \
             --env RSKJ_BRANCH="master" \
-            --env FEDERATOR_BRANCH="master" \
+            --env POWPEG_NODE_BRANCH="master" \
             --env "GITHUB_OUTPUT=/github-output" \
             -v "$GITHUB_OUTPUT:/github-output" \
             --rm ${{ env.TEST_TAG }}

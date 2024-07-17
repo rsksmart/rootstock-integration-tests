@@ -12,11 +12,11 @@ chmod +x ./configure.sh && chmod +x gradlew
 echo -e  "\n\n--------- Starting the configuration of powpeg ---------\n\n"
 cd /usr/src/
 git clone https://github.com/rsksmart/powpeg-node.git powpeg
-cp configure_gradle_federator.sh powpeg
-cd powpeg && git checkout "${INPUT_FEDERATOR_BRANCH}"
+cp configure_gradle_powpeg.sh powpeg
+cd powpeg && git checkout "${INPUT_POWPEG_NODE_BRANCH}"
 chmod +x ./configure.sh && chmod +x gradlew
-FED_VERSION=$(bash configure_gradle_federator.sh)
-echo "FED_VERSION=$FED_VERSION"
+POWPEG_VERSION=$(bash configure_gradle_powpeg.sh)
+echo "POWPEG_VERSION=$POWPEG_VERSION"
 ./configure.sh
 ./gradlew  --info --no-daemon clean build -x test
 
@@ -30,7 +30,7 @@ cd rit
 git checkout "${INPUT_RIT_BRANCH}"
 chmod +x ./configure.sh
 ./configure.sh
-./configure_rit_locally.sh "${FED_VERSION}"
+./configure_rit_locally.sh "${POWPEG_VERSION}"
 export LOG_LEVEL="${INPUT_RIT_LOG_LEVEL}"
 
 echo -e "\n\n--------- Executing Rootstock Integration Tests ---------\n\n"
@@ -48,3 +48,8 @@ echo -e "$MESSAGE"
 
 echo "status=${STATUS}" >>"${GITHUB_OUTPUT}"
 echo "message=${MESSAGE}" >>"${GITHUB_OUTPUT}"
+
+if [ $STATUS -ne 0 ]; then
+  exit 1
+fi
+exit 0
