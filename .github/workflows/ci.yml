@@ -51,8 +51,10 @@ jobs:
         id: test-container
         run: |
           docker run  \
-            --env RSKJ_BRANCH="master" \
-            --env POWPEG_NODE_BRANCH="master" \
+            --env INPUT_RSKJ_BRANCH="master" \
+            --env INPUT_POWPEG_NODE_BRANCH="master" \
+            --env INPUT_RIT_BRANCH="main" \
+            --env INPUT_RIT_LOG_LEVEL="info" \
             --env "GITHUB_OUTPUT=/github-output" \
             -v "$GITHUB_OUTPUT:/github-output" \
             --rm ${{ env.TEST_TAG }}
