@@ -43,21 +43,26 @@ jobs:
       - name: Build and export locally Docker
         uses: docker/build-push-action@v6
         with:
-          context: .github/images
+          context: .github/image
           load: true
           tags: ${{ env.TEST_TAG }}
 
       - name: Test the RIT Container Action
         id: test-container
+        env:
+          INPUT_RSKJ_BRANCH: master
+          INPUT_POWPEG_NODE_BRANCH: master
+          INPUT_RIT_BRANCH: main
+          INPUT_RIT_LOG_LEVEL: info
         run: |
-          docker run  \
-            --env INPUT_RSKJ_BRANCH="master" \
-            --env INPUT_POWPEG_NODE_BRANCH="master" \
-            --env INPUT_RIT_BRANCH="main" \
-            --env INPUT_RIT_LOG_LEVEL="info" \
-            --env GITHUB_OUTPUT="/github-output" \
-            -v "$GITHUB_OUTPUT:/github-output" \
-            --rm ${{ env.TEST_TAG }}
+          docker run \
+          --env GITHUB_OUTPUT="/github-output"  \
+          --env INPUT_RSKJ_BRANCH="${{ env.INPUT_RSKJ_BRANCH }}"  \
+          --env INPUT_POWPEG_NODE_BRANCH="${{ env.INPUT_POWPEG_NODE_BRANCH }}"  \
+          --env INPUT_RIT_BRANCH="${{ env.INPUT_RIT_BRANCH }}"  \
+          --env INPUT_RIT_LOG_LEVEL="${{ env.INPUT_RIT_LOG_LEVEL }}" \
+          -v "$GITHUB_OUTPUT:/github-output"  \
+          --rm ${{ env.TEST_TAG }} 
 
       - name: GitHub container registry login
         uses: docker/login-action@v3
@@ -69,7 +74,7 @@ jobs:
       - name: Build the RIT Action Container Image
         uses: docker/build-push-action@v6
         with:
-          context: .github/images
+          context: .github/image
           tags: ${{ env.LATEST_TAG }}
           labels: ${{ steps.meta.outputs.labels }}
           load: true
@@ -82,16 +87,13 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      - name: GitHub container registry login
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v4
 
       - name: Test RIT Action
         id: test-rit-action
-        uses: docker://ghcr.io/rsksmart/rootstock-integration-tests/rit:latest
+        uses: .github/
         with:
           rskj-branch: master
           powpeg-node-branch: master

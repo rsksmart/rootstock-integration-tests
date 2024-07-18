@@ -30,7 +30,7 @@ runs:
   using: docker
   image: ./images/Dockerfile
   env:
-    RSKJ_BRANCH: ${{ inputs.rskj-branch }}
-    POWPEG_NODE_BRANCH: ${{ inputs.powpeg-node-branch }}
-    RIT_BRANCH: ${{ inputs.rit-branch }}
-    RIT_LOG_LEVEL: ${{ inputs.rit-log-level }}
+    INPUT_RSKJ_BRANCH: ${{ inputs.rskj-branch }}
+    INPUT_POWPEG_NODE_BRANCH: ${{ inputs.powpeg-node-branch }}
+    INPUT_RIT_BRANCH: ${{ inputs.rit-branch }}
+    INPUT_RIT_LOG_LEVEL: ${{ inputs.rit-log-level }}
