@@ -28,7 +28,7 @@ chmod +x ./configure.sh && chmod +x gradlew
 POWPEG_VERSION=$(bash configure_gradle_powpeg.sh)
 echo "POWPEG_VERSION=$POWPEG_VERSION"
 ./configure.sh
-#./gradlew  --info --no-daemon clean build -x test
+./gradlew  --info --no-daemon clean build -x test
 
 echo -e "\n\n--------- Starting the configuration of RIT ---------\n\n"
 cd /usr/src/
@@ -45,7 +45,7 @@ export LOG_LEVEL="$LOG_LEVEL"
 
 echo -e "\n\n--------- Executing Rootstock Integration Tests ---------\n\n"
 npm install -y
-#npm run test-fail-fast
+npm run test-fail-fast
 STATUS=$?
 
 echo -e "\n\n--------- RIT Tests Result ---------\n\n"

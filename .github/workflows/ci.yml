@@ -14,8 +14,8 @@ env:
   LATEST_TAG: ghcr.io/rsksmart/${{ github.event.repository.name }}/rit
 
 jobs:
-  build-push-rit-action-image:
-    name: Test  RIT Action docker image
+  build-push-rit-action-container-action:
+    name: Test  RIT Action docker container-action
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
@@ -43,7 +43,7 @@ jobs:
       - name: Build and export locally Docker
         uses: docker/build-push-action@v6
         with:
-          context: .github/image
+          context: container-action/
           load: true
           tags: ${{ env.TEST_TAG }}
 
@@ -74,14 +74,14 @@ jobs:
       - name: Build the RIT Action Container Image
         uses: docker/build-push-action@v6
         with:
-          context: .github/image
+          context: container-action/
           tags: ${{ env.LATEST_TAG }}
           labels: ${{ steps.meta.outputs.labels }}
           load: true
           push: true
 
   test-rit-action:
-    needs:  build-push-rit-action-image
+    needs:  build-push-rit-action-container-action
     name: GitHub Actions Test
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -93,7 +93,7 @@ jobs:
 
       - name: Test RIT Action
         id: test-rit-action
-        uses: .github/
+        uses: ./container-action/
         with:
           rskj-branch: master
           powpeg-node-branch: master

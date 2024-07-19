@@ -51,7 +51,7 @@ The output message of the integration tests. It will be:
 ## Example usage
 
 ```yaml
-uses: docker://ghcr.io/rsksmart/rootstock-integration-tests/rit:latest
+uses: rootstock-integration-tests@v1
 with:
   rskj-branch: master
   powpeg-node-branch: master
