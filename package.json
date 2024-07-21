@@ -5,9 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha --timeout 600000",
-    "test-fail-fast": "mocha -b --timeout 600000",
-    "run-tests-multiple-times": "node multipleTestExecutionsRunner.js",
-    "run-single-test-file": "node singleTestFileRunner.js"
+    "test-fail-fast": "mocha -b --timeout 600000"
   },
   "author": "",
   "license": "GPL3",
