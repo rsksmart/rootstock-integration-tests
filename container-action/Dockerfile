@@ -22,7 +22,7 @@ ENV NODE_PATH $NVM_DIR/$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/$NODE_VERSION/bin:$PATH
 
 # -- java ---------------------------------------------------------
-ENV JAVA_VERSION 11
+ENV JAVA_VERSION 17
 
 RUN apt-get  -y install "openjdk-$JAVA_VERSION-jdk"
 
