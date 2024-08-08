@@ -4,7 +4,7 @@ LABEL Description="Custom RSK node image to execute Rootstock Integration Tests"
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-    wget gnupg2 curl git ca-certificates mocha \
+    ca-certificates curl git  gnupg2 mocha wget \
     && apt clean
 
 # -- nodeJs ---------------------------------------------------------
