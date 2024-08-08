@@ -6,7 +6,7 @@ if [ $# -ne 1 ] || [ -z "${1:-}" ]; then
 fi
 POWPEG_VERSION=$1
 shift
-echo "POWPEG_VERSION received as parameter: $1"
+echo "POWPEG_VERSION received as parameter: $POWPEG_VERSION"
 
 read -r -d '' SETTINGS_RIT <<EOF
 POWPEG_NODE_JAR_PATH=/usr/src/powpeg/build/libs/federate-node-$POWPEG_VERSION-all.jar

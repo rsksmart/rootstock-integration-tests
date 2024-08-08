@@ -28,9 +28,6 @@ RUN apt-get  -y install "openjdk-$JAVA_VERSION-jdk"
 
 ENV JAVA_HOME="/usr/lib/jvm/java-$JAVA_VERSION-openjdk-amd64"
 
-RUN export JAVA_HOME="$JAVA_HOME"  \
-    && export PATH="$JAVA_HOME:$PATH"
-
 # -- bitcoind ---------------------------------------------------------
 ENV BITCOIN_VERSION 0.18.1
 
