@@ -15,9 +15,6 @@
         <encoder>
             <pattern>%date{yyyy-MM-dd-HH:mm:ss.SSSS} %p [%c{1}]  %m%n</pattern>
         </encoder>
-        <!-- <filter class="ch.qos.rit-local-configs.classic.filter.ThresholdFilter">
-            <level>DEBUG</level>
-        </filter> -->
     </appender>
 
     <appender name="FILE-AUDIT"
@@ -104,7 +101,6 @@
     <logger name="co.rsk.peg.BridgeBtcWallet" level="DEBUG"/>
     <logger name="co.rsk.peg.BridgeStorageProvider" level="DEBUG"/>
     <logger name="co.rsk.peg.ReleaseTransactionSet" level="TRACE"/>
-    <!-- <logger name="co.rsk.pcc.NativeContract" level="TRACE"/> -->
 
     <root level="INFO">
         <appender-ref ref="stdout"/>

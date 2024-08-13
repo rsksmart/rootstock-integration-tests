@@ -14,8 +14,9 @@ That way, we will add steps on each repository to run the integration tests with
 No matter if it's a tag, a branch or a specific commit.
 
 ## Inputs
-By default, all the inputs are pointed to the `master/main` branch of the repositories. But, ideally, we will adapt
-the action to receive the branches  received to be the one in a branch or tag that we want to test.
+By default, all the inputs are pointed to the `master/main` branch of the repositories. But, ideally, the action step
+should receive the branches, commit or tag that should be tested by the pipeline execution. If we want to test
+a specific tag from `powpeg-node`, the input parameter `powpeg-node-branch` should  be the tag number `6.4.0.0-rc` for example.
 
 ### `rskj-branch`
 
@@ -27,8 +28,8 @@ The powpeg-node branch to checkout. If no branch or tag passed, it will be used 
 
 ### `rit-branch`
 
-**Optional** The rootstock-integration-tests branch to checkout. This one it's optional, because it will be
-very unlikely that we need to use a different branch for the rootstock-integration-test. It's offered the possibility
+**Optional** The rootstock-integration-tests branch to checkout. This one it's optional, if  it's needed
+to use a different branch for the rootstock-integration-test. It's offered the possibility
 to use a different one, but the default and most frequently used, should be `main`.
 
 ### `rit-log-level`
