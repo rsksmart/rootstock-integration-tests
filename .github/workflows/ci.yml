@@ -1,0 +1,127 @@
+name: RIT Action Continuous Integration Test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+env:
+  TEST_TAG:  ${{ github.event.repository.name }}/rit:test
+  LATEST_TAG: ghcr.io/rsksmart/${{ github.event.repository.name }}/rit
+
+jobs:
+  build-push-rit-action-container-action:
+    name: Test  RIT Action docker container-action
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v4
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.LATEST_TAG }}
+            ${{ env.TEST_TAG }}
+
+      - name: Setup Docker BuildX
+        id: setup-buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          install: true
+          driver-opts: network=host
+          platforms: linux/amd64
+
+      - name: Build and export locally Docker
+        uses: docker/build-push-action@v6
+        with:
+          context: container-action/
+          load: true
+          tags: ${{ env.TEST_TAG }}
+
+      - name: Test the RIT Container Action
+        id: test-container
+        env:
+          INPUT_RSKJ_BRANCH: master
+          INPUT_POWPEG_NODE_BRANCH: master
+          INPUT_RIT_BRANCH: main
+          INPUT_RIT_LOG_LEVEL: info
+        run: |
+          docker run \
+          --env GITHUB_OUTPUT="/github-output"  \
+          --env INPUT_RSKJ_BRANCH="${{ env.INPUT_RSKJ_BRANCH }}"  \
+          --env INPUT_POWPEG_NODE_BRANCH="${{ env.INPUT_POWPEG_NODE_BRANCH }}"  \
+          --env INPUT_RIT_BRANCH="${{ env.INPUT_RIT_BRANCH }}"  \
+          --env INPUT_RIT_LOG_LEVEL="${{ env.INPUT_RIT_LOG_LEVEL }}" \
+          -v "$GITHUB_OUTPUT:/github-output"  \
+          --rm ${{ env.TEST_TAG }} 
+
+      - name: GitHub container registry login
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build the RIT Action Container Image
+        uses: docker/build-push-action@v6
+        with:
+          context: container-action/
+          tags: ${{ env.LATEST_TAG }}
+          labels: ${{ steps.meta.outputs.labels }}
+          load: true
+          push: true
+
+  test-rit-action:
+    needs:  build-push-rit-action-container-action
+    name: GitHub Actions Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v4
+
+      - name: Test RIT Action
+        id: test-rit-action
+        uses: ./container-action/
+        with:
+          rskj-branch: master
+          powpeg-node-branch: master
+
+      - name: Print RIT Status and Message
+        id: output
+        run: |
+          echo "RIT Status = ${{ steps.test-rit-action.outputs.status }}"
+          echo "RIT Message = ${{ steps.test-rit-action.outputs.message }}"
+
+  publish-rit-action-tag:
+      needs:  test-rit-action
+      name: Publish RIT Action tag
+      runs-on: ubuntu-latest
+      timeout-minutes: 60
+      if: github.ref == 'refs/heads/main'
+
+      steps:
+          - name: Checkout
+            id: checkout
+            uses: actions/checkout@v4
+
+          - name: Create GitHub Release
+            uses: actions/create-release@v1
+            env:
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            with:
+              tag_name: rootstock-integration-tests@v1
+              release_name: Release rootstock-integration-tests@v1
+              draft: false
+              prerelease: false

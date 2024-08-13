@@ -1,0 +1,36 @@
+name: 'Rootstock Integration Tests Action'
+description: 'This action provides a containerized environment for running integration tests on Rootstock.'
+author: 'Rootstock Labs'
+
+inputs:
+  rskj-branch:
+    description: 'The rskj branch to checkout'
+    required: true
+    default: 'master'
+  powpeg-node-branch:
+    description: 'The powpeg-node branch to checkout'
+    required: true
+    default: 'master'
+  rit-branch:
+    description: 'The rootstock-integration-tests branch to checkout'
+    required: false
+    default: 'main'
+  rit-log-level:
+    description: 'Log level for the rootstock-integration-tests'
+    required: false
+    default: 'info'
+
+outputs:
+  status:
+    description: 'The status of the integration tests'
+  message:
+    description: 'The output message of the integration tests'
+
+runs:
+  using: docker
+  image: Dockerfile
+  env:
+    INPUT_RSKJ_BRANCH: ${{ inputs.rskj-branch }}
+    INPUT_POWPEG_NODE_BRANCH: ${{ inputs.powpeg-node-branch }}
+    INPUT_RIT_BRANCH: ${{ inputs.rit-branch }}
+    INPUT_RIT_LOG_LEVEL: ${{ inputs.rit-log-level }}
