@@ -52,7 +52,7 @@ The output message of the integration tests. It will be:
 ## Example usage
 
 ```yaml
-uses: rootstock-integration-tests@v1
+uses: rsksmart/rootstock-integration-tests@v1
 with:
   rskj-branch: master
   powpeg-node-branch: master

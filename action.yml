@@ -28,7 +28,7 @@ outputs:
 
 runs:
   using: docker
-  image: Dockerfile
+  image: ./container-action/Dockerfile
   env:
     INPUT_RSKJ_BRANCH: ${{ inputs.rskj-branch }}
     INPUT_POWPEG_NODE_BRANCH: ${{ inputs.powpeg-node-branch }}

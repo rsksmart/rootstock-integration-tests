@@ -93,7 +93,7 @@ jobs:
 
       - name: Test RIT Action
         id: test-rit-action
-        uses: ./container-action/
+        uses: ./
         with:
           rskj-branch: master
           powpeg-node-branch: master
@@ -111,17 +111,16 @@ jobs:
       timeout-minutes: 60
       if: github.ref == 'refs/heads/main'
       permissions:
+        contents:  write
         packages: write
-        contents: write
-      steps:
-          - name: Checkout
-            id: checkout
-            uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
-          - name: Create a Release
-            uses: elgohr/Github-Release-Action@v5
-            env:
-              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            with:
-              tag_name: rootstock-integration-tests@v1
-              title: Release rootstock-integration-tests@v1
+      steps:
+        - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+          with:
+            token: ${{ secrets.GITHUB_TOKEN }}
+        - name: Publish new version
+          run: |
+            git config --global user.email "no-reply@rootstocklabs.com"
+            git config --global user.name "RIT Release Automation"
+            git tag -fa v1 -m "Updating rootstock-integration-tests container action v1"
+            git push origin v1 --force
