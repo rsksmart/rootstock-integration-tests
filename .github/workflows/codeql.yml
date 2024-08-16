@@ -2,9 +2,9 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ "master", main" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "master", "main" ]
+    branches: [ "main" ]
   schedule:
     - cron: "0 0 * * *"
 
@@ -28,10 +28,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-
-      - name: Before Index (java)
-        if: ${{ matrix.language == 'java' }}
-        run: ./configure.sh
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@5973e2313ac1b9aaedb1f911a1e91228cde07d28 # v2.26.0
