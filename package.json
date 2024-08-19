@@ -45,7 +45,7 @@
     "precompiled-wasabi100": "npm:@rsksmart/rsk-precompiled-abis@^2.0.0-WASABI",
     "precompiled-orchid": "npm:@rsksmart/rsk-precompiled-abis@^1.0.0-ORCHID",
     "rsk-transaction-helper": "git+https://github.com/rsksmart/rootstock-transaction-helper#v3.1.0",
-    "solc": "^0.7.5",
+    "solc": "^0.8.26",
     "stream-line-wrapper": "^0.1.1",
     "tmp": "0.0.33",
     "wait-for-port": "0.0.2"
