@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: read
-  packages: write
 env:
   TEST_TAG:  ${{ github.event.repository.name }}/rit:test
   LATEST_TAG: ghcr.io/rsksmart/${{ github.event.repository.name }}/rit
@@ -108,6 +107,8 @@ jobs:
       needs:  test-rit-action
       name: Publish RIT Action tag
       runs-on: ubuntu-latest
+      permissions:
+          packages: write
       timeout-minutes: 60
       if: github.ref == 'refs/heads/main'
 
