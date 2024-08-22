@@ -44,7 +44,7 @@ chmod +x ./configure.sh
 export LOG_LEVEL="$LOG_LEVEL"
 
 echo -e "\n\n--------- Executing Rootstock Integration Tests ---------\n\n"
-npm install -y
+npm install -y package.json
 npm run test-fail-fast
 STATUS=$?
 
