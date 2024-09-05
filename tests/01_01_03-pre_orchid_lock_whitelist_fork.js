@@ -14,8 +14,9 @@ const WHITELIST_ADDRESSES = {
     'mnr8aGuc3tZb63gyssWssAz98LEojwTs9b' : 100000000000
   };
 
+// Skipped due to 'running with all forks active' changes.
 
-describe('RFS-170 test before fork', () => {
+describe.skip('RFS-170 test before fork', () => {
     const RFS_170_ACTIVATION_BLOCK = Runners.common.forks.orchid.activationHeight;
     
     before(async () => {

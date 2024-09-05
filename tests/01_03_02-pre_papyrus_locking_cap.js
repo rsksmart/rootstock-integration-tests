@@ -11,7 +11,9 @@ const CustomError = require('../lib/CustomError');
 
 const NETWORK = bitcoin.networks.testnet;
 
-describe('Calling locking cap methods before papyrus200', function() {
+// Skipped due to 'running with all forks active' changes.
+
+describe.skip('Calling locking cap methods before papyrus200', function() {
   
     before(() => {
       rskClient = rsk.getClient(Runners.hosts.federate.host);

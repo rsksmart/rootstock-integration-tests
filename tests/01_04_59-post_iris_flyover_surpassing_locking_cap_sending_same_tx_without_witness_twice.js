@@ -18,7 +18,10 @@ const fulfillRequirementsToRunAsSingleTestFile = async () => {
   await activateFork(Runners.common.forks.iris300);
 };
 
-describe('Executing registerFastBtcTransaction post hop - surpassing locking cap sending same tx without witness twice', () => {
+// Skipped due to 'running with all forks active' changes.
+// No need for locking cap tests now.
+
+describe.skip('Executing registerFastBtcTransaction post hop - surpassing locking cap sending same tx without witness twice', () => {
 
   let rskTxHelpers;
   let rskTxHelper;

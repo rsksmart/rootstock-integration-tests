@@ -11,7 +11,9 @@ const { ensure0x } = require('../lib/utils');
 let btcTxHelper;
 let rskTxHelpers;
 
-describe('pegout events improvements - pre fingerroot', () => {
+// Skipped due to 'running with all forks active' changes.
+
+describe.skip('pegout events improvements - pre fingerroot', () => {
 
   before(async () => {
     btcTxHelper = getBtcClient();

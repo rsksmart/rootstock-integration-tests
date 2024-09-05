@@ -16,6 +16,8 @@ let currentBlockNumber;
 let assertCallToBridgeMethodsRunner;
 let rskTxHelpers;
 
+// If the previous test file is removed, should we rename this one to `01_05_53-post_hop_pegout_batching_requests.js`?
+
 describe('Pegout Batching - Execute Pegout Transaction And Call New Bridge Methods', function () {
 
     before(() => {
@@ -32,7 +34,8 @@ describe('Pegout Batching - Execute Pegout Transaction And Call New Bridge Metho
         rskTxHelpers = getRskTransactionHelpers();
     });
 
-    it('Execute Pegout Transaction and Call new bridge methods after successful pegout transaction', async () => {
+    // This is part of the previous test file. It is expecting pegouts created by the previous tests, which are skipped, so skipping this.
+    it.skip('Execute Pegout Transaction and Call new bridge methods after successful pegout transaction', async () => {
         try {
             await rskUtilsLegacy.triggerPegoutEvent(rskClients, async () => currentBlockNumber = await rskClient.eth.getBlockNumber());
 

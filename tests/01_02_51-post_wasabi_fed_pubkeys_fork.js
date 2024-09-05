@@ -21,6 +21,9 @@ const fulfillRequirementsToRunAsSingleTestFile = async () => {
     await activateFork(Runners.common.forks.wasabi100);
 };
 
+// Skipped due to 'running with all forks active' changes.
+// TODO: should this test file be named '01_02_51-bridge-fed-public-keys-management-methods' or something like that after 'running with all forks active' changes? 
+
 describe('Multiple federation member keys test after fork', () => {
     
     const ACTIVATION_BLOCK = Runners.common.forks.wasabi100.activationHeight;
@@ -34,7 +37,8 @@ describe('Multiple federation member keys test after fork', () => {
         bridge = getBridge(rskTxHelper.getClient(), await getLatestActiveForkName());
     });
 
-    it(`should be at a height higher than ${ACTIVATION_BLOCK}`, async () => {
+    // This is not doing anything now. Can be deleted.
+    it.skip(`should be at a height higher than ${ACTIVATION_BLOCK}`, async () => {
         try{
             const blockNum = await rskTxHelper.getBlockNumber();
             expect(blockNum > ACTIVATION_BLOCK).to.be.true;

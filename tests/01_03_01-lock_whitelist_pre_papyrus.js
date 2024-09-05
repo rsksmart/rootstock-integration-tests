@@ -82,7 +82,11 @@ const assertNonMatchedAmountsExist = (testCaseAmounts, peginBtcTx, returnTx) => 
   expect(nonMatchedAmounts.length).to.equal(0);
 }
 
-describe('Lock whitelisting', () => {
+
+// Skipped due to 'running with all forks active' changes.
+// Should we delete this whole file?
+
+describe.skip('Lock whitelisting', () => {
     before(async () => {
       if(process.env.RUNNING_SINGLE_TEST_FILE) {
           await fulfillRequirementsToRunAsSingleTestFile();

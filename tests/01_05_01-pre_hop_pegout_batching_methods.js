@@ -6,7 +6,9 @@ const peglib = require('peglib');
 const rsk = peglib.rsk;
 const CustomError = require('../lib/CustomError');
 
-describe('Pegout Batching - Calling new bridge methods before hop400 activation', function () {
+// Skipped due to 'running with all forks active' changes.
+
+describe.skip('Pegout Batching - Calling new bridge methods before hop400 activation', function () {
 
     before(() => {
         rskClient = rsk.getClient(Runners.hosts.federate.host);

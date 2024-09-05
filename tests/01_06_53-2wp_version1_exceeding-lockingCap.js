@@ -26,7 +26,9 @@ const fulfillRequirementsToRunAsSingleTestFile = async () => {
     await rskUtils.activateFork(Runners.common.forks.fingerroot500);
 };
 
-describe('Lock funds using peg-in protocol version 1', () => {
+// Skipped due to 'running with all forks active' changes.
+
+describe.skip('Lock funds using peg-in protocol version 1', () => {
     before(async () => {
 
         btcTxHelper = getBtcClient();

@@ -11,12 +11,16 @@ const AMOUNT_TO_LOCK_IN_BTC = 2;
 let rskTxHelper;
 let btcTxHelper;
 
-describe('Lock funds using peg-in protocol version 1 before iris300', () => {
+// Skipped due to 'running with all forks active' changes.
+// No need for this test anymore after running tests with all forks active, since pegin and pegout tests are already being covered in other tests.
+
+describe.skip('Lock funds using peg-in protocol version 1 before iris300', () => {
     before(async () => {
         rskTxHelper = getRskTransactionHelper();
         btcTxHelper = getBtcClient()
     });
     
+    // TODO: rename this test accordingly.
     it('should lock using p2pkh sender to derived address, ignoring OP_RETURN output', async () => {
         // Create legacy type address to use as sender
         const senderAddressInformation = await btcTxHelper.generateBtcAddress('legacy');
@@ -51,8 +55,8 @@ describe('Lock funds using peg-in protocol version 1 before iris300', () => {
         expect(Number(initialSenderBalance)).to.equal(0);
         expect(Number(finalSenderBalance)).to.equal(0);
         expect(Number(initialDerivedAddressBalance)).to.equal(0);
-        expect(Number(finalDerivedAddressBalance)).to.equal(Number(btcEthUnitConverter.btcToWeis(AMOUNT_TO_LOCK_IN_BTC)));
+        expect(Number(finalDerivedAddressBalance)).to.equal(0);
         expect(Number(initialDestinationAddressBalance)).to.equal(0);
-        expect(Number(finalDestinationAddressBalance)).to.equal(0);
+        expect(Number(finalDestinationAddressBalance)).to.equal(Number(btcEthUnitConverter.btcToWeis(AMOUNT_TO_LOCK_IN_BTC)));
     });
 });

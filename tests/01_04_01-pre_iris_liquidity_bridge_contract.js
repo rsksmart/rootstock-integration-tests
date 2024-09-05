@@ -6,7 +6,9 @@ const lbc = require('../lib/liquidity-bridge-contract');
 
 let liquidityBridgeContract;
 
-describe('Call liquidity bridge contract before iris300', () => {
+// Skipped due to 'running with all forks active' changes.
+
+describe.skip('Call liquidity bridge contract before iris300', () => {
 
     it('should create the testing contract', async () => {
         try {

@@ -8,7 +8,9 @@ const CustomError = require('../lib/CustomError');
 
 const NETWORK = bitcoin.networks.testnet;
 
-describe('Calling registerFastBridgeBtcTransaction before iris', function() {
+// Skipped due to 'running with all forks active' changes.
+
+describe.skip('Calling registerFastBridgeBtcTransaction before iris', function() {
 
     before(() => {
       rskClient = rsk.getClient(Runners.hosts.federate.host);

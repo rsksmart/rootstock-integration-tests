@@ -26,7 +26,9 @@ let utils;
 const NETWORK = bitcoin.networks.testnet;
 const BTC_TX_FEE = bitcoin.btcToSatoshis(0.001);
 
-  describe('Lock funds with locking cap', function() {
+// Skipped due to 'running with all forks active' changes.
+
+  describe.skip('Lock funds with locking cap', function() {
   
     before(async () => {
       try{

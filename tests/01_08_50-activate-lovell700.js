@@ -1,6 +1,8 @@
 const activateForkTest = require('../lib/tests/activate-fork');
 
-activateForkTest.execute(
-    Runners.common.forks.lovell700,
-    () => Runners.hosts.federates
-);
+// Skipped due to 'running with all forks active' changes.
+
+// activateForkTest.execute(
+//     Runners.common.forks.lovell700,
+//     () => Runners.hosts.federates
+// );

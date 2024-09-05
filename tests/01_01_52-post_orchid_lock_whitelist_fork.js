@@ -17,6 +17,8 @@ let rskTxHelper;
 let rskTxHelpers;
 let bridge;
 
+// TODO: analyze why these tests are passing after the 'running with all forks active' changes.
+
 describe('RFS-170 test after fork', () => {
     before(async () => {
         btcTxHelper = getBtcClient();

@@ -51,7 +51,8 @@ describe('Executing registerFastBtcTransaction post hop - sending same tx withou
       const liquidityProviderBtcAddressBytes = ensure0x(btcTxHelper.decodeBase58Address(liquidityProviderBtcAddress));
       const preHash = rskTxHelper.getClient().utils.randomHex(32);
 
-      const EXPECTED_AMOUNT_IN_BTC = 0.04;
+      // Minimum pegin value set in rskj for regtest.
+      const EXPECTED_AMOUNT_IN_BTC = 0.5;
       
       const derivationHash = await liquidityBridgeContract.methods.getDerivationHash(
         preHash,

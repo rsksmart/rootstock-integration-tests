@@ -26,8 +26,7 @@ describe('Peg-in multisig address', () => {
         }
     });
 
-    // Should fail and not refund when sending a pengin from a multisig address pre papyrus
-    it('Peg-in should fail when using multisig address', async () => {
+    it('Peg-in should fail and funds should be refunded when using multisig address', async () => {
         const latestActiveForkName = await getLatestActiveForkName();
         const bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
 
@@ -45,14 +44,16 @@ describe('Peg-in multisig address', () => {
         const federationAddressBalanceAfterPegin = Number(await btcTxHelper.getAddressBalance(federationAddress));
         expect(Number(federationAddressBalanceAfterPegin)).to.be.equal(Number(federationAddressBalanceInitial + minimumPeginValueInBtc));
 
+        await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
+
         const isPeginUtxoRegistered = await isUtxoRegisteredInBridge(rskTxHelper, btcPeginTxHash);
         expect(isPeginUtxoRegistered).to.be.false;
 
         const federationAddressBalanceFinal = Number(await btcTxHelper.getAddressBalance(federationAddress));
-        expect(Number(federationAddressBalanceFinal)).to.be.equal(Number(federationAddressBalanceInitial + minimumPeginValueInBtc));
+        expect(Number(federationAddressBalanceFinal)).to.be.equal(Number(federationAddressBalanceInitial));
 
         const senderAddressBalanceFinal = await btcTxHelper.getAddressBalance(senderAddress.address);
-        expect(Number(senderAddressBalanceFinal)).to.be.equal(0);
+        expect(Number(senderAddressBalanceFinal)).to.be.at.most(minimumPeginValueInBtc);
     });
 });
 

@@ -14,7 +14,9 @@ let fedChangeAddress;
 let preWasabiBridge;
 let postWasabiBridge;
 
-describe('Multiple federation member keys test before fork', () => {
+// Skipped due to 'running with all forks active' changes.
+
+describe.skip('Multiple federation member keys test before fork', () => {
     
     const ACTIVATION_BLOCK = Runners.common.forks.wasabi100.activationHeight;
 

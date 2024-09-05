@@ -11,6 +11,8 @@ const CustomError = require('../lib/CustomError');
 
 const NETWORK = bitcoin.networks.testnet;
 
+// Should the name of this test class simply be: 01_03_03-coinbase_information?
+
 describe('Calling coinbase information methods before papyrus', function() {
   
     before(() => {
@@ -37,7 +39,8 @@ describe('Calling coinbase information methods before papyrus', function() {
       }
     })
 
-    it('should return false when calling hasBtcBlockCoinbaseTransactionInformation method', async () => {
+    // Should assert for true instead?
+    it.skip('should return false when calling hasBtcBlockCoinbaseTransactionInformation method', async () => {
         try{
             let randomHex = web3.utils.randomHex;
             let stringHex = randomHex(32);

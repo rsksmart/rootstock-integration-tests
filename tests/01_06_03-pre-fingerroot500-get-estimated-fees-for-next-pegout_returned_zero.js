@@ -5,7 +5,9 @@ const { getRskTransactionHelper } = require('../lib/rsk-tx-helper-provider');
 
 let bridge;
 
-describe('getEstimatedFeesForNextPegOutEvent - pre fingerroot', () => {
+// Skipped due to 'running with all forks active' changes.
+
+describe.skip('getEstimatedFeesForNextPegOutEvent - pre fingerroot', () => {
     before(async () => {
       const rskTxHelper = getRskTransactionHelper();
       const latestActiveForkName = await getLatestActiveForkName();

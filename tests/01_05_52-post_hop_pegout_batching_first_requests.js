@@ -6,7 +6,10 @@ const pegAssertions = require('../lib/assertions/2wp');
 
 let pegoutCount = 0;
 
-describe('Pegout Batching - New Pegout Requests Then Call new bridge methods', function () {
+// Skipped due to 'running with all forks active' changes.
+// These tests no longer apply because they are expecting the nextPegoutCreationBlockNumber to be 0.
+
+describe.skip('Pegout Batching - New Pegout Requests Then Call new bridge methods', function () {
 
     before(() => {
         rskClient = rsk.getClient(Runners.hosts.federate.host);

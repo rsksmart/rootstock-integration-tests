@@ -6,7 +6,6 @@ const { sendPegin, ensurePeginIsRegistered, sendTxToBridge } = require('../lib/2
 const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
 const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivation');
 const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
-const whitelistingAssertions = require('../lib/assertions/whitelisting');
 
 describe('Transfer BTC to RBTC before papyrus200', function() {
 
@@ -35,7 +34,6 @@ describe('Transfer BTC to RBTC before papyrus200', function() {
 
   it('should do a multiple pegouts from the same rsk address after making a pegin', async () => {
     const btcAddressInfo = await btcTxHelper.generateBtcAddress('legacy');
-    await whitelistingAssertions.assertAddLimitedLockWhitelistAddress(rskTxHelper, btcAddressInfo.address, Number(btcEthUnitConverter.btcToSatoshis(PEGIN_VALUE_IN_BTC)));
     await rskUtils.mineAndSync(rskTxHelpers);
     
     const recipientRskAddressInfo = getDerivedRSKAddressInformation(btcAddressInfo.privateKey, btcTxHelper.btcConfig.network);

@@ -13,6 +13,9 @@ const { fundAddressAndGetData } = require('../lib/btc-utils');
 const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
 const { mineForPeginRegistration } = require('../lib/2wp-utils');
 
+// Skipped due to 'running with all forks active' changes.
+// No need for locking cap tests now.
+
 describe('Executing registerFastBtcTransaction after fed change - with release', () => {
 
   let rskTxHelpers;

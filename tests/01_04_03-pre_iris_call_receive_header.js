@@ -10,7 +10,9 @@ const CustomError = require('../lib/CustomError');
 
 const NETWORK = bitcoin.networks.testnet;
 
-describe('Calling method receiveHeader before iris300', function() {
+// Skipped due to 'running with all forks active' changes.
+
+describe.skip('Calling method receiveHeader before iris300', function() {
   
     before(() => {
       rskClient = rsk.getClient(Runners.hosts.federate.host);

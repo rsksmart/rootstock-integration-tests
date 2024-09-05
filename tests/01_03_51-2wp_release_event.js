@@ -29,7 +29,9 @@ const BTC_TX_FEE = bitcoin.btcToSatoshis(0.001);
 const WHITELIST_CHANGE_PK = '3890187a3071327cee08467ba1b44ed4c13adb2da0d5ffcc0563c371fa88259c';
 const WHITELIST_CHANGE_ADDR = '87d2a0f33744929da08b65fd62b627ea52b25f8e';
 
-describe('Release events (for whitelisting) after papyrus activation', function() {
+// Skipped due to 'running with all forks active' changes.
+
+describe.skip('Release events (for whitelisting) after papyrus activation', function() {
   var addresses;
 
   before(async () => {

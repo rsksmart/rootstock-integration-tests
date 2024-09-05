@@ -6,7 +6,9 @@ const CustomError = require('../lib/CustomError');
 
 let rskClient;
 
-describe('Calling getActivePowpegRedeemScript method before hop', function() {
+// Skipped due to 'running with all forks active' changes.
+
+describe.skip('Calling getActivePowpegRedeemScript method before hop', function() {
 
     before(() => {
       rskClient = rsk.getClient(Runners.hosts.federate.host);
