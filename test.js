@@ -83,15 +83,16 @@ global.Runners = {
   hosts: {},
   common: {
     forks: {
-      orchid: createForkObject('orchid', 100),
-      wasabi100: createForkObject('wasabi', 250),
-      papyrus200: createForkObject('papyrus', 450),
-      iris300: createForkObject('iris', 700),
-      hop400: createForkObject('hop', 1000),
-      hop401: createForkObject('hop401', 1010),
-      fingerroot500: createForkObject('fingerroot', 1350),
-      arrowhead600: createForkObject('arrowhead', 1600),
-      lovell700: createForkObject('lovell', 1850)
+      orchid: createForkObject('orchid', 1),
+      wasabi100: createForkObject('wasabi', 1),
+      papyrus200: createForkObject('papyrus', 1),
+      iris300: createForkObject('iris', 1),
+      hop400: createForkObject('hop', 1),
+      hop401: createForkObject('hop401', 1),
+      fingerroot500: createForkObject('fingerroot', 1),
+      arrowhead600: createForkObject('arrowhead', 1),
+      arrowhead631: createForkObject('arrowhead631', 1),
+      lovell700: createForkObject('lovell', -1),
     },
     additionalFederationAddresses: []
   }
