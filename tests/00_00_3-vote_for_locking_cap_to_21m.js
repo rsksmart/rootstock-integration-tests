@@ -47,7 +47,7 @@ describe('Vote for locking cap to the max 21 million btc', function() {
             currentLockingCapValueInSatoshis = Number(await bridge.methods.getLockingCap().call());
 
             // Ensuring that the locking cap is being increased on every iteration.
-            expect(currentLockingCapValueInSatoshis).to.be.greaterThanOrEqual(nextIncrement, 'Locking cap should be greater or equal to next increment');
+            expect(currentLockingCapValueInSatoshis).to.be.equal(nextIncrement, 'The new locking cap value should be equal to the set value');
 
         }
 
