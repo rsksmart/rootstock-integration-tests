@@ -77,13 +77,6 @@ let rskTxHelpers;
 let btcTxHelper;
 let rskTxHelper;
 
-/**
- * Takes the blockchain to the required state for this test file to run in isolation.
- */
-const fulfillRequirementsToRunAsSingleTestFile = async (rskTxHelper, btcTxHelper) => {
-  await rskUtils.activateFork(rskUtils.getLatestForkName());
-};
-
 describe('RSK Federation change', function() {
   let addresses;
 
@@ -103,10 +96,6 @@ describe('RSK Federation change', function() {
       rskTxHelpers = getRskTransactionHelpers();
       rskTxHelper = rskTxHelpers[0];
       btcTxHelper = getBtcClient();
-
-      if(process.env.RUNNING_SINGLE_TEST_FILE) {
-        await fulfillRequirementsToRunAsSingleTestFile(rskTxHelper, btcTxHelper);
-      }
 
       // Assume the last of the running federators belongs to the new federation
       rskClientNewFed = rskClients[rskClients.length-1];

@@ -4,34 +4,22 @@ const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const { sendPegin } = require('../lib/2wp-utils');
-const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/precompiled-abi-forks-util');
 
 let rskTxHelpers;
 let rskTxHelper;
 let btcTxHelper;
-
-/**
- * Takes the blockchain to the required state for this test file to run in isolation.
- */
-const fulfillRequirementsToRunAsSingleTestFile = async () => {
-    await rskUtils.activateFork(Runners.common.forks.fingerroot500);
-};
 
 describe('Lock multisig address', () => {
     before(async () => {
         rskTxHelpers = getRskTransactionHelpers();
         rskTxHelper = rskTxHelpers[0];
         btcTxHelper = getBtcClient()
-
-        if(process.env.RUNNING_SINGLE_TEST_FILE) {
-            await fulfillRequirementsToRunAsSingleTestFile();
-        }
     });
 
     // Should refund if the btc sender address is a multisig
     it('lock should work when using multisig address', async () => {
-        const latestActiveForkName = await getLatestActiveForkName();
-        const bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
+        const bridge = getBridge(rskTxHelper.getClient());
         
         const minimumPeginValueInSatoshis = await bridge.methods.getMinimumLockTxValue().call();
         const minimumPeginValueInBtc = Number(satoshisToBtc(minimumPeginValueInSatoshis));
