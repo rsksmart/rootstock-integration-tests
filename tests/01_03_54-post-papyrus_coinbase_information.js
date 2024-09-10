@@ -60,7 +60,7 @@ describe('Calling coinbase information methods after papyrus', () => {
           ensure0x(witnessReservedValue)
         );
 
-        const txReceipt = await rskUtils.sendTxWithCheck(rskTxHelper, registerBtcCoinbaseTransactionMethod, rskTxSenderAddress);
+        const txReceipt = await rskUtils.sendTransaction(rskTxHelper, registerBtcCoinbaseTransactionMethod, rskTxSenderAddress);
 
         expect(txReceipt).not.to.be.null;
 
