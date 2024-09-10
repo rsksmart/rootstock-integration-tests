@@ -1,10 +1,9 @@
 const expect = require('chai').expect
 const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivation');
 const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
-const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { sendPegin, ensurePeginIsRegistered, disableWhitelisting } = require('../lib/2wp-utils');
-const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/precompiled-abi-forks-util');
 const { getBtcClient } = require('../lib/btc-client-provider');
 
 let rskTxHelpers;
@@ -12,8 +11,6 @@ let rskTxHelper;
 let btcTxHelper;
 
 const fulfillRequirementsToRunAsSingleTestFile = async (rskTxHelper, btcTxHelper) => {
-    const latestForkName = rskUtils.getLatestForkName();
-    await rskUtils.activateFork(latestForkName);
     await disableWhitelisting(rskTxHelper, btcTxHelper);
 };
 
@@ -29,8 +26,8 @@ describe('Lock using p2sh-p2wpkh address', () => {
     });
 
     it('should do a legacy pegin using p2sh-p2wpkh address', async () => {
-        const latestActiveForkName = await getLatestActiveForkName();
-        const bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
+
+        const bridge = getBridge(rskTxHelper.getClient());
 
         const minimumPeginValueInSatoshis = Number(await bridge.methods.getMinimumLockTxValue().call());
         const minimumPeginValueInBtc = Number(btcEthUnitConverter.satoshisToBtc(minimumPeginValueInSatoshis));
