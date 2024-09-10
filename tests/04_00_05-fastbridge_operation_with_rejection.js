@@ -10,7 +10,7 @@ const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const { ensure0x, wait } = require('../lib/utils');
 const { fundAddressAndGetData } = require('../lib/btc-utils');
-const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/precompiled-abi-forks-util');
 const { mineForPeginRegistration } = require('../lib/2wp-utils');
 
 describe('Executing registerFastBtcTransaction after fed change - with release', () => {
@@ -24,8 +24,7 @@ describe('Executing registerFastBtcTransaction after fed change - with release',
     rskTxHelpers = getRskTransactionHelpers();
     rskTxHelper = rskTxHelpers[rskTxHelpers.length - 1];
     btcTxHelper = getBtcClient();
-    const latestActiveForkName = await getLatestActiveForkName();
-    bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
+    bridge = getBridge(rskTxHelper.getClient());
   });
 
   it('should return funds when calling registerFastBtcTransaction method surpassing locking cap after fed change', async () => {

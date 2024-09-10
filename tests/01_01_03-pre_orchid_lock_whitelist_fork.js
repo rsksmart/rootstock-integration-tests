@@ -1,5 +1,5 @@
 const whitelistingAssertions = require('../lib/assertions/whitelisting');
-const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/precompiled-abi-forks-util');
 const contractMethodAssertions = require('../lib/assertions/contractMethods');
 const expect = require('chai').expect;
 const CustomError = require('../lib/CustomError');
@@ -20,7 +20,7 @@ describe('RFS-170 test before fork', () => {
     
     before(async () => {
         rskTxHelper = getRskTransactionHelper();
-        bridge = getBridge(rskTxHelper.getClient(), await getLatestActiveForkName());
+        bridge = getBridge(rskTxHelper.getClient());
     });
 
     it(`should be at a height lower than ${RFS_170_ACTIVATION_BLOCK}`, async () => {

@@ -9,7 +9,7 @@ const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const { ensure0x } = require('../lib/utils');
 const { fundAddressAndGetData } = require('../lib/btc-utils');
-const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/precompiled-abi-forks-util');
 const { mineForPeginRegistration } = require('../lib/2wp-utils');
 
 describe('Executing registerFastBtcTransaction after hop and federation changed', () => {
@@ -23,8 +23,7 @@ describe('Executing registerFastBtcTransaction after hop and federation changed'
     rskTxHelpers = getRskTransactionHelpers();
     rskTxHelper = rskTxHelpers[rskTxHelpers.length - 1];
     btcTxHelper = getBtcClient();
-    const latestActiveForkName = await getLatestActiveForkName();
-    bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
+    bridge = getBridge(rskTxHelper.getClient());
   });
 
   it(`should return UNPROCESSABLE_TX_AMOUNT_SENT_BELOW_MINIMUM_ERROR(${UNPROCESSABLE_TX_AMOUNT_SENT_BELOW_MINIMUM_ERROR}) when calling registerFastBtcTransaction method sending amount below minimum after fed changed`, async () => {

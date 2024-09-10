@@ -1,35 +1,25 @@
 const expect = require('chai').expect
 const { satoshisToBtc } = require('@rsksmart/btc-eth-unit-converter');
-const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const { sendPegin } = require('../lib/2wp-utils');
-const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/precompiled-abi-forks-util');
 const { isUtxoRegisteredInBridge } = require('../lib/2wp-utils');
 
 let rskTxHelpers;
 let rskTxHelper;
 let btcTxHelper;
 
-const fulfillRequirementsToRunAsSingleTestFile = async () => {
-    await rskUtils.activateFork(Runners.common.forks.wasabi100);
-};
-
 describe('Peg-in multisig address', () => {
     before(async () => {
         rskTxHelpers = getRskTransactionHelpers();
         rskTxHelper = rskTxHelpers[0];
         btcTxHelper = getBtcClient()
-
-        if(process.env.RUNNING_SINGLE_TEST_FILE) {
-            await fulfillRequirementsToRunAsSingleTestFile();
-        }
     });
 
     // Should fail and not refund when sending a pengin from a multisig address pre papyrus
     it('Peg-in should fail when using multisig address', async () => {
-        const latestActiveForkName = await getLatestActiveForkName();
-        const bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
+        const bridge = getBridge(rskTxHelper.getClient());
 
         const minimumPeginValueInSatoshis = await bridge.methods.getMinimumLockTxValue().call();
         const minimumPeginValueInBtc = Number(satoshisToBtc(minimumPeginValueInSatoshis));

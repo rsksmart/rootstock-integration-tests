@@ -3,7 +3,7 @@ const bitcoinJs = require('bitcoinjs-lib');
 const rskUtils = require('../lib/rsk-utils');
 const { wait, ensure0x, retryWithCheck }  = require('../lib/utils');
 const CustomError = require('../lib/CustomError');
-const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/precompiled-abi-forks-util');
 const { getBtcClient } = require('../lib//btc-client-provider');
 const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
@@ -50,7 +50,7 @@ describe('Calling coinbase information methods after papyrus', () => {
 
         const pmt = `0100000001${coinbaseTx.getHash().toString('hex')}0101`;
 
-        const bridge = getBridge(rskTxHelper.getClient(), await getLatestActiveForkName());
+        const bridge = getBridge(rskTxHelper.getClient());
 
         const registerBtcCoinbaseTransactionMethod = bridge.methods.registerBtcCoinbaseTransaction(
           ensure0x(coinbaseTxWithoutWitness.toHex()), 

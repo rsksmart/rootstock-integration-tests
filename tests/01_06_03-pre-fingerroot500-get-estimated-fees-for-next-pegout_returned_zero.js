@@ -1,5 +1,5 @@
 const expect = require('chai').expect;
-const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/precompiled-abi-forks-util');
 const CustomError = require('../lib/CustomError');
 const { getRskTransactionHelper } = require('../lib/rsk-tx-helper-provider');
 
@@ -8,8 +8,8 @@ let bridge;
 describe('getEstimatedFeesForNextPegOutEvent - pre fingerroot', () => {
     before(async () => {
       const rskTxHelper = getRskTransactionHelper();
-      const latestActiveForkName = await getLatestActiveForkName();
-      bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
+
+      bridge = getBridge(rskTxHelper.getClient());
     });
 
   it('getEstimatedFeesForNextPegOutEvent bridge method returns zero when there are no pegout requests', async () => {

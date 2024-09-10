@@ -3,17 +3,13 @@ const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
 const { UNPROCESSABLE_TX_AMOUNT_SENT_BELOW_MINIMUM_ERROR } = require("../lib/flyover-pegin-response-codes");
 const CustomError = require('../lib/CustomError');
 const lbc = require('../lib/liquidity-bridge-contract');
-const { sendTxWithCheck, getFedsPubKeys, activateFork } = require('../lib/rsk-utils');
+const { sendTxWithCheck, getFedsPubKeys } = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const { ensure0x } = require('../lib/utils');
 const { fundAddressAndGetData } = require('../lib/btc-utils');
-const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/precompiled-abi-forks-util');
 const { mineForPeginRegistration } = require('../lib/2wp-utils');
-
-const fulfillRequirementsToRunAsSingleTestFile = async () => {
-  await activateFork(Runners.common.forks.hop400);
-};
 
 describe('Executing registerFastBtcTransaction after hop - send funds below minimum', () => {
 
@@ -26,12 +22,7 @@ describe('Executing registerFastBtcTransaction after hop - send funds below mini
     rskTxHelpers = getRskTransactionHelpers();
     rskTxHelper = rskTxHelpers[0];
     btcTxHelper = getBtcClient();
-
-    if(process.env.RUNNING_SINGLE_TEST_FILE) {
-      await fulfillRequirementsToRunAsSingleTestFile();
-    }
-    const latestActiveForkName = await getLatestActiveForkName();
-    bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
+    bridge = getBridge(rskTxHelper.getClient());
   });
 
   it(`should return UNPROCESSABLE_TX_AMOUNT_SENT_BELOW_MINIMUM_ERROR(${UNPROCESSABLE_TX_AMOUNT_SENT_BELOW_MINIMUM_ERROR}) when calling registerFastBtcTransaction method sending amount below minimum`, async () => {

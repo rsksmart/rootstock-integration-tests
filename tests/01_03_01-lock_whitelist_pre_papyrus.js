@@ -14,7 +14,7 @@ const { getBtcClient } = require('../lib/btc-client-provider');
 const { sendPegin, ensurePeginIsRegistered } = require('../lib/2wp-utils');
 const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivation');
 const { btcToWeis, btcToSatoshis, satoshisToBtc } = require('@rsksmart/btc-eth-unit-converter');
-const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/precompiled-abi-forks-util');
 const { waitAndUpdateBridge } = require('../lib/rsk-utils');
 
 let rskTxHelpers;
@@ -35,13 +35,6 @@ const WHITELIST_ADDRESSES = {
 };
 
 const WHITELIST_RANDOM_PUBLIC_KEY = 'msJRGyaYvT8YNjvU3q9nPgBpZj9umAgetn';
-
-/**
- * Takes the blockchain to the required state for this test file to run in isolation.
- */
-const fulfillRequirementsToRunAsSingleTestFile = async () => {
-    await rskUtils.activateFork(Runners.common.forks.wasabi100);
-};
 
 const assertLockCreatingWhiteListAddress = async (rskTxHelper, btcTxHelper, useUnlimitedWhitelist) => {
     const minPeginValueInSatoshis = await bridge.methods.getMinimumLockTxValue().call();
@@ -84,14 +77,10 @@ const assertNonMatchedAmountsExist = (testCaseAmounts, peginBtcTx, returnTx) => 
 
 describe('Lock whitelisting', () => {
     before(async () => {
-      if(process.env.RUNNING_SINGLE_TEST_FILE) {
-          await fulfillRequirementsToRunAsSingleTestFile();
-      }
-      
       rskTxHelpers = getRskTransactionHelpers();
       btcTxHelper = getBtcClient();
       rskTxHelper = rskTxHelpers[0];
-      bridge = getBridge(rskTxHelper.getClient(), await getLatestActiveForkName());
+      bridge = getBridge(rskTxHelper.getClient());
       
       federationAddress = await bridge.methods.getFederationAddress().call();
       await btcTxHelper.importAddress(federationAddress, 'federations');

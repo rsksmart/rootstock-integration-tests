@@ -1,10 +1,10 @@
 const { expect } = require('chai');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
-const { getLatestForkName, activateFork, triggerRelease } = require('../lib/rsk-utils');
+const { triggerRelease } = require('../lib/rsk-utils');
 const { sendPegin, ensurePeginIsRegistered, sendTxToBridge, BRIDGE_ADDRESS, MIN_PEGOUT_VALUE_IN_RBTC } = require('../lib/2wp-utils');
 const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivation');
-const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/precompiled-abi-forks-util');
 const { btcToSatoshis, btcToWeis, satoshisToBtc } = require('@rsksmart/btc-eth-unit-converter');
 
 describe('2wp after iris300, using new minimum values', () => {
@@ -15,23 +15,13 @@ describe('2wp after iris300, using new minimum values', () => {
     let bridge;
     let federationAddress;
 
-    const fulfillRequirementsToRunAsSingleTestFile = async () => {
-        const latestForkName = getLatestForkName()
-        await activateFork(latestForkName);
-    };
-
     before(async () => {
         rskTxHelpers = getRskTransactionHelpers();
         rskTxHelper = rskTxHelpers[0];
         btcTxHelper = getBtcClient();
   
-        if(process.env.RUNNING_SINGLE_TEST_FILE) {
-            await fulfillRequirementsToRunAsSingleTestFile();
-        };
-
         // Get the current peg-in minimum
-        const latestActiveForkName = await getLatestActiveForkName();
-        bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
+        bridge = getBridge(rskTxHelper.getClient());
         const minimumPeginValueInSatoshi = await bridge.methods.getMinimumLockTxValue().call();
         minimumPeginValueInBTC = Number(satoshisToBtc(minimumPeginValueInSatoshi));
 

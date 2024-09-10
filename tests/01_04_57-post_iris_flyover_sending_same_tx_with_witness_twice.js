@@ -4,20 +4,13 @@ const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const { UNPROCESSABLE_TX_ALREADY_PROCESSED_ERROR } = require("../lib/flyover-pegin-response-codes");
 const CustomError = require('../lib/CustomError');
 const lbc = require('../lib/liquidity-bridge-contract');
-const { sendTxWithCheck, getFedsPubKeys, activateFork } = require('../lib/rsk-utils');
+const { sendTxWithCheck, getFedsPubKeys } = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const { ensure0x } = require('../lib/utils');
 const { fundAddressAndGetData } = require('../lib/btc-utils');
-const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/precompiled-abi-forks-util');
 const { mineForPeginRegistration } = require('../lib/2wp-utils');
-
-/**
- * Takes the blockchain to the required state for this test file to run in isolation.
- */
-const fulfillRequirementsToRunAsSingleTestFile = async () => {
-  await activateFork(Runners.common.forks.iris300);
-};
 
 describe('Executing registerFastBtcTransaction post hop - sending same tx with witness twice', () => {
 
@@ -30,13 +23,7 @@ describe('Executing registerFastBtcTransaction post hop - sending same tx with w
     rskTxHelpers = getRskTransactionHelpers();
     rskTxHelper = rskTxHelpers[0];
     btcTxHelper = getBtcClient();
-
-    if(process.env.RUNNING_SINGLE_TEST_FILE) {
-      await fulfillRequirementsToRunAsSingleTestFile();
-    }
-    const latestActiveForkName = await getLatestActiveForkName();
-    bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
-
+    bridge = getBridge(rskTxHelper.getClient());
   });
 
   it(`should execute first tx successfully and fail executing second tx due to hash already used when calling registerFastBtcTransaction sending same tx twice`, async () => {

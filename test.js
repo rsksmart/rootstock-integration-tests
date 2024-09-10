@@ -42,54 +42,22 @@ const bookkeepingConfigurations = {
   blockHeadersToSend: 27
 };
 
-/**
- * Creates a fork object with the provided name and activation height.
- * The fork object will have a method called `isAlreadyActive` to check if the fork is already active,
- * which will get the latest block number and compare it with the `activationHeight` and cache the result to avoid calling the blockchain again
- * if the fork is already active because a fork is activated only once.
- * @param {string} name 
- * @param {number} activationHeight 
- * @returns {{name: string, activationHeight: number, isAlreadyActive: function(RskTransactionHelper): Promise<boolean>}}
- */
-const createForkObject = (name, activationHeight) => {
-  // 'Private' variable to hold if the fork is already active
-  let isActive = false;
-
-  async function isAlreadyActive(rskTxHelper) {
-    // If the fork is already active, then return the cached result
-    if(isActive) {
-      return isActive;
-    }
-    rskTxHelper = rskTxHelper || getRskTransactionHelper();
-    // Cache the result to avoid calling the network again if the fork is already active
-    const latestBlockNumber = await rskTxHelper.getBlockNumber();
-    isActive = latestBlockNumber >= this.activationHeight;
-    return isActive;
-  }
-
-  return {
-    name,
-    activationHeight,
-    isAlreadyActive,
-  };
-
-};
-
 // ***** GLOBALS ***** //
+// If this is updated and more forks are added, remember to update './lib/precompiled-abi-forks-util.js' accordingly.
 global.Runners = {
   hosts: {},
   common: {
     forks: {
-      orchid: createForkObject('orchid', 1),
-      wasabi100: createForkObject('wasabi', 1),
-      papyrus200: createForkObject('papyrus', 1),
-      iris300: createForkObject('iris', 1),
-      hop400: createForkObject('hop', 1),
-      hop401: createForkObject('hop401', 1),
-      fingerroot500: createForkObject('fingerroot', 1),
-      arrowhead600: createForkObject('arrowhead', 1),
-      arrowhead631: createForkObject('arrowhead631', 1),
-      lovell700: createForkObject('lovell', -1),
+      orchid: 1,
+      wasabi100: 1,
+      papyrus200: 1,
+      iris300: 1,
+      hop400: 1,
+      hop401: 1,
+      fingerroot500: 1,
+      arrowhead600: 1,
+      arrowhead631: 1,
+      lovell700: -1,
     },
     additionalFederationAddresses: []
   }
