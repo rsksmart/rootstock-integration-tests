@@ -1,4 +1,3 @@
-const { wait } = require('../lib/utils');
 const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
@@ -39,10 +38,9 @@ describe('Vote for locking cap to the max 21 million btc', function() {
             // Ensuring that the next increment is not greater than the target locking cap.
             nextIncrement = Math.min(nextIncrement, targetLockingCapInSatoshis);
 
-            const increaseLockingCapCallResult = bridge.methods.increaseLockingCap(nextIncrement).send({ from: authAddress });
-            await wait(1000);
-            await rskUtils.mineAndSync(rskTxHelpers);
-            await increaseLockingCapCallResult;
+            const increaseLockingCapMethod = bridge.methods.increaseLockingCap(nextIncrement);
+
+            await rskUtils.sendTransaction(rskTxHelper, increaseLockingCapMethod, authAddress);
 
             currentLockingCapValueInSatoshis = Number(await bridge.methods.getLockingCap().call());
 
