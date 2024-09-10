@@ -18,12 +18,6 @@ let btcTxHelper;
 let rskTxHelper;
 let rskTxHelpers;
 
-/**
- * Takes the blockchain to the required state for this test file to run in isolation.
- */
-const fulfillRequirementsToRunAsSingleTestFile = async () => {
-    await rskUtils.activateFork(rskUtils.getLatestForkName());
-};
 
 describe('Lock funds using peg-in protocol version 1', () => {
     before(async () => {
@@ -31,10 +25,6 @@ describe('Lock funds using peg-in protocol version 1', () => {
         btcTxHelper = getBtcClient();
         rskTxHelpers = getRskTransactionHelpers();
         rskTxHelper = rskTxHelpers[0];
-
-        if(process.env.RUNNING_SINGLE_TEST_FILE) {
-            await fulfillRequirementsToRunAsSingleTestFile();
-        }
 
     });
     
