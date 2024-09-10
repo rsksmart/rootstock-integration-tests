@@ -3,7 +3,7 @@ const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const { sendPegin, ensurePeginIsRegistered, sendTxToBridge } = require('../lib/2wp-utils');
-const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/precompiled-abi-forks-util');
 const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivation');
 const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const whitelistingAssertions = require('../lib/assertions/whitelisting');
@@ -17,19 +17,11 @@ describe('Transfer BTC to RBTC before papyrus200', function() {
   const PEGIN_VALUE_IN_BTC = 3;
   const PEGOUT_VALUE_IN_RBTC = PEGIN_VALUE_IN_BTC / 3;
   const RSK_TX_FEE_IN_RBTC = 0.001;
- 
-  const fulfillRequirementsToRunAsSingleTestFile = async () => {
-    await rskUtils.activateFork(Runners.common.forks.wasabi100);
-  };
   
   before(async () => {
       rskTxHelpers = getRskTransactionHelpers();
       rskTxHelper = rskTxHelpers[0];
       btcTxHelper = getBtcClient();
-
-      if(process.env.RUNNING_SINGLE_TEST_FILE) {
-          await fulfillRequirementsToRunAsSingleTestFile();
-      };
   });
 
 
@@ -43,8 +35,7 @@ describe('Transfer BTC to RBTC before papyrus200', function() {
     const unlocked = await rskTxHelper.unlockAccount(recipientRskAddressInfo.address);
     expect(unlocked, 'Account was not unlocked').to.be.true;
 
-    const latestActiveForkName = await getLatestActiveForkName();
-    const bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
+    const bridge = getBridge(rskTxHelper.getClient());
     const federationAddress = await bridge.methods.getFederationAddress().call();
 
     const federationAddressBalanceInitial = Number(await btcTxHelper.getAddressBalance(federationAddress));

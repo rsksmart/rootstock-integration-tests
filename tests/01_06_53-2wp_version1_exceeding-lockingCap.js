@@ -2,7 +2,7 @@ const { expect } = require('chai');
 const peginVerifier = require('pegin-address-verificator');
 const rskUtils = require('../lib/rsk-utils');
 const { sendPegin, assertRefundUtxosSameAsPeginUtxos } = require('../lib/2wp-utils');
-const { getBridge , getLatestActiveForkName} = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/precompiled-abi-forks-util');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getDerivedRSKAddressInformation } = require('@rsksmart/btc-rsk-derivation');
@@ -19,13 +19,6 @@ let btcTxHelper;
 let rskTxHelper;
 let rskTxHelpers;
 
-/**
- * Takes the blockchain to the required state for this test file to run in isolation.
- */
-const fulfillRequirementsToRunAsSingleTestFile = async () => {
-    await rskUtils.activateFork(Runners.common.forks.fingerroot500);
-};
-
 describe('Lock funds using peg-in protocol version 1', () => {
     before(async () => {
 
@@ -33,12 +26,7 @@ describe('Lock funds using peg-in protocol version 1', () => {
         rskTxHelpers = getRskTransactionHelpers();
         rskTxHelper = rskTxHelpers[0];
 
-        if(process.env.RUNNING_SINGLE_TEST_FILE) {
-            await fulfillRequirementsToRunAsSingleTestFile();
-        }
-
-        const latestActiveForkName = await getLatestActiveForkName();
-        const bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
+        const bridge = getBridge(rskTxHelper.getClient());
 
         // Get the current locking cap
         lockingCapInBtc = Number(btcEthUnitConverter.satoshisToBtc(Number(await bridge.methods.getLockingCap().call())));

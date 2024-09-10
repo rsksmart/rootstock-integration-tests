@@ -3,21 +3,14 @@ const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
 const CustomError = require('../lib/CustomError');
 const lbc = require('../lib/liquidity-bridge-contract');
 const { REFUNDED_USER_ERROR } = require("../lib/flyover-pegin-response-codes");
-const { sendTxWithCheck, triggerRelease, getFedsPubKeys, activateFork } = require('../lib/rsk-utils');
+const { sendTxWithCheck, triggerRelease, getFedsPubKeys } = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const { ensure0x, wait } = require('../lib/utils');
 const { fundAddressAndGetData } = require('../lib/btc-utils');
-const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/precompiled-abi-forks-util');
 const { mineForPeginRegistration } = require('../lib/2wp-utils');
-
-/**
- * Takes the blockchain to the required state for this test file to run in isolation.
- */
-const fulfillRequirementsToRunAsSingleTestFile = async () => {
-  await activateFork(Runners.common.forks.iris300);
-};
 
 describe('Executing registerFastBtcTransaction after iris - with release', () => {
 
@@ -30,13 +23,7 @@ describe('Executing registerFastBtcTransaction after iris - with release', () =>
     rskTxHelpers = getRskTransactionHelpers();
     rskTxHelper = rskTxHelpers[0];
     btcTxHelper = getBtcClient();
-    
-    if(process.env.RUNNING_SINGLE_TEST_FILE) {
-      await fulfillRequirementsToRunAsSingleTestFile();
-    }
-    const latestActiveForkName = await getLatestActiveForkName();
-    bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
-
+    bridge = getBridge(rskTxHelper.getClient());
   });
 
   it('should return funds when calling registerFastBtcTransaction method surpassing locking cap', async () => {
