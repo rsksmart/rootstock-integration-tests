@@ -26,17 +26,17 @@ const expectedNewFederationErpRedeemScript = '0x64532102cd53fc53a07f211641a677d2
 
 const getCurrentFederationKeys = async (bridge) => {
 
-    const activeFederationKeys = [];
+    const initialFederationKeys = [];
 
-    const activeFederationSize = Number(await bridge.methods.getFederationSize().call());
+    const initialFederationSize = Number(await bridge.methods.getFederationSize().call());
 
-    for(let i = 0; i < activeFederationSize; i++) {
+    for(let i = 0; i < initialFederationSize; i++) {
 
         const federatorBtcPublicKey = await bridge.methods.getFederatorPublicKeyOfType(i, KEY_TYPE_BTC).call();
         const federatorRskPublicKey = await bridge.methods.getFederatorPublicKeyOfType(i, KEY_TYPE_RSK).call();
         const federatorMstPublicKey = await bridge.methods.getFederatorPublicKeyOfType(i, KEY_TYPE_MST).call();
 
-        activeFederationKeys.push({
+        initialFederationKeys.push({
             [KEY_TYPE_BTC]: federatorBtcPublicKey,
             [KEY_TYPE_RSK]: federatorRskPublicKey,
             [KEY_TYPE_MST]: federatorMstPublicKey
@@ -44,7 +44,7 @@ const getCurrentFederationKeys = async (bridge) => {
         
     }
 
-    return activeFederationKeys;
+    return initialFederationKeys;
 
 };
 
@@ -92,7 +92,7 @@ describe('Change federation', async function() {
     let fedChangeAuthorizer2Address;
     let fedChangeAuthorizer3Address;
 
-    let activeFederationPublicKeys;
+    let initialFederationPublicKeys;
     let newFederationPublicKeys;
 
     let initialFederationAddress;
@@ -118,8 +118,8 @@ describe('Change federation', async function() {
 
         bridge = getBridge(rskTxHelper.getClient(), await getLatestActiveForkName());
 
-        activeFederationPublicKeys = await getCurrentFederationKeys(bridge);
-        newFederationPublicKeys = createNewFederationKeys(activeFederationPublicKeys);
+        initialFederationPublicKeys = await getCurrentFederationKeys(bridge);
+        newFederationPublicKeys = createNewFederationKeys(initialFederationPublicKeys);
 
         initialFederationAddress = await bridge.methods.getFederationAddress().call();
         
@@ -224,7 +224,7 @@ describe('Change federation', async function() {
         const federationActivationBlockNumber = commitFederationEvent.arguments.activationHeight;
         const currentBlockNumber = await rskTxHelper.getClient().eth.getBlockNumber();
         const blockDifference = federationActivationBlockNumber - currentBlockNumber;
-        // Mining enough blocks to active the federation.
+        // Mining enough blocks to activate the federation.
         await rskUtils.mineAndSync(rskTxHelpers, blockDifference + 1);
 
         // Assert the pending federation does not exist anymore.
