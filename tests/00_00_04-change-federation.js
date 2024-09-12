@@ -3,7 +3,7 @@ const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
 const { btcToWeis } = require('@rsksmart/btc-eth-unit-converter');
 const { removePrefix0x, ensure0x, splitStringIntoChunks } = require('../lib/utils');
-const bridgeTxParser = require('bridge-transaction-parser-fingerroot500');
+const bridgeTxParser = require('bridge-transaction-parser');
 const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
 const { expect } = require('chai');
 const { 
@@ -12,7 +12,6 @@ const {
     KEY_TYPE_MST,
     REGTEST_FEDERATION_CHANGE_PRIVATE_KEYS,
     FEDERATION_ACTIVATION_AGE,
-    FUNDS_MIGRATION_AGE_SINCE_ACTIVATION_BEGIN,
   FUNDS_MIGRATION_AGE_SINCE_ACTIVATION_END,
   ERP_PUBKEYS,
   ERP_CSV_VALUE,
@@ -22,10 +21,6 @@ const {
 const newFederator1PublicKey = '0x02f80abfd3dac069887f974ac033cb62991a0ed55b9880faf8b8cbd713b75d649e';
 // Generated with seed newFed2
 const newFederator2PublicKey = '0x03488898918c76758e52842c700060adbbbd0a38aa836838fd7215147b924ef7dc';
-
-const expectedPendingFederationHash = '0x6f45ac8763317802a9a9c540b58af03e577bb4af14209f8a690d501e21c68ace';
-
-const expectedNewFederationAddress = '2NGJ9Rhk5KqK1RwMZm7Uph6nhGFL5MYtpJo';
 
 const getCurrentFederationKeys = async (bridge) => {
 
@@ -88,26 +83,25 @@ const parseBtcPublicKeys = (btcPublicKeysInString) => {
 
 describe('Change federation', async function() {
 
+    let rskTxHelpers;
+    let rskTxHelper;
+    let bridge;
+
     const regtestFedChangeAuthorizer1PrivateKey = REGTEST_FEDERATION_CHANGE_PRIVATE_KEYS[0];
     const regtestFedChangeAuthorizer2PrivateKey = REGTEST_FEDERATION_CHANGE_PRIVATE_KEYS[1];
     const regtestFedChangeAuthorizer3PrivateKey = REGTEST_FEDERATION_CHANGE_PRIVATE_KEYS[2];
 
-    let rskTxHelpers;
-    let rskTxHelper;
-
     let fedChangeAuthorizer1Address;
     let fedChangeAuthorizer2Address;
     let fedChangeAuthorizer3Address;
-
     let initialFederationPublicKeys;
     let newFederationPublicKeys;
     let newFederationBtcPublicKeys;
-
     let initialFederationAddress;
-
-    let bridge;
-
     let commitFederationEvent;
+    let expectedNewFederationAddress;
+    let commitFederationCreationBlockNumber;
+    let expectedNewFederationErpRedeemScript;
   
     before(async () => {
 
@@ -129,6 +123,9 @@ describe('Change federation', async function() {
         initialFederationPublicKeys = await getCurrentFederationKeys(bridge);
         newFederationPublicKeys = createNewFederationKeys(initialFederationPublicKeys);
         newFederationBtcPublicKeys = newFederationPublicKeys.map(federator => federator[KEY_TYPE_BTC]);
+        const expectedNewFederationErpRedeemScriptBuffer = redeemScriptParser.getP2shErpRedeemScript(newFederationBtcPublicKeys.map(key => removePrefix0x(key)), ERP_PUBKEYS, ERP_CSV_VALUE);
+        expectedNewFederationErpRedeemScript = expectedNewFederationErpRedeemScriptBuffer.toString('hex');
+        expectedNewFederationAddress = redeemScriptParser.getAddressFromRedeemScript('REGTEST', expectedNewFederationErpRedeemScriptBuffer);
 
         initialFederationAddress = await bridge.methods.getFederationAddress().call();
         
@@ -195,8 +192,6 @@ describe('Change federation', async function() {
 
         const pendingFederationHash = await bridge.methods.getPendingFederationHash().call();
 
-        expect(pendingFederationHash).to.be.equal(expectedPendingFederationHash, 'The pending federation hash should be the expected.').to.not.be.null;
-
         const commitPendingFederationMethod = bridge.methods.commitFederation(pendingFederationHash);
 
         // First commit pending federation vote
@@ -217,6 +212,8 @@ describe('Change federation', async function() {
         const actualActivationHeight = Number(commitFederationEvent.arguments.activationHeight);
         expect(actualActivationHeight).to.be.equal(expectedActivationHeight, 'The activation height should be the expected one.');
 
+        commitFederationCreationBlockNumber = bridgeTransaction.blockNumber;
+
         // Assert the old federation address in the commit federation event is the initial one.
         const oldFederationAddress = commitFederationEvent.arguments.oldFederationBtcAddress;
         expect(oldFederationAddress).to.be.equal(initialFederationAddress, 'The old federation address in the commit_federation event should now be the same as the initial.');
@@ -230,11 +227,17 @@ describe('Change federation', async function() {
         const actualNewFederationBtcPublicKeys = parseBtcPublicKeys(newFederationBtcPublicKeysInString);
         expect(actualNewFederationBtcPublicKeys).to.be.deep.equal(newFederationBtcPublicKeys, 'The new federation btc public keys should be the expected ones.');
 
+        // Assert the old federation btc public keys in the commit federation event are the expected ones.
+        const oldFederationBtcPublicKeysInString = commitFederationEvent.arguments.oldFederationBtcPublicKeys;
+        const actualOldFederationBtcPublicKeys = parseBtcPublicKeys(oldFederationBtcPublicKeysInString);
+        expect(actualOldFederationBtcPublicKeys).to.be.deep.equal(initialFederationPublicKeys.map(federator => federator[KEY_TYPE_BTC]), 'The old federation btc public keys should be the expected ones.');
+
     });
 
     it('should activate federation', async () => {
 
-        const federationActivationBlockNumber = commitFederationEvent.arguments.activationHeight;
+        const federationActivationBlockNumber = commitFederationCreationBlockNumber + FEDERATION_ACTIVATION_AGE;
+
         const currentBlockNumber = await rskTxHelper.getClient().eth.getBlockNumber();
         const blockDifference = federationActivationBlockNumber - currentBlockNumber;
         // Mining enough blocks to activate the federation.
@@ -245,16 +248,14 @@ describe('Change federation', async function() {
         const expectedFederationSize = -1;
         expect(actualPendingFederationSize).to.be.equal(expectedFederationSize, 'The pending federation should not exist anymore.');
 
+        // Assert the active federation redeem script is the expected ones.
+        const newActiveFederationErpRedeemScript = removePrefix0x(await bridge.methods.getActivePowpegRedeemScript().call());
+        expect(newActiveFederationErpRedeemScript).to.be.equal(expectedNewFederationErpRedeemScript, 'The new active federation erp redeem script should be the expected one.');
+
         // Assert the active federation address is the expected one.
         const newFederationAddress = await bridge.methods.getFederationAddress().call();
         expect(newFederationAddress).to.not.be.equal(initialFederationAddress, 'The new active federation address should be different from the initial federation address.');
         expect(newFederationAddress).to.be.equal(expectedNewFederationAddress, 'The new active federation address should be the expected one.');
-
-        // Assert the active federation redeem script is the expected ones.
-        const newActiveFederaetionErpRedeemScript = removePrefix0x(await bridge.methods.getActivePowpegRedeemScript().call());
-        const expectedNewFederationErpRedeemScript = redeemScriptParser.getP2shErpRedeemScript(newFederationBtcPublicKeys.map(key => removePrefix0x(key)), ERP_PUBKEYS, ERP_CSV_VALUE).toString('hex');
-
-        expect(newActiveFederaetionErpRedeemScript).to.be.equal(expectedNewFederationErpRedeemScript, 'The new active federation erp redeem script should be the expected one.');
 
         const retiringFederationSize = Number(await bridge.methods.getRetiringFederationSize().call());
         expect(retiringFederationSize).to.be.equal(initialFederationPublicKeys.length, 'The retiring federation size should be the same as the initial federation size.');
@@ -266,7 +267,7 @@ describe('Change federation', async function() {
 
     it('should complete retiring the old federation', async () => {
 
-        const blocksToMineToRetireFederation = FUNDS_MIGRATION_AGE_SINCE_ACTIVATION_BEGIN + FUNDS_MIGRATION_AGE_SINCE_ACTIVATION_END;
+        const blocksToMineToRetireFederation = FUNDS_MIGRATION_AGE_SINCE_ACTIVATION_END;
         // Mining enough blocks to complete retiring the old federation.
         await rskUtils.mineAndSync(rskTxHelpers, blocksToMineToRetireFederation);
 
