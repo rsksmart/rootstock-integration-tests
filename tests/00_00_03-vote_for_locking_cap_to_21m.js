@@ -1,6 +1,6 @@
 const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
-const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/precompiled-abi-forks-util');
 const { btcToWeis, btcToSatoshis } = require('@rsksmart/btc-eth-unit-converter');
 const { expect } = require('chai');
 
@@ -21,7 +21,7 @@ describe('Vote for locking cap to the max 21 million btc', function() {
         const authAddress = await rskTxHelper.getClient().eth.personal.importRawKey(lockingCapAuthorizerPrivateKey, '');
         await rskUtils.sendFromCow(rskTxHelper, authAddress, btcToWeis(1));
 
-        const bridge = getBridge(rskTxHelper.getClient(), await getLatestActiveForkName());
+        const bridge = getBridge(rskTxHelper.getClient());
 
         const MAX_BTC = 21_000_000;
 
