@@ -1,4 +1,4 @@
-const twoWpTests = require('../lib/tests/2wp');
+const twoWpTests = require('../lib/tests/2wp-legacy');
 
 twoWpTests.execute(
   'BTC <=> RSK 2WP after federation change',
