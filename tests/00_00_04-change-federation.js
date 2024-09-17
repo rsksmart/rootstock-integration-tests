@@ -1,9 +1,9 @@
 const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
-const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/precompiled-abi-forks-util');
 const { btcToWeis } = require('@rsksmart/btc-eth-unit-converter');
 const { removePrefix0x, ensure0x, splitStringIntoChunks } = require('../lib/utils');
-const bridgeTxParser = require('bridge-transaction-parser');
+const BridgeTransactionParser = require('@rsksmart/bridge-transaction-parser');
 const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
 const { expect } = require('chai');
 const { 
@@ -86,6 +86,7 @@ describe('Change federation', async function() {
     let rskTxHelpers;
     let rskTxHelper;
     let bridge;
+    let bridgeTxParser;
 
     const regtestFedChangeAuthorizer1PrivateKey = REGTEST_FEDERATION_CHANGE_PRIVATE_KEYS[0];
     const regtestFedChangeAuthorizer2PrivateKey = REGTEST_FEDERATION_CHANGE_PRIVATE_KEYS[1];
@@ -107,6 +108,7 @@ describe('Change federation', async function() {
 
         rskTxHelpers = getRskTransactionHelpers();
         rskTxHelper = rskTxHelpers[0];
+        bridgeTxParser = new BridgeTransactionParser(rskTxHelper.getClient());
 
         // Import the private keys of the federation change authorizers.
         fedChangeAuthorizer1Address = await rskTxHelper.importAccount(regtestFedChangeAuthorizer1PrivateKey);
@@ -118,7 +120,7 @@ describe('Change federation', async function() {
         await fundFedChangeAuthorizer(rskTxHelper, fedChangeAuthorizer2Address);
         await fundFedChangeAuthorizer(rskTxHelper, fedChangeAuthorizer3Address);
 
-        bridge = getBridge(rskTxHelper.getClient(), await getLatestActiveForkName());
+        bridge = getBridge(rskTxHelper.getClient());
 
         initialFederationPublicKeys = await getCurrentFederationKeys(bridge);
         newFederationPublicKeys = createNewFederationKeys(initialFederationPublicKeys);
@@ -203,7 +205,7 @@ describe('Change federation', async function() {
         // Third and final commit pending federation vote
         const commitFederationTransactionReceipt = await rskUtils.sendTransaction(rskTxHelper, commitPendingFederationMethod, fedChangeAuthorizer3Address);
 
-        const bridgeTransaction = await bridgeTxParser.getBridgeTransactionByTxHash(rskTxHelper.getClient(), commitFederationTransactionReceipt.transactionHash);
+        const bridgeTransaction = await bridgeTxParser.getBridgeTransactionByTxHash(commitFederationTransactionReceipt.transactionHash);
 
         commitFederationEvent = bridgeTransaction.events.find(event => event.name === 'commit_federation');
         expect(commitFederationEvent, 'The commit federation event should be emitted.').to.not.be.null;
