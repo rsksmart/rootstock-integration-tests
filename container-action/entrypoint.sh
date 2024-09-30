@@ -5,16 +5,18 @@ RSKJ_BRANCH="${INPUT_RSKJ_BRANCH}"
 POWPEG_NODE_BRANCH="${INPUT_POWPEG_NODE_BRANCH}"
 RIT_BRANCH="${INPUT_RIT_BRANCH}"
 LOG_LEVEL="${INPUT_RIT_LOG_LEVEL}"
+REPO_OWNER="${INPUT_REPO_OWNER:-rsksmart}" # Default to 'rsksmart' if not provided
 
 echo -e "\n\n--------- Input parameters received ---------\n\n"
 echo "RSKJ_BRANCH=$RSKJ_BRANCH"
 echo "POWPEG_NODE_BRANCH=$POWPEG_NODE_BRANCH"
 echo "RIT_BRANCH=$RIT_BRANCH"
 echo "LOG_LEVEL=$LOG_LEVEL"
+echo "REPO_OWNER=$REPO_OWNER"
 
 echo -e "\n\n--------- Starting the configuration of rskj ---------\n\n"
 cd /usr/src/
-git clone https://github.com/rsksmart/rskj.git rskj
+git clone "https://github.com/$REPO_OWNER/rskj.git" rskj
 cd rskj && git checkout "$RSKJ_BRANCH"
 chmod +x ./configure.sh && chmod +x gradlew
 ./configure.sh
