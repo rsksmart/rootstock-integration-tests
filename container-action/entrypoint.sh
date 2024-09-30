@@ -13,6 +13,7 @@ echo "POWPEG_NODE_BRANCH=$POWPEG_NODE_BRANCH"
 echo "RIT_BRANCH=$RIT_BRANCH"
 echo "LOG_LEVEL=$LOG_LEVEL"
 echo "REPO_OWNER=$REPO_OWNER"
+echo "Input REPO_OWNER=${INPUT_REPO_OWNER}"
 
 echo -e "\n\n--------- Starting the configuration of rskj ---------\n\n"
 cd /usr/src/
