@@ -6,39 +6,23 @@ POWPEG_NODE_BRANCH="${INPUT_POWPEG_NODE_BRANCH}"
 RIT_BRANCH="${INPUT_RIT_BRANCH}"
 LOG_LEVEL="${INPUT_RIT_LOG_LEVEL}"
 REPO_OWNER="${INPUT_REPO_OWNER:-rsksmart}"  # Default to 'rsksmart' if not provided
-IS_RSKJ_BRANCH=$(git ls-remote "https://github.com/$REPO_OWNER/rskj.git" "$RSKJ_BRANCH")
-IS_POWPEG_BRANCH=$(git ls-remote "https://github.com/$REPO_OWNER/powpeg-node.git" "$POWPEG_NODE_BRANCH")
 
 # Check if the branch exists
-if [ -n "$IS_RSKJ_BRANCH" ]; then
-    echo "Branch '$RSKJ_BRANCH' exists in repository '$REPO_OWNER/rskj.git'."
+IS_RSKJ_BRANCH=$(curl -s -o /dev/null -w "%{http_code}" "https://api.github.com/repos/$REPO_OWNER/rskj/branches/$RSKJ_BRANCH")
+
+if [ "$IS_RSKJ_BRANCH" -eq 200 ]; then
+    echo "IS_RSKJ_BRANCH is true: Branch '$RSKJ_BRANCH' exists in $REPO_OWNER/rskj.git"
 else
-    echo "Branch '$RSKJ_BRANCH' does not exist in repository '$REPO_OWNER/rskj.git'."
+    echo "Branch '$RSKJ_BRANCH' does not exist in $REPO_OWNER/rskj.git"
 fi
 
-if [ -n "$IS_POWPEG_BRANCH" ]; then
-    echo "Branch '$POWPEG_NODE_BRANCH' exists in repository '$REPO_OWNER/powpeg-node.git'."
+IS_POWPEG_BRANCH=$(curl -s -o /dev/null -w "%{http_code}" "https://api.github.com/repos/$REPO_OWNER/powpeg-node/branches/$POWPEG_NODE_BRANCH")
+
+if [ "$IS_POWPEG_BRANCH" -eq 200 ]; then
+    echo "IS_POWPEG_BRANCH is true: Branch '$POWPEG_NODE_BRANCH' exists in $REPO_OWNER/powpeg-node.git"
 else
-    echo "Branch '$POWPEG_NODE_BRANCH' does not exist in repository '$REPO_OWNER/powpeg-node.git'."
+    echo "Branch '$POWPEG_NODE_BRANCH' does not exist in $REPO_OWNER/powpeg-node.git"
 fi
-
-
-# Check if the branch exists
-#IS_RSKJ_BRANCH=$(curl -s -o /dev/null -w "%{http_code}" "https://api.github.com/repos/$REPO_OWNER/rskj/branches/$RSKJ_BRANCH")
-
-#if [ "$IS_RSKJ_BRANCH" -eq 200 ]; then
-#    echo "Branch '$RSKJ_BRANCH' exists in $REPO_OWNER/rskj.git"
-#else
-#    echo "Branch '$RSKJ_BRANCH' does not exist in $REPO_OWNER/rskj.git"
-#fi
-
-#IS_POWPEG_BRANCH=$(curl -s -o /dev/null -w "%{http_code}" "https://api.github.com/repos/$REPO_OWNER/powpeg-node/branches/$POWPEG_NODE_BRANCH")
-
-#if [ "$IS_POWPEG_BRANCH" -eq 200 ]; then
-#    echo "Branch '$POWPEG_NODE_BRANCH' exists in $REPO_OWNER/powpeg-node.git"
-#else
-#    echo "Branch '$POWPEG_NODE_BRANCH' does not exist in $REPO_OWNER/powpeg-node.git"
-#fi
 
 
 echo -e "\n\n--------- Input parameters received ---------\n\n"
@@ -50,7 +34,7 @@ echo "REPO_OWNER=$REPO_OWNER"
 
 echo -e "\n\n--------- Starting the configuration of rskj ---------\n\n"
 cd /usr/src/
-if test -n "${IS_RSKJ_BRANCH}"; then
+if [ "$IS_RSKJ_BRANCH" -eq 200 ]; then
   echo "Found matching branch name in $REPO_OWNER/rskj.git repo"
   git clone "https://github.com/$REPO_OWNER/rskj.git" rskj
 else
@@ -63,7 +47,7 @@ chmod +x ./configure.sh && chmod +x gradlew
 
 echo -e  "\n\n--------- Starting the configuration of powpeg ---------\n\n"
 cd /usr/src/
-if test -n "${IS_POWPEG_BRANCH}"; then
+if [ "$IS_POWPEG_BRANCH" -eq 200 ]; then
   echo "Found matching branch name in $REPO_OWNER/powpeg-node.git repo"
   git clone "https://github.com/$REPO_OWNER/powpeg-node.git" powpeg
 else
