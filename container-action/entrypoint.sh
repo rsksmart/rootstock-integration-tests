@@ -5,23 +5,55 @@ RSKJ_BRANCH="${INPUT_RSKJ_BRANCH}"
 POWPEG_NODE_BRANCH="${INPUT_POWPEG_NODE_BRANCH}"
 RIT_BRANCH="${INPUT_RIT_BRANCH}"
 LOG_LEVEL="${INPUT_RIT_LOG_LEVEL}"
+REPO_OWNER="${INPUT_REPO_OWNER:-rsksmart}"  # Default to 'rsksmart' if not provided
+
+# Check if the branch exists
+IS_RSKJ_BRANCH=$(curl -s -o /dev/null -w "%{http_code}" "https://api.github.com/repos/$REPO_OWNER/rskj/branches/$RSKJ_BRANCH")
+
+if [ "$IS_RSKJ_BRANCH" -eq 200 ]; then
+    echo "IS_RSKJ_BRANCH is true: Branch '$RSKJ_BRANCH' exists in $REPO_OWNER/rskj.git"
+else
+    echo "Branch '$RSKJ_BRANCH' does not exist in $REPO_OWNER/rskj.git"
+fi
+
+IS_POWPEG_BRANCH=$(curl -s -o /dev/null -w "%{http_code}" "https://api.github.com/repos/$REPO_OWNER/powpeg-node/branches/$POWPEG_NODE_BRANCH")
+
+if [ "$IS_POWPEG_BRANCH" -eq 200 ]; then
+    echo "IS_POWPEG_BRANCH is true: Branch '$POWPEG_NODE_BRANCH' exists in $REPO_OWNER/powpeg-node.git"
+else
+    echo "Branch '$POWPEG_NODE_BRANCH' does not exist in $REPO_OWNER/powpeg-node.git"
+fi
+
 
 echo -e "\n\n--------- Input parameters received ---------\n\n"
 echo "RSKJ_BRANCH=$RSKJ_BRANCH"
 echo "POWPEG_NODE_BRANCH=$POWPEG_NODE_BRANCH"
 echo "RIT_BRANCH=$RIT_BRANCH"
 echo "LOG_LEVEL=$LOG_LEVEL"
+echo "REPO_OWNER=$REPO_OWNER"
 
 echo -e "\n\n--------- Starting the configuration of rskj ---------\n\n"
 cd /usr/src/
-git clone https://github.com/rsksmart/rskj.git rskj
+if [ "$IS_RSKJ_BRANCH" -eq 200 ]; then
+  echo "Found matching branch name in $REPO_OWNER/rskj.git repo"
+  git clone "https://github.com/$REPO_OWNER/rskj.git" rskj
+else
+  echo "Found matching branch name in rsksmart/rskj.git repo"
+  git clone "https://github.com/rsksmart/rskj.git" rskj
+fi
 cd rskj && git checkout "$RSKJ_BRANCH"
 chmod +x ./configure.sh && chmod +x gradlew
 ./configure.sh
 
 echo -e  "\n\n--------- Starting the configuration of powpeg ---------\n\n"
 cd /usr/src/
-git clone https://github.com/rsksmart/powpeg-node.git powpeg
+if [ "$IS_POWPEG_BRANCH" -eq 200 ]; then
+  echo "Found matching branch name in $REPO_OWNER/powpeg-node.git repo"
+  git clone "https://github.com/$REPO_OWNER/powpeg-node.git" powpeg
+else
+  echo "Found matching branch name in rsksmart/powpeg-node.git repo"
+  git clone "https://github.com/rsksmart/powpeg-node.git" powpeg
+fi
 cp configure_gradle_powpeg.sh powpeg
 cd powpeg && git checkout "$POWPEG_NODE_BRANCH"
 chmod +x ./configure.sh && chmod +x gradlew

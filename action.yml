@@ -19,6 +19,10 @@ inputs:
     description: 'Log level for the rootstock-integration-tests'
     required: false
     default: 'info'
+  repo-owner:
+    description: 'The owner of the repository'
+    required: false
+    default: 'rsksmart'
 
 outputs:
   status:
@@ -34,3 +38,4 @@ runs:
     INPUT_POWPEG_NODE_BRANCH: ${{ inputs.powpeg-node-branch }}
     INPUT_RIT_BRANCH: ${{ inputs.rit-branch }}
     INPUT_RIT_LOG_LEVEL: ${{ inputs.rit-log-level }}
+    INPUT_REPO_OWNER: ${{ inputs.repo-owner }}
