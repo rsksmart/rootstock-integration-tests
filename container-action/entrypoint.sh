@@ -6,6 +6,8 @@ POWPEG_NODE_BRANCH="${INPUT_POWPEG_NODE_BRANCH}"
 RIT_BRANCH="${INPUT_RIT_BRANCH}"
 LOG_LEVEL="${INPUT_RIT_LOG_LEVEL}"
 REPO_OWNER="${INPUT_REPO_OWNER:-rsksmart}"  # Default to 'rsksmart' if not provided
+IS_RSKJ_BRANCH=$(git ls-remote "https://github.com/$REPO_OWNER/rskj.git" "$RSKJ_BRANCH")
+IS_POWPEG_BRANCH=$(git ls-remote "https://github.com/$REPO_OWNER/powpeg-node.git" "$POWPEG_NODE_BRANCH")
 
 echo -e "\n\n--------- Input parameters received ---------\n\n"
 echo "RSKJ_BRANCH=$RSKJ_BRANCH"
@@ -13,18 +15,29 @@ echo "POWPEG_NODE_BRANCH=$POWPEG_NODE_BRANCH"
 echo "RIT_BRANCH=$RIT_BRANCH"
 echo "LOG_LEVEL=$LOG_LEVEL"
 echo "REPO_OWNER=$REPO_OWNER"
-echo "Input REPO_OWNER=${INPUT_REPO_OWNER}"
 
 echo -e "\n\n--------- Starting the configuration of rskj ---------\n\n"
 cd /usr/src/
-git clone "https://github.com/$REPO_OWNER/rskj.git" rskj  # Use the variable for repo owner
+if test -n "${IS_RSKJ_BRANCH}"; then
+  echo "Found matching branch name in $REPO_OWNER/rskj.git repo"
+  git clone "https://github.com/$REPO_OWNER/rskj.git" rskj
+else
+  echo "Found matching branch name in rsksmart/rskj.git repo"
+  git clone "https://github.com/rsksmart/rskj.git" rskj
+fi
 cd rskj && git checkout "$RSKJ_BRANCH"
 chmod +x ./configure.sh && chmod +x gradlew
 ./configure.sh
 
 echo -e  "\n\n--------- Starting the configuration of powpeg ---------\n\n"
 cd /usr/src/
-git clone https://github.com/rsksmart/powpeg-node.git powpeg
+if test -n "${IS_POWPEG_BRANCH}"; then
+  echo "Found matching branch name in $REPO_OWNER/powpeg-node.git repo"
+  git clone "https://github.com/$REPO_OWNER/powpeg-node.git" powpeg
+else
+  echo "Found matching branch name in rsksmart/powpeg-node.git repo"
+  git clone "https://github.com/rsksmart/powpeg-node.git" powpeg
+fi
 cp configure_gradle_powpeg.sh powpeg
 cd powpeg && git checkout "$POWPEG_NODE_BRANCH"
 chmod +x ./configure.sh && chmod +x gradlew
