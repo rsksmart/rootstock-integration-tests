@@ -9,6 +9,38 @@ REPO_OWNER="${INPUT_REPO_OWNER:-rsksmart}"  # Default to 'rsksmart' if not provi
 IS_RSKJ_BRANCH=$(git ls-remote "https://github.com/$REPO_OWNER/rskj.git" "$RSKJ_BRANCH")
 IS_POWPEG_BRANCH=$(git ls-remote "https://github.com/$REPO_OWNER/powpeg-node.git" "$POWPEG_NODE_BRANCH")
 
+# Check if the branch exists
+if [ -n "$IS_RSKJ_BRANCH" ]; then
+    echo "Branch '$RSKJ_BRANCH' exists in repository '$REPO_OWNER/rskj.git'."
+else
+    echo "Branch '$RSKJ_BRANCH' does not exist in repository '$REPO_OWNER/rskj.git'."
+fi
+
+if [ -n "$IS_POWPEG_BRANCH" ]; then
+    echo "Branch '$POWPEG_NODE_BRANCH' exists in repository '$REPO_OWNER/powpeg-node.git'."
+else
+    echo "Branch '$POWPEG_NODE_BRANCH' does not exist in repository '$REPO_OWNER/powpeg-node.git'."
+fi
+
+
+# Check if the branch exists
+#IS_RSKJ_BRANCH=$(curl -s -o /dev/null -w "%{http_code}" "https://api.github.com/repos/$REPO_OWNER/rskj/branches/$RSKJ_BRANCH")
+
+#if [ "$IS_RSKJ_BRANCH" -eq 200 ]; then
+#    echo "Branch '$RSKJ_BRANCH' exists in $REPO_OWNER/rskj.git"
+#else
+#    echo "Branch '$RSKJ_BRANCH' does not exist in $REPO_OWNER/rskj.git"
+#fi
+
+#IS_POWPEG_BRANCH=$(curl -s -o /dev/null -w "%{http_code}" "https://api.github.com/repos/$REPO_OWNER/powpeg-node/branches/$POWPEG_NODE_BRANCH")
+
+#if [ "$IS_POWPEG_BRANCH" -eq 200 ]; then
+#    echo "Branch '$POWPEG_NODE_BRANCH' exists in $REPO_OWNER/powpeg-node.git"
+#else
+#    echo "Branch '$POWPEG_NODE_BRANCH' does not exist in $REPO_OWNER/powpeg-node.git"
+#fi
+
+
 echo -e "\n\n--------- Input parameters received ---------\n\n"
 echo "RSKJ_BRANCH=$RSKJ_BRANCH"
 echo "POWPEG_NODE_BRANCH=$POWPEG_NODE_BRANCH"
