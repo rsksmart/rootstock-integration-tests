@@ -8,7 +8,7 @@ on:
 
 permissions:
   contents: read
-  packages: write
+  
 env:
   TEST_TAG:  ${{ github.event.repository.name }}/rit:test
   LATEST_TAG: ghcr.io/rsksmart/${{ github.event.repository.name }}/rit
@@ -112,7 +112,6 @@ jobs:
       if: github.ref == 'refs/heads/main'
       permissions:
         contents:  write
-        packages: write
 
       steps:
         - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
