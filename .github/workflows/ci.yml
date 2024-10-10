@@ -105,21 +105,21 @@ jobs:
           echo "RIT Message = ${{ steps.test-rit-action.outputs.message }}"
 
   publish-rit-action-tag:
-      needs:  test-rit-action
-      name: Publish RIT Action tag
-      runs-on: ubuntu-latest
-      timeout-minutes: 60
-      if: github.ref == 'refs/heads/main'
-      permissions:
-        contents:  write
+    needs:  test-rit-action
+    name: Publish RIT Action tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents:  write
 
-      steps:
-        - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-          with:
-            token: ${{ secrets.GITHUB_TOKEN }}
-        - name: Publish new version
-          run: |
-            git config --global user.email "no-reply@rootstocklabs.com"
-            git config --global user.name "RIT Release Automation"
-            git tag -fa v1 -m "Updating rootstock-integration-tests container action v1"
-            git push origin v1 --force
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish new version
+        run: |
+          git config --global user.email "no-reply@rootstocklabs.com"
+          git config --global user.name "RIT Release Automation"
+          git tag -fa v1 -m "Updating rootstock-integration-tests container action v1"
+          git push origin v1 --force
