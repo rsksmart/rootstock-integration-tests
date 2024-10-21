@@ -34,7 +34,7 @@
     "mocha-junit-reporter": "^1.17.0",
     "pegin-address-verificator": "git+https://git@github.com/rsksmart/pegin-address-verifier#v0.4.0",
     "peglib": "git+https://github.com/rsksmart/rsk-peglib#v1.4.15",
-    "@rsksmart/rsk-precompiled-abis": "npm:@rsksmart/rsk-precompiled-abis@^6.0.0-ARROWHEAD",
+    "@rsksmart/rsk-precompiled-abis": "^6.0.0-ARROWHEAD",
     "rsk-transaction-helper": "git+https://github.com/rsksmart/rootstock-transaction-helper#v3.1.0",
     "solc": "^0.7.5",
     "stream-line-wrapper": "^0.1.1",
