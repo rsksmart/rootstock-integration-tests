@@ -23,7 +23,7 @@
     "bridge-transaction-parser-lovell700": "git+https://github.com/rsksmart/bridge-transaction-parser#master",
     "btc-transaction-helper": "git+https://git@github.com/rsksmart/btc-transaction-helper#v3.5.0",
     "chai": "^4.1.2",
-    "chai-as-promised": "^7.1.1",
+    "chai-as-promised": "^8.0.0",
     "colors": "^1.1.2",
     "dev-null": "^0.1.1",
     "dotenv": "^16.0.3",
