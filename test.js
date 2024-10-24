@@ -214,6 +214,9 @@ before(async () => {
       // Set amountOfHeadersToSend to 500 to avoid having to inform headers in separated calls
       config.customConfig[`federator.amountOfHeadersToSend`] = 500;
       
+      // TODO: Remove once RIT refactors have been completed
+      config.customConfig[`blockchain.config.consensusRules.rskip427`] = -1;
+
       // federatesToStart: [1, 2, 3]
       // additionalFederateNodes: [4, 5]
       // Configure peers
