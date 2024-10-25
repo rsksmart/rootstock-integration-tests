@@ -1,5 +1,7 @@
 # Rootstock Integration tests
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/rsksmart/rootstock-integration-tests/badge)](https://scorecard.dev/viewer/?uri=github.com/rsksmart/rootstock-integration-tests)
+
 ## Disclaimer
 
 This library is intended to be used for testing purposes only, to avoid any possible risk it is recommended to execute in an isolated environment such as a container or VM.
