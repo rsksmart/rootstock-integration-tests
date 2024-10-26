@@ -5,11 +5,11 @@ const rsk = peglib.rsk;
 const pegUtils = peglib.pegUtils;
 const rskUtilsLegacy = require('../lib/rsk-utils-legacy');
 const CustomError = require('../lib/CustomError');
+const { FEE_PER_KB_CHANGER_PRIVATE_KEY } = require('../lib/constants');
 
 const NETWORK = bitcoin.networks.testnet;
 
-const FEE_PER_KB_CHANGE_PK = '6a4b49312b91e203ddfb9bc2d900ebbd46fbede46a7462e770bedcb11ad405e9';
-const FEE_PER_KB_CHANGE_ADDR = '53f8f6dabd612b6137215ddd7758bb5cdd638922';
+const FEE_PER_KB_CHANGER_ADDRESS = '53f8f6dabd612b6137215ddd7758bb5cdd638922';
 const MAX_FEE_PER_KB = 5000000;
 
 const RANDOM_PK = 'a4896a3f93bf4bf58378e579f3cf193bb4af1022af7d2089f37d8bae7157b85f';
@@ -62,15 +62,15 @@ describe('Fee per kb change voting', function() {
   it('should reject votes above the max fee per kb value', async () => {
     try{
       const newFeePerKb = MAX_FEE_PER_KB + 1;
-      var addr = await rskClient.eth.personal.importRawKey(FEE_PER_KB_CHANGE_PK, '');
-      expect(addr.slice(2)).to.equal(FEE_PER_KB_CHANGE_ADDR);
+      var addr = await rskClient.eth.personal.importRawKey(FEE_PER_KB_CHANGER_PRIVATE_KEY, '');
+      expect(addr.slice(2)).to.equal(FEE_PER_KB_CHANGER_ADDRESS);
 
       await rskClient.eth.personal.unlockAccount(addr, '');
 
       await utils.sendTxWithCheck(
         rskClient.rsk.bridge.methods.voteFeePerKbChange(newFeePerKb),
         (result) => { expect(Number(result)).to.equal(-2); }, // excessive fee per kb
-        FEE_PER_KB_CHANGE_ADDR
+        FEE_PER_KB_CHANGER_ADDRESS
       )();
 
       var feePerKb = await rskClient.rsk.bridge.methods.getFeePerKb().call();
@@ -84,15 +84,15 @@ describe('Fee per kb change voting', function() {
   it('should be able to vote and change the fee per kb', async () => {
     try{
       const newFeePerKb = bitcoin.btcToSatoshis(0.005);
-      var addr = await rskClient.eth.personal.importRawKey(FEE_PER_KB_CHANGE_PK, '');
-      expect(addr.slice(2)).to.equal(FEE_PER_KB_CHANGE_ADDR);
+      var addr = await rskClient.eth.personal.importRawKey(FEE_PER_KB_CHANGER_PRIVATE_KEY, '');
+      expect(addr.slice(2)).to.equal(FEE_PER_KB_CHANGER_ADDRESS);
 
       await rskClient.eth.personal.unlockAccount(addr, '');
 
       await utils.sendTxWithCheck(
         rskClient.rsk.bridge.methods.voteFeePerKbChange(newFeePerKb),
         (result) => { expect(Number(result)).to.equal(1); }, // successful vote
-        FEE_PER_KB_CHANGE_ADDR
+        FEE_PER_KB_CHANGER_ADDRESS
       )();
 
       var feePerKb = await rskClient.rsk.bridge.methods.getFeePerKb().call();
