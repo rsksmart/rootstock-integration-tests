@@ -13,7 +13,7 @@
   "license": "GPL3",
   "dependencies": {
     "@rsksmart/bridge-state-data-parser": "^1.2.0",
-    "@rsksmart/bridge-transaction-parser": "^1.1.3",
+    "@rsksmart/bridge-transaction-parser": "^1.1.4",
     "@rsksmart/btc-eth-unit-converter": "^1.0.0",
     "@rsksmart/btc-rsk-derivation": "^0.0.2",
     "@rsksmart/pmt-builder": "^3.0.0",
