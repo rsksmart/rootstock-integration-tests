@@ -9,7 +9,7 @@ const removePrefix0x = require('../lib/utils').removePrefix0x;
 const {
   GENESIS_FEDERATION_ADDRESS,
   GENESIS_FEDERATION_REDEEM_SCRIPT,
-} = require('../lib/constants');
+} = require('../lib/constants/federation-constants');
 
 describe('Calling getActivePowpegRedeemScript method after last fork before fedchange', function() {
   let rskTxHelpers;

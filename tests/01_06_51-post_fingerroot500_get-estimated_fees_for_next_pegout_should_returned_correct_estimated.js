@@ -1,7 +1,7 @@
 const expect = require('chai').expect
 const { getBridge } = require('../lib/precompiled-abi-forks-util');
 const CustomError = require('../lib/CustomError');
-const {MAX_ESTIMATED_FEE_PER_PEGOUT, FEE_DIFFERENCE_PER_PEGOUT} = require("../lib/constants");
+const { MAX_ESTIMATED_FEE_PER_PEGOUT, FEE_DIFFERENCE_PER_PEGOUT } = require("../lib/constants/pegout-constants");
 const { getRskTransactionHelper } = require('../lib/rsk-tx-helper-provider');
 
 let bridge;

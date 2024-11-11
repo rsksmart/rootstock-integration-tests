@@ -7,7 +7,7 @@ const CustomError = require('../lib/CustomError');
 const rskUtilsLegacy = require('../lib/rsk-utils-legacy');
 const _2wpUtilsLegacy = require('../lib/2wp-utils-legacy');
 const pegAssertions = require('../lib/assertions/2wp');
-const { NUMBER_OF_BLOCKS_BTW_PEGOUTS } = require('../lib/constants');
+const { NUMBER_OF_BLOCKS_BTW_PEGOUTS } = require('../lib/constants/pegout-constants');
 const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 
