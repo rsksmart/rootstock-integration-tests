@@ -18,7 +18,7 @@ const {
   KEY_TYPE_BTC,
   KEY_TYPE_RSK,
   KEY_TYPE_MST,
-} = require('../lib/constants');
+} = require('../lib/constants/federation-constants');
 const INITIAL_FEDERATION_SIZE = 3;
 
 let rskTxHelpers;

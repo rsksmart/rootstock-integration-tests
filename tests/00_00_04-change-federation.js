@@ -12,10 +12,10 @@ const {
     KEY_TYPE_MST,
     REGTEST_FEDERATION_CHANGE_PRIVATE_KEYS,
     FEDERATION_ACTIVATION_AGE,
-  FUNDS_MIGRATION_AGE_SINCE_ACTIVATION_END,
-  ERP_PUBKEYS,
-  ERP_CSV_VALUE,
-} = require('../lib/constants');
+    FUNDS_MIGRATION_AGE_SINCE_ACTIVATION_END,
+    ERP_PUBKEYS,
+    ERP_CSV_VALUE,
+} = require('../lib/constants/federation-constants');
 
 // Generated with seed newFed1
 const newFederator1PublicKey = '0x02f80abfd3dac069887f974ac033cb62991a0ed55b9880faf8b8cbd713b75d649e';

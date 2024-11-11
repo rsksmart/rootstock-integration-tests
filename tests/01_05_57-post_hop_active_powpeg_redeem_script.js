@@ -7,7 +7,7 @@ const CustomError = require('../lib/CustomError');
 const removePrefix0x = require('../lib/utils').removePrefix0x;
 const {getRskTransactionHelpers} = require('../lib/rsk-tx-helper-provider');
 const {getBridge} = require('../lib/precompiled-abi-forks-util');
-const {GENESIS_FEDERATION_ADDRESS, GENESIS_FEDERATION_REDEEM_SCRIPT} = require('../lib/constants');
+const { GENESIS_FEDERATION_ADDRESS, GENESIS_FEDERATION_REDEEM_SCRIPT } = require('../lib/constants/federation-constants');
 
 describe('Calling getActivePowpegRedeemScript method after hop', function() {
   let rskTxHelpers;
