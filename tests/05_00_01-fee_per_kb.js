@@ -5,7 +5,7 @@ const rsk = peglib.rsk;
 const pegUtils = peglib.pegUtils;
 const rskUtilsLegacy = require('../lib/rsk-utils-legacy');
 const CustomError = require('../lib/CustomError');
-const { FEE_PER_KB_CHANGER_PRIVATE_KEY } = require('../lib/constants');
+const { FEE_PER_KB_CHANGER_PRIVATE_KEY } = require('../lib/constants/fee-per-kb-constants');
 
 const NETWORK = bitcoin.networks.testnet;
 
