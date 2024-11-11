@@ -1,7 +1,7 @@
 const { assertContractCallFails, assertContractCallReturnsWithCallback } = require('../lib/assertions/contractMethods');
 const expect = require('chai').expect;
 const { assertIsPublicKey } = require('../lib/assertions/misc');
-const { KEY_TYPE_BTC } = require('../lib/constants');
+const { KEY_TYPE_BTC } = require('../lib/constants/federation-constants');
 const CustomError = require('../lib/CustomError');
 const { getBridge } = require('../lib/precompiled-abi-forks-util');
 const { getRskTransactionHelper } = require('../lib/rsk-tx-helper-provider');

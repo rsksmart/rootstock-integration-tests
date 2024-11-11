@@ -7,7 +7,7 @@ const rskUtilsLegacy = require('../lib/rsk-utils-legacy');
 const CustomError = require('../lib/CustomError');
 const _2wpUtilsLegacy = require('../lib/2wp-utils-legacy');
 const pegAssertions = require('../lib/assertions/2wp');
-const { NUMBER_OF_BLOCKS_BTW_PEGOUTS } = require('../lib/constants');
+const { NUMBER_OF_BLOCKS_BTW_PEGOUTS } = require('../lib/constants/pegout-constants');
 
 let currentBlockNumber;
 let pegoutCount = 0;

@@ -28,7 +28,7 @@ const {
     REGTEST_FEDERATION_CHANGE_PRIVATE_KEYS,
     REGTEST_FEDERATION_CHANGE_ADDRESSES,
     FEDERATION_ACTIVATION_AGE
-} = require('../lib/constants');
+} = require('../lib/constants/federation-constants');
 
 const OTHER_PKS = [
   '1722c8adb8a702553bb2b4fa7c8de97e0b572e13404a1263b5b31fead3d9784f',
