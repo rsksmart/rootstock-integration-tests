@@ -43,7 +43,6 @@ const bookkeepingConfigurations = {
 };
 
 // ***** GLOBALS ***** //
-// If this is updated and more forks are added, remember to update './lib/precompiled-abi-forks-util.js' accordingly.
 global.Runners = {
   hosts: {},
   common: {

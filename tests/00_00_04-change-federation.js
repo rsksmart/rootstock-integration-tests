@@ -1,6 +1,6 @@
 const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
-const { getBridge } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/bridge-provider');
 const { btcToWeis } = require('@rsksmart/btc-eth-unit-converter');
 const { removePrefix0x, ensure0x, splitStringIntoChunks } = require('../lib/utils');
 const BridgeTransactionParser = require('@rsksmart/bridge-transaction-parser');

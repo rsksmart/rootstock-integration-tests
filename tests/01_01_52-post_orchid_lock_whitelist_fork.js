@@ -2,7 +2,7 @@ const whitelistingAssertions = require('../lib/assertions/whitelisting');
 const contractMethodAssertions = require('../lib/assertions/contractMethods');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
-const { getBridge } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/bridge-provider');
 
 const WHITELIST_ADDRESSES = {
     'mq4w7mWwCtCURdbB3m3EVXqtJiVBdXcEaK' : 100000000000,
