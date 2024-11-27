@@ -3,7 +3,7 @@ const expect = require('chai').expect;
 const { assertIsPublicKey } = require('../lib/assertions/misc');
 const { KEY_TYPE_BTC } = require('../lib/constants/federation-constants');
 const CustomError = require('../lib/CustomError');
-const { getBridge } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/bridge-provider');
 const { getRskTransactionHelper } = require('../lib/rsk-tx-helper-provider');
 
 const RANDOM_PUBLIC_KEY = '0x02f9284f96eb093918a9da825111aec70a51152800e60249ac156ac35d2fa771ba';

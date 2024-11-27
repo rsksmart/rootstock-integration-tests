@@ -9,7 +9,7 @@ const { getBtcClient } = require('../lib/btc-client-provider');
 const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const { ensure0x, wait } = require('../lib/utils');
 const { fundAddressAndGetData } = require('../lib/btc-utils');
-const { getBridge } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/bridge-provider');
 const { mineForPeginRegistration } = require('../lib/2wp-utils');
 
 describe('Executing registerFastBtcTransaction after iris - with release', () => {

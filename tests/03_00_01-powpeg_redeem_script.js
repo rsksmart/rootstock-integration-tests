@@ -3,7 +3,7 @@ chai.use(require('chai-as-promised'));
 const expect = chai.expect;
 const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
 const {getRskTransactionHelpers} = require('../lib/rsk-tx-helper-provider');
-const {getBridge} = require('../lib/precompiled-abi-forks-util');
+const {getBridge} = require('../lib/bridge-provider');
 const CustomError = require('../lib/CustomError');
 const removePrefix0x = require('../lib/utils').removePrefix0x;
 const {
