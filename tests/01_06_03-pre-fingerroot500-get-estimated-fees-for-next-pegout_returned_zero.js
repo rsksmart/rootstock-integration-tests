@@ -1,5 +1,5 @@
 const expect = require('chai').expect;
-const { getBridge } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/bridge-provider');
 const CustomError = require('../lib/CustomError');
 const { getRskTransactionHelper } = require('../lib/rsk-tx-helper-provider');
 

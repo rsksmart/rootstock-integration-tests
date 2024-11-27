@@ -1,5 +1,5 @@
 const whitelistingAssertions = require('../lib/assertions/whitelisting');
-const { getBridge } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/bridge-provider');
 const contractMethodAssertions = require('../lib/assertions/contractMethods');
 const expect = require('chai').expect;
 const CustomError = require('../lib/CustomError');
