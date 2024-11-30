@@ -665,6 +665,10 @@ describe('RSK Federation change', function() {
       ];
       
       await test.assertLock(addresses, outputs);
+
+      // Pushing any migration pegout that might be pending.
+      await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
+
     }
     catch (err) {
       throw new CustomError('Transfer BTC to RBTC with outputs both federations failure', err);

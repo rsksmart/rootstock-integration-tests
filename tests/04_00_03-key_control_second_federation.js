@@ -3,7 +3,7 @@ const fedAssertions = require('../lib/assertions/fed');
 
 var fedAssert;
 
-const INITIAL_FEDERATION_SIZE = 3;
+const INITIAL_FEDERATION_SIZE = 5;
 const INITIAL_FEDERATOR_BALANCE_IN_BTC = 1;
 
 describe('Federate nodes key control - second federation', function() {

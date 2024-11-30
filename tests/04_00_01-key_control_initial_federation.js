@@ -2,7 +2,7 @@ const fedAssertions = require('../lib/assertions/fed');
 
 var fedAssert;
 
-const INITIAL_FEDERATION_SIZE = 3;
+const INITIAL_FEDERATION_SIZE = 5;
 
 describe('Federate nodes key control - initial federation', function() {
   before(() => {
