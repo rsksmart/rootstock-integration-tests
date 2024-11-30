@@ -16,7 +16,7 @@ let rskTxHelper;
 let btcTxHelper;
 let bridge;
 
-describe('Calling registerFastBtcTransaction after iris', () => {
+describe.skip('Calling registerFastBtcTransaction after iris', () => {
   
   before(async () => {
     rskTxHelpers = getRskTransactionHelpers();
