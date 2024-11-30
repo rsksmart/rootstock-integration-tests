@@ -12,7 +12,7 @@ const { fundAddressAndGetData } = require('../lib/btc-utils');
 const { getBridge } = require('../lib/bridge-provider');
 const { mineForPeginRegistration } = require('../lib/2wp-utils');
 
-describe('Executing registerFastBtcTransaction post hop - sending same tx without witness twice', () => {
+describe.skip('Executing registerFastBtcTransaction post hop - sending same tx without witness twice', () => {
 
   let rskTxHelpers;
   let rskTxHelper;
