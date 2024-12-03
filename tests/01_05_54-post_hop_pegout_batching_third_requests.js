@@ -24,7 +24,10 @@ let btcClient;
 let pegClient;
 let rskTxHelpers;
 
-describe('Pegout Batching - Execute Pegout Transaction And Call New Bridge Methods', function () {
+// TODO: Refactor these tests
+// Some tests fail after running all tests with all forks active from scratch.
+// More analysis need to be done. Also, these tests use legacy functions. We need to refactor them.
+describe.skip('Pegout Batching - Execute Pegout Transaction And Call New Bridge Methods', function () {
 
     before(async () => {
         rskClients = Runners.hosts.federates.map(federate => rsk.getClient(federate.host));

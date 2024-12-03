@@ -77,7 +77,10 @@ let rskTxHelpers;
 let btcTxHelper;
 let rskTxHelper;
 
-describe('RSK Federation change', function() {
+// Skipped by now because these tests, as the are right now, create a federation with 2 members, and we already
+// have a federation with 5 members. We should create a new one with 5 or more members, not less.
+// Also, we already have some federation change tests in 00_00_04-change-federation.js, we should reuse those and add more scenarios.
+describe.skip('RSK Federation change', function() {
   let addresses;
 
   before(async () => {
@@ -665,6 +668,10 @@ describe('RSK Federation change', function() {
       ];
       
       await test.assertLock(addresses, outputs);
+
+      // Pushing any migration pegout that might be pending.
+      await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
+
     }
     catch (err) {
       throw new CustomError('Transfer BTC to RBTC with outputs both federations failure', err);
