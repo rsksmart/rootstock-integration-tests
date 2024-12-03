@@ -25,7 +25,8 @@ let rskTxHelpers;
 let rskTxHelper;
 let bridge;
 
-describe('Calling getActivePowpegRedeemScript method after last fork after fed change', function() {
+// Skipped because 04_00_02-fedchange.js is skipped and this one depends on it.
+describe.skip('Calling getActivePowpegRedeemScript method after last fork after fed change', function() {
   before(async () => {
     rskTxHelpers = getRskTransactionHelpers();
     rskTxHelper = rskTxHelpers[0];
