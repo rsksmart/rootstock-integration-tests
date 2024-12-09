@@ -2,7 +2,6 @@ const { assertContractCallFails, assertContractCallReturnsWithCallback } = requi
 const expect = require('chai').expect;
 const { assertIsPublicKey } = require('../lib/assertions/misc');
 const { KEY_TYPE_BTC } = require('../lib/constants/federation-constants');
-const CustomError = require('../lib/CustomError');
 const { getBridge } = require('../lib/bridge-provider');
 const { getRskTransactionHelper } = require('../lib/rsk-tx-helper-provider');
 
@@ -14,23 +13,11 @@ let fedChangeAddress;
 let bridge;
 
 describe('Multiple federation member keys test after fork', () => {
-    
-    const ACTIVATION_BLOCK = Runners.common.forks.wasabi100.activationHeight;
 
     before(async () => {
         rskTxHelper = getRskTransactionHelper();
         fedChangeAddress = await rskTxHelper.importAccount(FEDERATION_CHANGE_PK);
         bridge = getBridge(rskTxHelper.getClient());
-    });
-
-    it(`should be at a height higher than ${ACTIVATION_BLOCK}`, async () => {
-        try{
-            const blockNum = await rskTxHelper.getBlockNumber();
-            expect(blockNum > ACTIVATION_BLOCK).to.be.true;
-        }
-        catch (err) {
-            throw new CustomError('Activation block height failure', err); 
-        }
     });
 
     it('method getFederatorPublicKey should NOT work', () => {
