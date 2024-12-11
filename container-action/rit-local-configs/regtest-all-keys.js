@@ -3,6 +3,9 @@ const nodesConfigPath = 'config/node-configs';
 const keysPathResolve = 'node-keys';
 const classpath = process.env.POWPEG_NODE_JAR_PATH;
 const federatesLogbackPath = path.resolve(__dirname, 'logbacks');
+const tcpsignerPath = process.env.TCPSIGNER_PATH;
+
+console.log('tcpsignerPath: ', tcpsignerPath)
 
 module.exports = {
     init: {
@@ -91,6 +94,13 @@ module.exports = {
                 'federator.signers.MST.type': 'keyFile',
                 'federator.signers.MST.path': path.resolve(__dirname, `${keysPathResolve}/reg4.key`)
             },
+            hsmConfigs: {
+                btc: {
+                  serverPath: tcpsignerPath,
+                  keyPath : path.resolve(__dirname, `${keysPathResolve}/reg4-tcpsigner-v5-key.json`),
+                  version: '5',
+                },
+            },
             nodeId: '1da807c71c2f303b7f409dd2605b297ac494a563be3b9ca5f52d95a43d183cc52191fc2bd3b06ece06b68390cbb3ba306284aed9ca7cb61dd6289e66e693126f'
         },
         {
@@ -109,6 +119,13 @@ module.exports = {
                 'federator.signers.RSK.path': path.resolve(__dirname, `${keysPathResolve}/reg5.key`),
                 'federator.signers.MST.type': 'keyFile',
                 'federator.signers.MST.path': path.resolve(__dirname, `${keysPathResolve}/reg5.key`)
+            },
+            hsmConfigs: {
+                btc: {
+                  serverPath: tcpsignerPath,
+                  keyPath : path.resolve(__dirname, `${keysPathResolve}/reg4-tcpsigner-v5-key.json`),
+                  version: '5',
+                },
             },
             nodeId: '6bb9eab797eadc8b697f0e82a01d01cabbfaaca37e5bafc06fdc6fdd38af894a9a8cbaf526d344b5df39b80433609e006586050fd2188d30ab000b0fb6a6baaf'
         }
