@@ -16,6 +16,7 @@ BITCOIND_BIN_PATH=/usr/local/bin/bitcoind
 BITCOIN_DATA_DIR=/usr/src/bitcoindata
 WAIT_FOR_BLOCK_ATTEMPT_TIME_MILLIS=800
 WAIT_FOR_BLOCK_MAX_ATTEMPTS=1200
+TCPSIGNER_PATH=/usr/src/tcpsigner-dist
 EOF
 
 echo -e  "\n\n---------- Configuring RIT to run the tests locally -----------\n\n"

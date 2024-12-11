@@ -18,9 +18,9 @@ const {
 } = require('../lib/constants/federation-constants');
 
 // Generated with seed newFed1
-const newFederator1PublicKey = '0x02f80abfd3dac069887f974ac033cb62991a0ed55b9880faf8b8cbd713b75d649e';
+const newFederator1PublicKey = '0x031da807c71c2f303b7f409dd2605b297ac494a563be3b9ca5f52d95a43d183cc5';
 // Generated with seed newFed2
-const newFederator2PublicKey = '0x03488898918c76758e52842c700060adbbbd0a38aa836838fd7215147b924ef7dc';
+const newFederator2PublicKey = '0x036bb9eab797eadc8b697f0e82a01d01cabbfaaca37e5bafc06fdc6fdd38af894a';
 
 const getCurrentFederationKeys = async (bridge) => {
 
@@ -64,6 +64,8 @@ const createNewFederationKeys = (currentFederationKeys) => {
 
     // Sort by btc public key
     newFederationKeys.sort((keyA, keyB) => keyA.btc.localeCompare(keyB.btc))
+
+    console.log('newFederationKeys: ', newFederationKeys);
 
     return newFederationKeys;
 
@@ -280,6 +282,9 @@ describe('Change federation', async function() {
         const actualRetiringFederationSize = Number(await bridge.methods.getRetiringFederationSize().call());
         const expectedRetiringFederationSize = -1;
         expect(actualRetiringFederationSize).to.be.equal(expectedRetiringFederationSize, 'The retiring federation should not exist anymore.');
+
+        const currentFederationKeys = await getCurrentFederationKeys(bridge);
+        console.log('currentFederationKeys after federation change: ', currentFederationKeys);
     
     });
 

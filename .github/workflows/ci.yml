@@ -34,6 +34,25 @@ jobs:
         id: checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
+      - name: Build tcpsigner
+        run: |
+          sudo apt-get update
+          mkdir -p tcpsigner-build
+          mkdir -p container-action/tcpsigner-dist
+          cd tcpsigner-build
+          git clone https://github.com/rsksmart/rsk-powhsm.git
+          cd rsk-powhsm
+          git checkout 5.2.1
+          ./docker/mware/build
+          ./docker/packer/build
+          ./utils/tcpsigner-bundle/build.sh
+          cd ../..
+          ls
+          tar -xzf tcpsigner-build/rsk-powhsm/utils/tcpsigner-bundle/dist/bin/manager-tcp.tgz -C tcpsigner-build/rsk-powhsm/utils/tcpsigner-bundle/dist/bin/
+          mv tcpsigner-build/rsk-powhsm/utils/tcpsigner-bundle/dist/bin/* container-action/tcpsigner-dist/
+          cd container-action/tcpsigner-dist
+          ls
+
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5.5.1
