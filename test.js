@@ -56,7 +56,7 @@ global.Runners = {
       fingerroot500: 1,
       arrowhead600: 1,
       arrowhead631: 1,
-      lovell700: -1,
+      lovell700: 1,
     },
     additionalFederationAddresses: []
   }

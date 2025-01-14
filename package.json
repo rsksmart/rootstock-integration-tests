@@ -13,7 +13,7 @@
   "license": "GPL3",
   "dependencies": {
     "@rsksmart/bridge-state-data-parser": "^1.2.0",
-    "@rsksmart/bridge-transaction-parser": "^1.1.4",
+   "@rsksmart/bridge-transaction-parser": "github:rsksmart/bridge-transaction-parser#fbdeb686fc438f530d3a5f01bce062fd455be01f",
     "@rsksmart/btc-eth-unit-converter": "^1.0.0",
     "@rsksmart/btc-rsk-derivation": "^0.0.2",
     "@rsksmart/pmt-builder": "^3.0.0",
@@ -34,7 +34,7 @@
     "mocha-junit-reporter": "^2.2.1",
     "pegin-address-verificator": "git+https://git@github.com/rsksmart/pegin-address-verifier#v0.4.0",
     "peglib": "git+https://github.com/rsksmart/rsk-peglib#v1.4.15",
-    "@rsksmart/rsk-precompiled-abis": "^6.0.0-ARROWHEAD",
+    "@rsksmart/rsk-precompiled-abis": "github:rsksmart/precompiled-abis#841aa8f0caab0356ae510708bfb2fceae9144790",
     "rsk-transaction-helper": "git+https://github.com/rsksmart/rootstock-transaction-helper#v3.1.0",
     "solc": "^0.8.28",
     "stream-line-wrapper": "^0.1.1",
