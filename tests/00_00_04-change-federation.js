@@ -34,7 +34,7 @@ const {
     ensurePeginIsRegistered
 } = require('../lib/2wp-utils');
 const { getBtcClient } = require('../lib/btc-client-provider');
-const { MINIMUM_PEGOUT_AMOUNT_IN_SATOSHIS } = require('../lib/constants/pegout-constants');
+const { MINIMUM_PEGOUT_AMOUNT_IN_SATOSHIS, PEGOUT_EVENTS } = require('../lib/constants/pegout-constants');
 const {
     getActiveFederationKeys,
     getProposedFederationInfo,
@@ -302,7 +302,8 @@ describe('Change federation', async function() {
 
         const pegoutCreationBlockNumber = Number(svpPegoutWaitingForConfirmations.pegoutCreationBlockNumber);
 
-        expect(pegoutCreationBlockNumber).to.be.equal(commitFederationCreationBlockNumber + 1, 'The svp fund tx pegout creation block number should be the block that contains the first updateCollections call right after the commitFederation call.');
+        const expectedPegoutCreationBlockNumber = commitFederationCreationBlockNumber + 1;
+        expect(pegoutCreationBlockNumber).to.be.equal(expectedPegoutCreationBlockNumber, 'The svp fund tx pegout creation block number should be the block that contains the first updateCollections call right after the commitFederation call.');
 
         const rawSvpBtcTransaction = svpPegoutWaitingForConfirmations.btcRawTx;
 
@@ -327,11 +328,27 @@ describe('Change federation', async function() {
         expect(actualActiveFederationAddress).to.be.equal(initialFederationAddress, 'The active federation address in the SVP fund transaction should be the third output.');
 
         // The proposed federation and flyover addresses output values should be double the minimum pegout value.
-        expect(proposedFederationOutput.value).to.be.equal(MINIMUM_PEGOUT_AMOUNT_IN_SATOSHIS * 2, 'The proposed federation output value should be double the minimum pegout value.');
-        expect(flyoverOutput.value).to.be.equal(MINIMUM_PEGOUT_AMOUNT_IN_SATOSHIS * 2, 'The flyover output value should be double the minimum pegout value.');
+        const expectedProposedFederationOutputValue = MINIMUM_PEGOUT_AMOUNT_IN_SATOSHIS * 2;
+        expect(proposedFederationOutput.value).to.be.equal(expectedProposedFederationOutputValue, 'The proposed federation output value should be double the minimum pegout value.');
+        const expectedFlyoverOutputValue = MINIMUM_PEGOUT_AMOUNT_IN_SATOSHIS * 2;
+        expect(flyoverOutput.value).to.be.equal(expectedFlyoverOutputValue, 'The flyover output value should be double the minimum pegout value.');
 
         // Only the svp fund tx hash unsigned value should be in storage
         await assertOnlySvpFundTxHashUnsignedIsInStorage(rskTxHelper, btcTransaction.getId());
+
+        // The release_requested event should be emitted with the expected values
+        const releaseRequestedEvent = await rskUtils.findEventInBlock(rskTxHelper, PEGOUT_EVENTS.RELEASE_REQUESTED.name, expectedPegoutCreationBlockNumber);
+        const expectedReleaseRequestedAmount = expectedProposedFederationOutputValue + expectedFlyoverOutputValue;
+        expect(Number(releaseRequestedEvent.arguments.amount)).to.be.equal(expectedReleaseRequestedAmount, 'The amount in the release requested event should be the sum of the proposed federation and flyover output values.');
+        expect(releaseRequestedEvent, 'The release requested event should be emitted.').to.not.be.null;
+        expect(removePrefix0x(releaseRequestedEvent.arguments.btcTxHash)).to.be.equal(btcTransaction.getId(), 'The btc tx hash in the release requested event should be the tx id of the SVP fund tx.');
+       
+        // The pegout_transaction_created event should be emitted with the expected values
+        const pegoutTransactionCreatedEvent = await rskUtils.findEventInBlock(rskTxHelper, PEGOUT_EVENTS.PEGOUT_TRANSACTION_CREATED.name, expectedPegoutCreationBlockNumber);
+        expect(pegoutTransactionCreatedEvent, 'The pegout transaction created event should be emitted.').to.not.be.null;
+        expect(removePrefix0x(pegoutTransactionCreatedEvent.arguments.btcTxHash)).to.be.equal(btcTransaction.getId(), 'The btc tx hash in the pegout transaction created event should be the tx id of the SVP fund tx.');
+       
+        // TODO: assert utxoOutpointValues here?
 
     });
 
