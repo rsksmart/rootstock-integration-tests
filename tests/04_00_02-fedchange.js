@@ -1,6 +1,6 @@
 const expect = require('chai').expect
 const BN = require('bn.js');
-const { sequentialPromise, wait, randomElement, randomNElements, additionalFederationAddresses } = require('../lib/utils');
+const { wait, randomElement, randomNElements, additionalFederationAddresses } = require('../lib/utils');
 const CustomError = require('../lib/CustomError');
 const peglib = require('peglib');
 const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
@@ -169,9 +169,6 @@ describe('RSK Federation change', function() {
       for (fedAddress of newFederatorRskAddressesRsk) {
         await utils.sendFromCow(fedAddress, rsk.btcToWeis(INITIAL_FEDERATOR_BALANCE_IN_BTC));
       }
-      // mine a few rsk blocks to prevent being at the beginning of the chain,
-      // which could trigger border cases we're not interested in
-      await sequentialPromise(10, () => rskUtils.mineAndSync(rskTxHelpers));
 
     }
     catch (err){
@@ -401,7 +398,7 @@ describe('RSK Federation change', function() {
 
       // FEDERATION_ACTIVATION_AGE blocks is what takes to activate the new federation in regtest. Mine half
       // and check no activation happened
-      await sequentialPromise(FEDERATION_ACTIVATION_AGE / 2, () => rskUtils.mineAndSync(rskTxHelpers));
+      await rskUtils.mineAndSync(rskTxHelpers, FEDERATION_ACTIVATION_AGE / 2);
 
       // Check retiring federation is still not assigned
       address = await getRetiringFederationAddress();
@@ -436,7 +433,7 @@ describe('RSK Federation change', function() {
     try {
       // FEDERATION_ACTIVATION_AGE blocks is what takes to activate the new federation in regtest.
       // Already mined at least half of that before. Mine the other have + 1 more and check.
-      await sequentialPromise(FEDERATION_ACTIVATION_AGE / 2 + 1, () => rskUtils.mineAndSync(rskTxHelpers));
+      await rskUtils.mineAndSync(rskTxHelpers, FEDERATION_ACTIVATION_AGE / 2 + 1);
 
       // Check new federation
       var activeFederationAddress = await getActiveFederationAddress();
@@ -506,9 +503,7 @@ describe('RSK Federation change', function() {
       expect(rawRetiringFederationBalance).to.be.finite;
       expect(rawRetiringFederationBalance).to.be.greaterThan(0, 'Retiring federation should have some balance to migrate');
 
-      await sequentialPromise(20, (index) => {
-        return rskUtils.mineAndSync(rskTxHelpers);
-      });
+      await rskUtils.mineAndSync(rskTxHelpers, 20);
 
       await rskUtilsLegacy.waitForSync(rskClients);
 
@@ -635,7 +630,7 @@ describe('RSK Federation change', function() {
       // Mine some blocks (20) and the wait for nodes to sync so that the
       // federate nodes start being aware of the federation changes
       var valueToTransfer = bitcoin.btcToSatoshis(5);
-      await sequentialPromise(20, () => rskUtils.mineAndSync(rskTxHelpers));
+      await rskUtils.mineAndSync(rskTxHelpers, 20);
       await rskUtilsLegacy.waitForSync(rskClients);
       await testNewFed.assertLock(
         addresses,
