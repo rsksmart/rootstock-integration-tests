@@ -117,7 +117,7 @@ describe('RSK Federation change', function() {
       utils = rskUtilsLegacy.with(btcClient, rskClientOldFed, pegClient);
       utilsNewFed = rskUtilsLegacy.with(btcClient, rskClientNewFed, pegClient);
       
-      await rskUtilsLegacy.waitForSync(rskClients);
+      await rskUtils.waitForSync(rskTxHelpers);
 
       // Grab the new federation public keys and calculate the federators addresses and expected federation
       // address from the existing runners. Use compressed public keys for federation change
@@ -399,7 +399,7 @@ describe('RSK Federation change', function() {
         await getIndexAndExpectResult(rskClientOldFed, 'getFederatorPublicKeyOfType', i, oldFederation.publicKeys)();
       }
 
-      // 20 blocks is what takes to activate the new federation in regtest. Mine half
+      // FEDERATION_ACTIVATION_AGE blocks is what takes to activate the new federation in regtest. Mine half
       // and check no activation happened
       await sequentialPromise(FEDERATION_ACTIVATION_AGE / 2, () => rskUtils.mineAndSync(rskTxHelpers));
 
@@ -434,9 +434,9 @@ describe('RSK Federation change', function() {
 
   it('should activate the new federation and assign the retiring federation', async () => {
     try {
-      // 20 blocks is what takes to activate the new federation in regtest.
-      // Already mined at least 10 before. Mine 20 more and check.
-      await sequentialPromise(FEDERATION_ACTIVATION_AGE, () => rskUtils.mineAndSync(rskTxHelpers));
+      // FEDERATION_ACTIVATION_AGE blocks is what takes to activate the new federation in regtest.
+      // Already mined at least half of that before. Mine the other have + 1 more and check.
+      await sequentialPromise(FEDERATION_ACTIVATION_AGE / 2 + 1, () => rskUtils.mineAndSync(rskTxHelpers));
 
       // Check new federation
       var activeFederationAddress = await getActiveFederationAddress();
@@ -635,7 +635,7 @@ describe('RSK Federation change', function() {
       // Mine some blocks (20) and the wait for nodes to sync so that the
       // federate nodes start being aware of the federation changes
       var valueToTransfer = bitcoin.btcToSatoshis(5);
-      await sequentialPromise(FEDERATION_ACTIVATION_AGE, () => rskUtils.mineAndSync(rskTxHelpers));
+      await sequentialPromise(20, () => rskUtils.mineAndSync(rskTxHelpers));
       await rskUtilsLegacy.waitForSync(rskClients);
       await testNewFed.assertLock(
         addresses,
