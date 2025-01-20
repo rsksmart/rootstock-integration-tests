@@ -1,7 +1,7 @@
 const { expect } = require('chai');
 const bitcoinJsLib = require('bitcoinjs-lib');
 const { getBridgeState } = require('@rsksmart/bridge-state-data-parser');
-const { btcToWeis } = require('@rsksmart/btc-eth-unit-converter');
+const { btcToWeis, satoshisToBtc } = require('@rsksmart/btc-eth-unit-converter');
 const BridgeTransactionParser = require('@rsksmart/bridge-transaction-parser');
 const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
 const rskUtils = require('../lib/rsk-utils');
@@ -40,6 +40,7 @@ const {
     getProposedFederationInfo,
     getProposedFederationPublicKeys
 } = require('../lib/federation-utils');
+const { decodeOutpointValues } = require('../lib/varint');
 
 // Generated with seed newFed1
 const newFederator1PublicKey = '0x02f80abfd3dac069887f974ac033cb62991a0ed55b9880faf8b8cbd713b75d649e';
@@ -141,10 +142,10 @@ describe('Change federation', async function() {
         minimumPeginValueInSatoshis = Number(await bridge.methods.getMinimumLockTxValue().call());
 
         // Making a donation pegin to the Bridge to ensure there is enough utxo value to create the SVP fund transaction.
-        const senderRecipientInfo = await createSenderRecipientInfo(rskTxHelper, btcTxHelper, 'legacy', 2 + btcTxHelper.getFee());
-        const btcPeginTxHash = await sendPegin(rskTxHelper, btcTxHelper, senderRecipientInfo.btcSenderAddressInfo, 2);
+        const senderRecipientInfo = await createSenderRecipientInfo(rskTxHelper, btcTxHelper, 'legacy', satoshisToBtc(minimumPeginValueInSatoshis) * 2);
+        const btcPeginTxHash = await sendPegin(rskTxHelper, btcTxHelper, senderRecipientInfo.btcSenderAddressInfo, satoshisToBtc(minimumPeginValueInSatoshis));
         await ensurePeginIsRegistered(rskTxHelper, btcPeginTxHash);
-        
+
     });
 
     it('should create a pending federation', async () => {
@@ -288,17 +289,19 @@ describe('Change federation', async function() {
 
         // Act
 
+        const initialBridgeState = await getBridgeState(rskTxHelper.getClient());
+
         await rskUtils.waitAndUpdateBridge(rskTxHelper);
+
+        const finalBridgeState = await getBridgeState(rskTxHelper.getClient());
 
         // Assert
 
-        const bridgeStateAfterUpdateCollections = await getBridgeState(rskTxHelper.getClient());
-
         // The SVP fund transaction should be created and put in waiting for confirmations.
-        expect(bridgeStateAfterUpdateCollections.pegoutsWaitingForConfirmations.length).to.be.equal(1, 'There should be one pegout waiting for confirmations.');
-        expect(bridgeStateAfterUpdateCollections.pegoutsWaitingForSignatures.length).to.be.equal(0, 'No pegout should be waiting for signatures.');
+        expect(finalBridgeState.pegoutsWaitingForConfirmations.length).to.be.equal(1, 'There should be one pegout waiting for confirmations.');
+        expect(finalBridgeState.pegoutsWaitingForSignatures.length).to.be.equal(0, 'No pegout should be waiting for signatures.');
 
-        const svpPegoutWaitingForConfirmations = bridgeStateAfterUpdateCollections.pegoutsWaitingForConfirmations[0];
+        const svpPegoutWaitingForConfirmations = finalBridgeState.pegoutsWaitingForConfirmations[0];
 
         const pegoutCreationBlockNumber = Number(svpPegoutWaitingForConfirmations.pegoutCreationBlockNumber);
 
@@ -330,6 +333,7 @@ describe('Change federation', async function() {
         // The proposed federation and flyover addresses output values should be double the minimum pegout value.
         const expectedProposedFederationOutputValue = MINIMUM_PEGOUT_AMOUNT_IN_SATOSHIS * 2;
         expect(proposedFederationOutput.value).to.be.equal(expectedProposedFederationOutputValue, 'The proposed federation output value should be double the minimum pegout value.');
+
         const expectedFlyoverOutputValue = MINIMUM_PEGOUT_AMOUNT_IN_SATOSHIS * 2;
         expect(flyoverOutput.value).to.be.equal(expectedFlyoverOutputValue, 'The flyover output value should be double the minimum pegout value.');
 
@@ -348,7 +352,7 @@ describe('Change federation', async function() {
         expect(pegoutTransactionCreatedEvent, 'The pegout transaction created event should be emitted.').to.not.be.null;
         expect(removePrefix0x(pegoutTransactionCreatedEvent.arguments.btcTxHash)).to.be.equal(btcTransaction.getId(), 'The btc tx hash in the pegout transaction created event should be the tx id of the SVP fund tx.');
        
-        // TODO: assert utxoOutpointValues here?
+        await assertPegoutTrasactionCreatedOutpointValues(initialBridgeState, finalBridgeState, btcTransaction, pegoutTransactionCreatedEvent);
 
     });
 
@@ -431,5 +435,28 @@ const assertOnlySvpFundTxHashUnsignedIsInStorage = async (rskTxHelper, pegoutBtc
 
     const svpSpendTxWaitingForSignatures = await rskTxHelper.getClient().rsk.getStorageBytesAt(BRIDGE_ADDRESS, svpSpendTxWaitingForSignaturesStorageIndex);
     expect(svpSpendTxWaitingForSignatures).to.be.equal('0x0', 'The SVP spend tx waiting for signatures storage value should be empty.');
+
+};
+
+const assertPegoutTrasactionCreatedOutpointValues = async (initialBridgeState, finalBridgeState, svpBtcTransaction, pegoutTransactionCreatedEvent) => {
+
+    const svpFundTxInput = svpBtcTransaction.ins[0];
+    const svpFundTxInputIndex = svpFundTxInput.index;
+    const svpFundTxInputTxHash = svpFundTxInput.hash.reverse().toString('hex');
+
+    expect(finalBridgeState.activeFederationUtxos.length).to.be.equal(initialBridgeState.activeFederationUtxos.length - 1, 'There should be one less active federation utxo.');
+
+    // Asserting that the expected utxo was used up and removed from the Bridge
+    const svpFundTxUtxoInInitialBridgeState = initialBridgeState.activeFederationUtxos.find(utxo => utxo.btcTxHash === svpFundTxInputTxHash && utxo.btcTxOutputIndex === svpFundTxInputIndex);
+    expect(svpFundTxUtxoInInitialBridgeState).to.not.be.undefined;
+    const svpFundTxUtxoInFinalridgeState = finalBridgeState.activeFederationUtxos.find(utxo => utxo.btcTxHash === svpFundTxInputTxHash && utxo.btcTxOutputIndex === svpFundTxInputIndex);
+    expect(svpFundTxUtxoInFinalridgeState).to.be.undefined;
+
+    // Asserting the outpoint values in the pegout transaction created event are the same as the used up utxo value
+    const encodedUtxoOutpointValues = Buffer.from(removePrefix0x(pegoutTransactionCreatedEvent.arguments.utxoOutpointValues), 'hex');
+    const outpointValues = decodeOutpointValues(encodedUtxoOutpointValues);
+    expect(outpointValues.length).to.be.equal(1);
+    const outpointValue = outpointValues[0];
+    expect(Number(outpointValue)).to.be.equal(svpFundTxUtxoInInitialBridgeState.valueInSatoshis, 'The outpoint value should be the same as the utxo value.');
 
 };
