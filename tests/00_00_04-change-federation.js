@@ -14,6 +14,7 @@ const {
     splitStringIntoChunks,
     getBridgeStorageValueDecodedHexString,
     decodeRlp,
+    wait,
 } = require('../lib/utils');
 const { 
     KEY_TYPE_BTC, 
@@ -32,7 +33,8 @@ const {
 const {
     createSenderRecipientInfo,
     sendPegin,
-    ensurePeginIsRegistered
+    ensurePeginIsRegistered,
+    BTC_TO_RSK_MINIMUM_CONFIRMATIONS
 } = require('../lib/2wp-utils');
 const { BRIDGE_ADDRESS } = require('../lib/bridge-constants');
 const { getBtcClient } = require('../lib/btc-client-provider');
@@ -43,6 +45,7 @@ const {
     getProposedFederationPublicKeys
 } = require('../lib/federation-utils');
 const { decodeOutpointValues } = require('../lib/varint');
+const { waitForBitcoinTxToBeInMempool } = require('../lib/btc-utils');
 
 // Generated with seed newFed1
 const newFederator1PublicKey = '0x02f80abfd3dac069887f974ac033cb62991a0ed55b9880faf8b8cbd713b75d649e';
@@ -382,29 +385,26 @@ describe('Change federation', async function() {
 
     });
 
-    it('should release and register the svp fund transaction and create the svp spend transaction', async () => {
+    it('should register the SVP Spend transaction and finish the SVP process', async () => {
 
-        // Mining to have enough confirmations for the SVP fund transaction and updating the bridge.
-        await rskTxHelper.mine(3);
+        const blockNumberBeforeUpdateCollections = await rskTxHelper.getBlockNumber();
+        const expectedCountOfSignatures = Math.floor(newFederationPublicKeys.length / 2) + 1;
+
+        await waitForExpectedCountOfAddSignatureEventsToBeEmitted(rskTxHelper, blockNumberBeforeUpdateCollections, expectedCountOfSignatures);
+
+        // Finding the SVP Spend transaction release_btc event
+        const blockNumberAfterRelease = await rskTxHelper.getBlockNumber();
+        const releaseBtcEvent = await rskUtils.findEventInBlock(rskTxHelper, PEGOUT_EVENTS.RELEASE_BTC.name, blockNumberBeforeUpdateCollections, blockNumberAfterRelease);
+        const releaseBtcTransaction = bitcoinJsLib.Transaction.fromHex(removePrefix0x(releaseBtcEvent.arguments.btcRawTransaction));
+
+        // Mining the SVP Spend transaction in bitcoin to register it in the Bridge
+        await waitForBitcoinTxToBeInMempool(btcTxHelper, releaseBtcTransaction.getId());
+        await btcTxHelper.mine(BTC_TO_RSK_MINIMUM_CONFIRMATIONS);
         await rskUtils.waitAndUpdateBridge(rskTxHelper);
 
-        const initialBridgeState = await getBridgeState(rskTxHelper.getClient());
-        expect(initialBridgeState.pegoutsWaitingForSignatures.length).to.be.equal(1, 'The svp fund transaction should be waiting for signatures.');
+        await assertProposedFederationIsNotInStorage(bridge);
 
-        const blockNumberBeforeRelease = await rskTxHelper.getBlockNumber();
-        await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
-        const blockNumberAfterRelease = await rskTxHelper.getBlockNumber();
-        const releaseBtcEvent = await rskUtils.findEventInBlock(rskTxHelper, PEGOUT_EVENTS.RELEASE_BTC.name, blockNumberBeforeRelease, blockNumberAfterRelease);
-
-        const releaseBtcTransaction = bitcoinJsLib.Transaction.fromHex(removePrefix0x(releaseBtcEvent.arguments.btcRawTransaction));
-        const finalBridgeState = await getBridgeState(rskTxHelper.getClient());
-        const registeredSvpFundTxUtxo = finalBridgeState.activeFederationUtxos.find(utxo => utxo.btcTxHash === releaseBtcTransaction.getId());
-        expect(registeredSvpFundTxUtxo, 'The SVP fund tx should be registered in the Bridge by now.').to.not.be.undefined;
-
-        const utxoToActiveFederation = releaseBtcTransaction.outs[2];
-        expect(registeredSvpFundTxUtxo.valueInSatoshis).to.be.equal(utxoToActiveFederation.value, 'The SVP fund tx registered utxo value should be the same as the utxo to the active federation.');
-
-        await assertOnlySvpSpendTxValuesAreInStorage(rskTxHelper);
+        await assertSvpValuesNotPresentInStorage(rskTxHelper);
 
     });
 
@@ -541,5 +541,43 @@ const assertProposedFederationIsStillInStorage = async (bridge, expectedProposed
 
     const proposedFederationMembers = await getProposedFederationPublicKeys(bridge);
     expect(proposedFederationMembers).to.be.deep.equal(expectedProposedFederationMembers, 'The proposed federation members should still be in storage.');
+
+};
+
+const assertProposedFederationIsNotInStorage = async (bridge) => {
+
+    const proposedFederationAddress = await bridge.methods.getProposedFederationAddress().call();
+    expect(proposedFederationAddress).to.be.equal('');
+
+    const proposedFederationSize = Number(await bridge.methods.getProposedFederationSize().call());
+    expect(proposedFederationSize).to.be.equal(-1);
+
+    const proposedFederationMembers = await getProposedFederationPublicKeys(bridge);
+    expect(proposedFederationMembers).to.be.empty;
+
+};
+
+const waitForExpectedCountOfAddSignatureEventsToBeEmitted = async (rskTxHelper, fromBlockNumber, expectedCountOfSignatures, checkEveryMilliseconds = 1000, maxAttempts = 16) => {
+
+    const addSignatureEvents = [];
+
+    while(addSignatureEvents.length < expectedCountOfSignatures) {
+        await wait(checkEveryMilliseconds);
+        await rskUtils.findEventInBlock(rskTxHelper, PEGOUT_EVENTS.ADD_SIGNATURE.name, fromBlockNumber, fromBlockNumber, event => {
+            if(event.name === PEGOUT_EVENTS.ADD_SIGNATURE.name) {
+                addSignatureEvents.push(event);
+            }
+        });
+
+        await rskTxHelper.mine();
+        fromBlockNumber++;
+
+        if(maxAttempts === 0) {
+            throw new Error(`The expected count of add signature events was not reached after ${maxAttempts} attempts checking every ${checkEveryMilliseconds} milliseconds.`);
+        }
+
+        maxAttempts--;
+
+    }
 
 };
