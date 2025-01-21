@@ -29,6 +29,7 @@ const {
     svpFundTxSignedStorageIndex,
     svpSpendTxHashUnsignedStorageIndex,
     svpSpendTxWaitingForSignaturesStorageIndex,
+    FUNDS_MIGRATION_AGE_SINCE_ACTIVATION_BEGIN,
 } = require('../lib/constants/federation-constants');
 const {
     createSenderRecipientInfo,
@@ -112,6 +113,8 @@ describe('Change federation', async function() {
     let expectedNewFederationErpRedeemScript;
     let minimumPeginValueInSatoshis;
     let expectedFlyoverAddress;
+    let bridgeStateBeforeActivation;
+    let svpSpendBtcTransaction;
 
     before(async () => {
 
@@ -387,6 +390,7 @@ describe('Change federation', async function() {
 
     it('should register the SVP Spend transaction and finish the SVP process', async () => {
 
+        bridgeStateBeforeActivation = await getBridgeState(rskTxHelper.getClient());
         const blockNumberBeforeUpdateCollections = await rskTxHelper.getBlockNumber();
         const expectedCountOfSignatures = Math.floor(newFederationPublicKeys.length / 2) + 1;
 
@@ -395,10 +399,10 @@ describe('Change federation', async function() {
         // Finding the SVP Spend transaction release_btc event
         const blockNumberAfterRelease = await rskTxHelper.getBlockNumber();
         const releaseBtcEvent = await rskUtils.findEventInBlock(rskTxHelper, PEGOUT_EVENTS.RELEASE_BTC.name, blockNumberBeforeUpdateCollections, blockNumberAfterRelease);
-        const releaseBtcTransaction = bitcoinJsLib.Transaction.fromHex(removePrefix0x(releaseBtcEvent.arguments.btcRawTransaction));
+        svpSpendBtcTransaction = bitcoinJsLib.Transaction.fromHex(removePrefix0x(releaseBtcEvent.arguments.btcRawTransaction));
 
         // Mining the SVP Spend transaction in bitcoin to register it in the Bridge
-        await waitForBitcoinTxToBeInMempool(btcTxHelper, releaseBtcTransaction.getId());
+        await waitForBitcoinTxToBeInMempool(btcTxHelper, svpSpendBtcTransaction.getId());
         await btcTxHelper.mine(BTC_TO_RSK_MINIMUM_CONFIRMATIONS);
         await rskUtils.waitAndUpdateBridge(rskTxHelper);
 
@@ -436,6 +440,63 @@ describe('Change federation', async function() {
 
         const retiringFederationAddress = await bridge.methods.getRetiringFederationAddress().call();
         expect(retiringFederationAddress).to.be.equal(initialFederationAddress, 'The retiring federation address should be the initial federation address.');
+
+    });
+
+    it('should migrate utxos', async () => {
+
+        const initialBridgeState = await getBridgeState(rskTxHelper.getClient());
+
+        expect(initialBridgeState.activeFederationUtxos.length).to.be.equal(0, 'There should not be any utxos in the active federation yet.');
+        expect(initialBridgeState.pegoutsWaitingForConfirmations.length).to.be.equal(0, 'No pegout should be waiting for confirmations.');
+        expect(initialBridgeState.pegoutsWaitingForSignatures.length).to.be.equal(0, 'No pegout should be waiting for signatures.');
+
+        // Mining to activate the migration age
+        await rskTxHelper.mine(FUNDS_MIGRATION_AGE_SINCE_ACTIVATION_BEGIN);
+
+        // Start migration
+        await rskUtils.waitAndUpdateBridge(rskTxHelper);
+        const bridgeStateAfterUpdatingCollections = await getBridgeState(rskTxHelper.getClient());
+        expect(bridgeStateAfterUpdatingCollections.pegoutsWaitingForConfirmations.length).to.be.equal(1, 'There should be one pegout waiting for confirmations.');
+
+        await rskTxHelper.mine(BTC_TO_RSK_MINIMUM_CONFIRMATIONS);
+        await rskUtils.waitAndUpdateBridge(rskTxHelper);
+        const bridgeStateAfterMiningPegout = await getBridgeState(rskTxHelper.getClient());
+        expect(bridgeStateAfterMiningPegout.pegoutsWaitingForConfirmations.length).to.be.equal(0, 'No pegout should be waiting for confirmations.');
+        expect(bridgeStateAfterMiningPegout.pegoutsWaitingForSignatures.length).to.be.equal(1, 'There should be one pegout waiting for signatures.');
+
+        const latestBlockNumber = await rskTxHelper.getBlockNumber();
+        const expectedCountOfSignatures = Math.floor(initialFederationPublicKeys.length / 2) + 1;
+        await waitForExpectedCountOfAddSignatureEventsToBeEmitted(rskTxHelper, latestBlockNumber, expectedCountOfSignatures);
+
+        // Finding the migration transaction release_btc event
+        const blockNumberAfterRelease = await rskTxHelper.getBlockNumber();
+        const releaseBtcEvent = await rskUtils.findEventInBlock(rskTxHelper, PEGOUT_EVENTS.RELEASE_BTC.name, latestBlockNumber, blockNumberAfterRelease);
+        const migrationReleaseBtcTransaction = bitcoinJsLib.Transaction.fromHex(removePrefix0x(releaseBtcEvent.arguments.btcRawTransaction));
+
+        // The SVP Fund transaction utxo is not included in the bridge utxo list but should be included in the migration transaction inputs.
+        // So we need to assert that the Bridge doesn't have it but the migration transaction does.
+        const inputsTxHashes = migrationReleaseBtcTransaction.ins.map(input => input.hash.reverse().toString('hex'));
+        const missingFromBridgeStateInputHashes = findMissingHashes(bridgeStateBeforeActivation.activeFederationUtxos, inputsTxHashes);
+        expect(missingFromBridgeStateInputHashes.length).to.be.equal(1, 'There should be one missing hash, the utxo that was sent to the Proposed federation in the SVP Spend transaction.');
+        const actualSvpSpendTxHash = missingFromBridgeStateInputHashes[0];
+        expect(actualSvpSpendTxHash).to.be.equal(svpSpendBtcTransaction.getId(), 'The missing hash should be the SVP Spend transaction hash.');
+
+        const destinationAddress = bitcoinJsLib.address.fromOutputScript(migrationReleaseBtcTransaction.outs[0].script, btcTxHelper.btcConfig.network);
+        expect(destinationAddress).to.be.equal(expectedNewFederationAddress, 'The destination address of the migration transaction should be the new federation address.');
+
+        // Mining the migration transaction in bitcoin and registering it in the Bridge
+        await waitForBitcoinTxToBeInMempool(btcTxHelper, migrationReleaseBtcTransaction.getId());
+        await btcTxHelper.mine(BTC_TO_RSK_MINIMUM_CONFIRMATIONS);
+        await rskUtils.waitAndUpdateBridge(rskTxHelper);
+
+        const finalBridgeState = await getBridgeState(rskTxHelper.getClient());
+
+        const registeredMigrationTxUtxo = finalBridgeState.activeFederationUtxos[0];
+        expect(registeredMigrationTxUtxo, 'The migration tx should be registered in the Bridge by now.').to.not.be.undefined;
+
+        const utxoToNewFederation = migrationReleaseBtcTransaction.outs[0];
+        expect(registeredMigrationTxUtxo.valueInSatoshis).to.be.equal(utxoToNewFederation.value, 'The migration tx registered utxo value should be the same as the utxo to the new federation.');
 
     });
 
@@ -580,4 +641,9 @@ const waitForExpectedCountOfAddSignatureEventsToBeEmitted = async (rskTxHelper, 
 
     }
 
+};
+
+function findMissingHashes(activeFederationUtxos, inputsTxHashes) {
+    const activeUtxoHashes = activeFederationUtxos.map(utxo => utxo.btcTxHash);
+    return inputsTxHashes.filter(hash => !activeUtxoHashes.includes(hash));
 };
