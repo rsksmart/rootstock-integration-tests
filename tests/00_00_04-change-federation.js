@@ -1,6 +1,7 @@
 const { expect } = require('chai');
 const bitcoinJsLib = require('bitcoinjs-lib');
 const { getBridgeState } = require('@rsksmart/bridge-state-data-parser');
+const { parseRLPToPegoutWaitingSignatures } = require('@rsksmart/bridge-state-data-parser/pegout-waiting-signature');
 const { btcToWeis, satoshisToBtc } = require('@rsksmart/btc-eth-unit-converter');
 const BridgeTransactionParser = require('@rsksmart/bridge-transaction-parser');
 const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
@@ -12,6 +13,7 @@ const {
     ensure0x,
     splitStringIntoChunks,
     getBridgeStorageValueDecodedHexString,
+    decodeRlp,
 } = require('../lib/utils');
 const { 
     KEY_TYPE_BTC, 
@@ -28,11 +30,11 @@ const {
     svpSpendTxWaitingForSignaturesStorageIndex,
 } = require('../lib/constants/federation-constants');
 const {
-    BRIDGE_ADDRESS,
     createSenderRecipientInfo,
     sendPegin,
     ensurePeginIsRegistered
 } = require('../lib/2wp-utils');
+const { BRIDGE_ADDRESS } = require('../lib/bridge-constants');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const { MINIMUM_PEGOUT_AMOUNT_IN_SATOSHIS, PEGOUT_EVENTS } = require('../lib/constants/pegout-constants');
 const {
@@ -352,6 +354,32 @@ describe('Change federation', async function() {
 
     });
 
+    it('should release and register the svp fund transaction and create the svp spend transaction', async () => {
+
+        // Mining to have enough confirmations for the SVP fund transaction and updating the bridge.
+        await rskTxHelper.mine(3);
+        await rskUtils.waitAndUpdateBridge(rskTxHelper);
+
+        const initialBridgeState = await getBridgeState(rskTxHelper.getClient());
+        expect(initialBridgeState.pegoutsWaitingForSignatures.length).to.be.equal(1, 'The svp fund transaction should be waiting for signatures.');
+
+        const blockNumberBeforeRelease = await rskTxHelper.getBlockNumber();
+        await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
+        const blockNumberAfterRelease = await rskTxHelper.getBlockNumber();
+        const releaseBtcEvent = await rskUtils.findEventInBlock(rskTxHelper, PEGOUT_EVENTS.RELEASE_BTC.name, blockNumberBeforeRelease, blockNumberAfterRelease);
+
+        const releaseBtcTransaction = bitcoinJsLib.Transaction.fromHex(removePrefix0x(releaseBtcEvent.arguments.btcRawTransaction));
+        const finalBridgeState = await getBridgeState(rskTxHelper.getClient());
+        const registeredSvpFundTxUtxo = finalBridgeState.activeFederationUtxos.find(utxo => utxo.btcTxHash === releaseBtcTransaction.getId());
+        expect(registeredSvpFundTxUtxo, 'The SVP fund tx should be registered in the Bridge by now.').to.not.be.undefined;
+
+        const utxoToActiveFederation = releaseBtcTransaction.outs[2];
+        expect(registeredSvpFundTxUtxo.valueInSatoshis).to.be.equal(utxoToActiveFederation.value, 'The SVP fund tx registered utxo value should be the same as the utxo to the active federation.');
+
+        await assertOnlySvpSpendTxValuesAreInStorage(rskTxHelper);
+
+    });
+
     it('should activate federation', async () => {
 
         const federationActivationBlockNumber = commitFederationCreationBlockNumber + FEDERATION_ACTIVATION_AGE;
@@ -431,6 +459,27 @@ const assertOnlySvpFundTxHashUnsignedIsInStorage = async (rskTxHelper, pegoutBtc
 
     const svpSpendTxWaitingForSignatures = await rskTxHelper.getClient().rsk.getStorageBytesAt(BRIDGE_ADDRESS, svpSpendTxWaitingForSignaturesStorageIndex);
     expect(svpSpendTxWaitingForSignatures).to.be.equal('0x0', 'The SVP spend tx waiting for signatures storage value should be empty.');
+
+};
+
+const assertOnlySvpSpendTxValuesAreInStorage = async (rskTxHelper) => {
+
+    const svpFundTxHashUnsignedRlpEncoded = await rskTxHelper.getClient().rsk.getStorageBytesAt(BRIDGE_ADDRESS, svpFundTxHashUnsignedStorageIndex);
+    expect(svpFundTxHashUnsignedRlpEncoded).to.be.equal('0x0', 'The SVP fund tx hash unsigned storage value should be empty.');
+
+    const svpFundTxSigned = await rskTxHelper.getClient().rsk.getStorageBytesAt(BRIDGE_ADDRESS, svpFundTxSignedStorageIndex);
+    expect(svpFundTxSigned).to.be.equal('0x0', 'The SVP fund tx signed storage value should be empty.');
+
+    const svpSpendTxHashUnsigned = await rskTxHelper.getClient().rsk.getStorageBytesAt(BRIDGE_ADDRESS, svpSpendTxHashUnsignedStorageIndex);
+    expect(svpSpendTxHashUnsigned).to.not.be.equal('0x0', 'The SVP spend tx hash unsigned storage value should not be empty.');
+    const svpSpendTxHashUnsignedDecoded = decodeRlp(svpSpendTxHashUnsigned).toString('hex');
+
+    const svpSpendTxWaitingForSignatures = await rskTxHelper.getClient().rsk.getStorageBytesAt(BRIDGE_ADDRESS, svpSpendTxWaitingForSignaturesStorageIndex);
+    expect(svpSpendTxWaitingForSignatures).to.not.be.equal('0x0', 'The SVP spend tx waiting for signatures storage value should not be empty.');
+
+    const decodedSvpSpendTxWaitingForSignature = parseRLPToPegoutWaitingSignatures(svpSpendTxWaitingForSignatures)[0];
+    const svpSpendBtcTx = bitcoinJsLib.Transaction.fromHex(removePrefix0x(decodedSvpSpendTxWaitingForSignature.btcRawTx));
+    expect(svpSpendTxHashUnsignedDecoded).to.be.equal(svpSpendBtcTx.getId(), 'The SVP spend tx hash unsigned storage value should be the tx id of the SVP spend tx.');
 
 };
 
