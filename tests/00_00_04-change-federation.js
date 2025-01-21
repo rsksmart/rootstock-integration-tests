@@ -382,6 +382,32 @@ describe('Change federation', async function() {
 
     });
 
+    it('should release and register the svp fund transaction and create the svp spend transaction', async () => {
+
+        // Mining to have enough confirmations for the SVP fund transaction and updating the bridge.
+        await rskTxHelper.mine(3);
+        await rskUtils.waitAndUpdateBridge(rskTxHelper);
+
+        const initialBridgeState = await getBridgeState(rskTxHelper.getClient());
+        expect(initialBridgeState.pegoutsWaitingForSignatures.length).to.be.equal(1, 'The svp fund transaction should be waiting for signatures.');
+
+        const blockNumberBeforeRelease = await rskTxHelper.getBlockNumber();
+        await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
+        const blockNumberAfterRelease = await rskTxHelper.getBlockNumber();
+        const releaseBtcEvent = await rskUtils.findEventInBlock(rskTxHelper, PEGOUT_EVENTS.RELEASE_BTC.name, blockNumberBeforeRelease, blockNumberAfterRelease);
+
+        const releaseBtcTransaction = bitcoinJsLib.Transaction.fromHex(removePrefix0x(releaseBtcEvent.arguments.btcRawTransaction));
+        const finalBridgeState = await getBridgeState(rskTxHelper.getClient());
+        const registeredSvpFundTxUtxo = finalBridgeState.activeFederationUtxos.find(utxo => utxo.btcTxHash === releaseBtcTransaction.getId());
+        expect(registeredSvpFundTxUtxo, 'The SVP fund tx should be registered in the Bridge by now.').to.not.be.undefined;
+
+        const utxoToActiveFederation = releaseBtcTransaction.outs[2];
+        expect(registeredSvpFundTxUtxo.valueInSatoshis).to.be.equal(utxoToActiveFederation.value, 'The SVP fund tx registered utxo value should be the same as the utxo to the active federation.');
+
+        await assertOnlySvpSpendTxValuesAreInStorage(rskTxHelper);
+
+    });
+
     it('should activate federation', async () => {
 
         const federationActivationBlockNumber = commitFederationCreationBlockNumber + FEDERATION_ACTIVATION_AGE;
