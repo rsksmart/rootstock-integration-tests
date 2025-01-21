@@ -378,6 +378,8 @@ describe('Change federation', async function() {
 
         await assertOnlySvpSpendTxValuesAreInStorage(rskTxHelper);
 
+        await assertProposedFederationIsStillInStorage(bridge, expectedNewFederationAddress, newFederationPublicKeys);
+
     });
 
     it('should activate federation', async () => {
@@ -503,5 +505,15 @@ const assertPegoutTransactionCreatedOutpointValues = async (initialBridgeState, 
     expect(outpointValues.length).to.be.equal(1);
     const outpointValue = outpointValues[0];
     expect(Number(outpointValue)).to.be.equal(svpFundTxUtxoInInitialBridgeState.valueInSatoshis, 'The outpoint value should be the same as the utxo value.');
+
+};
+
+const assertProposedFederationIsStillInStorage = async (bridge, expectedProposedFederationAddress, expectedProposedFederationMembers) => {
+
+    const proposedFederationAddress = await bridge.methods.getProposedFederationAddress().call();
+    expect(proposedFederationAddress).to.be.equal(expectedProposedFederationAddress, 'The proposed federation address should still be in storage.');
+
+    const proposedFederationMembers = await getProposedFederationPublicKeys(bridge);
+    expect(proposedFederationMembers).to.be.deep.equal(expectedProposedFederationMembers, 'The proposed federation members should still be in storage.');
 
 };
