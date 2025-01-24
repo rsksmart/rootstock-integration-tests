@@ -60,6 +60,9 @@ const createForkObject = (name, activationHeight) => {
     if(isActive) {
       return isActive;
     }
+    if(this.activationHeight === -1) {
+      return false;
+    }
     rskTxHelper = rskTxHelper || getRskTransactionHelper();
     // Cache the result to avoid calling the network again if the fork is already active
     const latestBlockNumber = await rskTxHelper.getBlockNumber();
@@ -88,7 +91,7 @@ global.Runners = {
       hop401: createForkObject('hop401', 1010),
       fingerroot500: createForkObject('fingerroot', 1350),
       arrowhead600: createForkObject('arrowhead', 1600),
-      lovell700: createForkObject('lovell', 1700)
+      lovell700: createForkObject('lovell', 1850)
     },
     additionalFederationAddresses: []
   }
@@ -216,6 +219,7 @@ before(async () => {
       
       // TODO: Remove once RIT refactors have been completed
       config.customConfig[`blockchain.config.consensusRules.rskip427`] = -1;
+      config.customConfig[`blockchain.config.consensusRules.rskip419`] = -1;
 
       // federatesToStart: [1, 2, 3]
       // additionalFederateNodes: [4, 5]

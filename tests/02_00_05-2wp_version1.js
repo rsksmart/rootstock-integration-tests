@@ -169,7 +169,7 @@ describe('Lock funds using peg-in protocol version 1', () => {
         });
 
         expect(rejectedPeginTx).to.not.be.null;
-        assertRejectedPeginEvent(rejectedPeginTx, PEGIN_V1_INVALID_PAYLOAD_REASON, peginBtcTxHashWith0xPrefix, amountSentInSatoshis)
+        await assertRejectedPeginEvent(rejectedPeginTx, PEGIN_V1_INVALID_PAYLOAD_REASON, peginBtcTxHashWith0xPrefix, amountSentInSatoshis)
     });
 
     it('should lock with multiple OP_RETURN outputs but only one for RSK', async () => {
@@ -251,7 +251,7 @@ describe('Lock funds using peg-in protocol version 1', () => {
         });
 
         expect(rejectedPeginTx).to.not.be.null;
-        assertRejectedPeginEvent(rejectedPeginTx, PEGIN_V1_INVALID_PAYLOAD_REASON, peginBtcTxHashWith0xPrefix, amountSentInSatoshis)
+        await assertRejectedPeginEvent(rejectedPeginTx, PEGIN_V1_INVALID_PAYLOAD_REASON, peginBtcTxHashWith0xPrefix, amountSentInSatoshis)
     });
 
     it('should refund lock with OP_RETURN output for RSK with invalid version number', async () => {
@@ -311,6 +311,6 @@ describe('Lock funds using peg-in protocol version 1', () => {
         });
 
         expect(rejectedPeginTx).to.not.be.null;
-        assertRejectedPeginEvent(rejectedPeginTx, PEGIN_V1_INVALID_PAYLOAD_REASON, peginBtcTxHashWith0xPrefix, amountSentInSatoshis);
+        await assertRejectedPeginEvent(rejectedPeginTx, PEGIN_V1_INVALID_PAYLOAD_REASON, peginBtcTxHashWith0xPrefix, amountSentInSatoshis);
     });
 });
