@@ -1,5 +1,6 @@
 # Rootstock Integration tests
 
+[![CodeQL](https://github.com/rsksmart/rootstock-integration-tests/workflows/CodeQL/badge.svg)](https://github.com/rsksmart/rootstock-integration-tests/actions?query=workflow%3ACodeQL)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/rsksmart/rootstock-integration-tests/badge)](https://scorecard.dev/viewer/?uri=github.com/rsksmart/rootstock-integration-tests)
 
 ## Disclaimer
