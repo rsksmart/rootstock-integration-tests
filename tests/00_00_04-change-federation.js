@@ -43,7 +43,8 @@ const { MINIMUM_PEGOUT_AMOUNT_IN_SATOSHIS, PEGOUT_EVENTS } = require('../lib/con
 const {
     getActiveFederationPublicKeys,
     getProposedFederationInfo,
-    getProposedFederationPublicKeys
+    getProposedFederationPublicKeys,
+    getNextFederationCreationBlockNumber,
 } = require('../lib/federation-utils');
 const { decodeOutpointValues } = require('../lib/varint');
 const { waitForBitcoinTxToBeInMempool } = require('../lib/btc-utils');
@@ -390,6 +391,9 @@ describe('Change federation', async function() {
 
     it('should register the SVP Spend transaction and finish the SVP process', async () => {
 
+        const nextFederationCreationBlockNumberBeforeSvpProcessFinishes = await getNextFederationCreationBlockNumber(rskTxHelper);
+        expect(nextFederationCreationBlockNumberBeforeSvpProcessFinishes).to.be.equal(-1, 'The next federation creation block number should not be set yet.');
+
         bridgeStateBeforeActivation = await getBridgeState(rskTxHelper.getClient());
         const blockNumberBeforeUpdateCollections = await rskTxHelper.getBlockNumber();
         const expectedCountOfSignatures = Math.floor(newFederationPublicKeys.length / 2) + 1;
@@ -409,6 +413,9 @@ describe('Change federation', async function() {
         await assertProposedFederationIsNotInStorage(bridge);
 
         await assertSvpValuesNotPresentInStorage(rskTxHelper);
+
+        const nextFederationCreationBlockNumberAfterSvpProcessFinishes = await getNextFederationCreationBlockNumber(rskTxHelper);
+        expect(nextFederationCreationBlockNumberAfterSvpProcessFinishes).to.be.equal(commitFederationCreationBlockNumber, 'The next federation creation block number should not have changed.');
 
     });
 
@@ -497,6 +504,9 @@ describe('Change federation', async function() {
 
         const utxoToNewFederation = migrationReleaseBtcTransaction.outs[0];
         expect(registeredMigrationTxUtxo.valueInSatoshis).to.be.equal(utxoToNewFederation.value, 'The migration tx registered utxo value should be the same as the utxo to the new federation.');
+
+        const nextFederationCreationBlockNumber = await getNextFederationCreationBlockNumber(rskTxHelper);
+        expect(nextFederationCreationBlockNumber).to.be.equal(-1, 'The next federation creation block number should not be set anymore');
 
     });
 
