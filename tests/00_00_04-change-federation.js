@@ -36,7 +36,7 @@ const {
 const { getBtcClient } = require('../lib/btc-client-provider');
 const { MINIMUM_PEGOUT_AMOUNT_IN_SATOSHIS, PEGOUT_EVENTS } = require('../lib/constants/pegout-constants');
 const {
-    getActiveFederationKeys,
+    getActiveFederationPublicKeys,
     getProposedFederationInfo,
     getProposedFederationPublicKeys
 } = require('../lib/federation-utils');
@@ -127,7 +127,7 @@ describe('Change federation', async function() {
 
         bridge = getBridge(rskTxHelper.getClient());
 
-        initialFederationPublicKeys = await getActiveFederationKeys(bridge);
+        initialFederationPublicKeys = await getActiveFederationPublicKeys(bridge);
         newFederationPublicKeys = createNewFederationKeys(initialFederationPublicKeys);
         newFederationBtcPublicKeys = newFederationPublicKeys.map(federator => federator[KEY_TYPE_BTC]);
         const expectedNewFederationErpRedeemScriptBuffer = redeemScriptParser.getP2shErpRedeemScript(newFederationBtcPublicKeys.map(key => removePrefix0x(key)), ERP_PUBKEYS, ERP_CSV_VALUE);
@@ -253,11 +253,7 @@ describe('Change federation', async function() {
 
     it('should create the proposed federation', async () => {
 
-        // Act
-
         const proposedFederationInfo = await getProposedFederationInfo(bridge);
-
-        // Assert
 
         const expectedProposedFederationSize = newFederationPublicKeys.length;
         expect(proposedFederationInfo.proposedFederationSize).to.be.equal(expectedProposedFederationSize, 'The proposed federation size should be the expected one.');
@@ -268,7 +264,7 @@ describe('Change federation', async function() {
         
         const proposedFederationMembers = await getProposedFederationPublicKeys(bridge);
 
-        expect(proposedFederationMembers).to.be.deep.equal(newFederationPublicKeys, 'The proposed federation members should be the expected ones.');
+        expect(proposedFederationMembers).to.be.deep.equal(newFederationPublicKeys, 'The proposed federation public keys should be the expected ones.');
 
     });
 
@@ -318,14 +314,14 @@ describe('Change federation', async function() {
 
         // The output addresses should be in the expected order.
         const proposedFederationOutput = btcTransaction.outs[0];
-        const flyoverOutput = btcTransaction.outs[1];
+        const proposedFederationFlyoverOutput = btcTransaction.outs[1];
         const activeFederationOutput = btcTransaction.outs[2];
 
         const actualProposedFederationAddress = bitcoinJsLib.address.fromOutputScript(proposedFederationOutput.script, btcTxHelper.btcConfig.network);
         expect(actualProposedFederationAddress).to.be.equal(proposedFederationAddress, 'The proposed federation address in the SVP fund transaction should be the first output.');
 
-        const actualFlyoverAddress = bitcoinJsLib.address.fromOutputScript(flyoverOutput.script, btcTxHelper.btcConfig.network);
-        expect(actualFlyoverAddress).to.be.equal(expectedFlyoverAddress, 'The flyover address in the SVP fund transaction should be the second expected output.');
+        const actualProposedFederationFlyoverAddress = bitcoinJsLib.address.fromOutputScript(proposedFederationFlyoverOutput.script, btcTxHelper.btcConfig.network);
+        expect(actualProposedFederationFlyoverAddress).to.be.equal(expectedFlyoverAddress, 'The flyover address in the SVP fund transaction should be the second expected output.');
 
         const actualActiveFederationAddress = bitcoinJsLib.address.fromOutputScript(activeFederationOutput.script, btcTxHelper.btcConfig.network);
         expect(actualActiveFederationAddress).to.be.equal(initialFederationAddress, 'The active federation address in the SVP fund transaction should be the third output.');
@@ -335,7 +331,7 @@ describe('Change federation', async function() {
         expect(proposedFederationOutput.value).to.be.equal(expectedProposedFederationOutputValue, 'The proposed federation output value should be double the minimum pegout value.');
 
         const expectedFlyoverOutputValue = MINIMUM_PEGOUT_AMOUNT_IN_SATOSHIS * 2;
-        expect(flyoverOutput.value).to.be.equal(expectedFlyoverOutputValue, 'The flyover output value should be double the minimum pegout value.');
+        expect(proposedFederationFlyoverOutput.value).to.be.equal(expectedFlyoverOutputValue, 'The flyover output value should be double the minimum pegout value.');
 
         // Only the svp fund tx hash unsigned value should be in storage
         await assertOnlySvpFundTxHashUnsignedIsInStorage(rskTxHelper, btcTransaction.getId());
@@ -352,7 +348,7 @@ describe('Change federation', async function() {
         expect(pegoutTransactionCreatedEvent, 'The pegout transaction created event should be emitted.').to.not.be.null;
         expect(removePrefix0x(pegoutTransactionCreatedEvent.arguments.btcTxHash)).to.be.equal(btcTransaction.getId(), 'The btc tx hash in the pegout transaction created event should be the tx id of the SVP fund tx.');
        
-        await assertPegoutTrasactionCreatedOutpointValues(initialBridgeState, finalBridgeState, btcTransaction, pegoutTransactionCreatedEvent);
+        await assertPegoutTransactionCreatedOutpointValues(initialBridgeState, finalBridgeState, btcTransaction, pegoutTransactionCreatedEvent);
 
     });
 
@@ -438,7 +434,7 @@ const assertOnlySvpFundTxHashUnsignedIsInStorage = async (rskTxHelper, pegoutBtc
 
 };
 
-const assertPegoutTrasactionCreatedOutpointValues = async (initialBridgeState, finalBridgeState, svpBtcTransaction, pegoutTransactionCreatedEvent) => {
+const assertPegoutTransactionCreatedOutpointValues = async (initialBridgeState, finalBridgeState, svpBtcTransaction, pegoutTransactionCreatedEvent) => {
 
     const svpFundTxInput = svpBtcTransaction.ins[0];
     const svpFundTxInputIndex = svpFundTxInput.index;
