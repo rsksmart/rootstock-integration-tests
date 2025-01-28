@@ -268,9 +268,7 @@ describe('Change federation', async function() {
 
     });
 
-    it('should not have created svp transaction and there should not be any SVP values in storage yet', async () => {
-
-        // Assert
+    it('should not have created svp fund transaction and there should not be any SVP values in storage yet', async () => {
 
         const bridgeState = await getBridgeState(rskTxHelper.getClient());
 
