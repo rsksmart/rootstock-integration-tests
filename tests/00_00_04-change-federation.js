@@ -262,9 +262,9 @@ describe('Change federation', async function() {
 
         expect(proposedFederationInfo.proposedFederationCreationBlockNumber).to.be.equal(commitFederationCreationBlockNumber, 'The proposed federation creation block number should be the expected one.');
         
-        const proposedFederationMembers = await getProposedFederationPublicKeys(bridge);
+        const proposedFederationPublicKeys = await getProposedFederationPublicKeys(bridge);
 
-        expect(proposedFederationMembers).to.be.deep.equal(newFederationPublicKeys, 'The proposed federation public keys should be the expected ones.');
+        expect(proposedFederationPublicKeys).to.be.deep.equal(newFederationPublicKeys, 'The proposed federation public keys should be the expected ones.');
 
     });
 
