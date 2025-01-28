@@ -410,6 +410,9 @@ describe('Change federation', async function() {
 
         await assertSvpValuesNotPresentInStorage(rskTxHelper);
 
+        const svpSpendTxIsRegisteredInTheBridge = await bridge.methods.isBtcTxHashAlreadyProcessed(svpSpendBtcTransaction.getId()).call();
+        expect(svpSpendTxIsRegisteredInTheBridge, 'The SVP Spend transaction should be registered in the Bridge.').to.be.true;
+
     });
 
     it('should activate federation', async () => {
@@ -474,12 +477,17 @@ describe('Change federation', async function() {
         const releaseBtcEvent = await rskUtils.findEventInBlock(rskTxHelper, PEGOUT_EVENTS.RELEASE_BTC.name, latestBlockNumber, blockNumberAfterRelease);
         const migrationReleaseBtcTransaction = bitcoinJsLib.Transaction.fromHex(removePrefix0x(releaseBtcEvent.arguments.btcRawTransaction));
 
-        // The SVP Fund transaction utxo is not included in the bridge utxo list but should be included in the migration transaction inputs.
-        // So we need to assert that the Bridge doesn't have it but the migration transaction does.
-        const inputsTxHashes = migrationReleaseBtcTransaction.ins.map(input => input.hash.reverse().toString('hex'));
-        const missingFromBridgeStateInputHashes = findMissingHashes(bridgeStateBeforeActivation.activeFederationUtxos, inputsTxHashes);
-        expect(missingFromBridgeStateInputHashes.length).to.be.equal(1, 'There should be one missing hash, the utxo that was sent to the Proposed federation in the SVP Spend transaction.');
-        const actualSvpSpendTxHash = missingFromBridgeStateInputHashes[0];
+        // The SVP Spend transaction utxo is registed in the Bridge but in exactly the same block an `updateCollections` transaction
+        // finishes the svp process and we don't get to see this uxto in the Bridge state since all the utxos are removed form the bridge
+        // when the proposed federation is finally commited to get ready for the migration.
+        // Because of this, since we have the `bridgeStateBeforeActivation`, that has all the utxos except the svp spend tx utxo,
+        // we're searching the svp spend tx utxo hash in the `migrationReleaseBtcTransaction` inputs and asserting that the Bridge
+        // `bridgeStateBeforeActivation` has all the utxos except this one, just to also assert that the migration transaction has all the
+        // utxos that were in the bridge before the activation + the svp spend tx utxo.
+        const migrationReleaseBtcTxInputsTxHashes = migrationReleaseBtcTransaction.ins.map(input => input.hash.reverse().toString('hex'));
+        const svpSpendTxUtxoHashesNotPresentInTheBridgeStateBeforeActivation = findSvpSpendTxUtxoHashNotPresentInTheBridgeStateBeforeActivation(bridgeStateBeforeActivation.activeFederationUtxos, migrationReleaseBtcTxInputsTxHashes);
+        expect(svpSpendTxUtxoHashesNotPresentInTheBridgeStateBeforeActivation.length).to.be.equal(1, 'There should be one missing hash, the utxo that was sent to the Proposed federation in the SVP Spend transaction.');
+        const actualSvpSpendTxHash = svpSpendTxUtxoHashesNotPresentInTheBridgeStateBeforeActivation[0];
         expect(actualSvpSpendTxHash).to.be.equal(svpSpendBtcTransaction.getId(), 'The missing hash should be the SVP Spend transaction hash.');
 
         const destinationAddress = bitcoinJsLib.address.fromOutputScript(migrationReleaseBtcTransaction.outs[0].script, btcTxHelper.btcConfig.network);
@@ -643,7 +651,7 @@ const waitForExpectedCountOfAddSignatureEventsToBeEmitted = async (rskTxHelper, 
 
 };
 
-function findMissingHashes(activeFederationUtxos, inputsTxHashes) {
+function findSvpSpendTxUtxoHashNotPresentInTheBridgeStateBeforeActivation(activeFederationUtxos, migrationReleaseBtcTxInputsTxHashes) {
     const activeUtxoHashes = activeFederationUtxos.map(utxo => utxo.btcTxHash);
-    return inputsTxHashes.filter(hash => !activeUtxoHashes.includes(hash));
+    return migrationReleaseBtcTxInputsTxHashes.filter(hash => !activeUtxoHashes.includes(hash));
 };
