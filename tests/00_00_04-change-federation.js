@@ -508,12 +508,12 @@ const assertPegoutTransactionCreatedOutpointValues = async (initialBridgeState, 
 
 };
 
-const assertProposedFederationIsStillInStorage = async (bridge, expectedProposedFederationAddress, expectedProposedFederationMembers) => {
+const assertProposedFederationIsStillInStorage = async (bridge, expectedProposedFederationAddress, expectedProposedFederationPublicKeys) => {
 
     const proposedFederationAddress = await bridge.methods.getProposedFederationAddress().call();
     expect(proposedFederationAddress).to.be.equal(expectedProposedFederationAddress, 'The proposed federation address should still be in storage.');
 
-    const proposedFederationMembers = await getProposedFederationPublicKeys(bridge);
-    expect(proposedFederationMembers).to.be.deep.equal(expectedProposedFederationMembers, 'The proposed federation members should still be in storage.');
+    const proposedFederationPublicKeys = await getProposedFederationPublicKeys(bridge);
+    expect(proposedFederationPublicKeys).to.be.deep.equal(expectedProposedFederationPublicKeys, 'The proposed federation public keys should still be in storage.');
 
 };
