@@ -23,7 +23,7 @@ describe.skip('Executing registerFastBtcTransaction post hop - sending same tx w
     rskTxHelpers = getRskTransactionHelpers();
     rskTxHelper = rskTxHelpers[0];
     btcTxHelper = getBtcClient();
-    bridge = getBridge(rskTxHelper.getClient());
+    bridge = await getBridge(rskTxHelper.getClient());
   });
 
   it(`should execute first tx successfully and fail executing second tx due to hash already used when calling registerFastBtcTransaction sending same tx twice`, async () => {

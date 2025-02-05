@@ -19,7 +19,7 @@ describe.skip('Calling getActivePowpegRedeemScript method after hop', function()
   before(async () => {
     rskTxHelpers = getRskTransactionHelpers();
     rskTxHelper = rskTxHelpers[0];
-    bridge = getBridge(rskTxHelper.getClient());
+    bridge = await getBridge(rskTxHelper.getClient());
   });
 
   it('should return the active powpeg redeem script', async () => {

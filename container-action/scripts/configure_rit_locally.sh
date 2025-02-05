@@ -10,7 +10,7 @@ echo "POWPEG_VERSION received as parameter: $POWPEG_VERSION"
 
 read -r -d '' SETTINGS_RIT <<EOF
 POWPEG_NODE_JAR_PATH=/usr/src/powpeg/build/libs/federate-node-$POWPEG_VERSION-all.jar
-CONFIG_FILE=/usr/src/rit/config/regtest.js
+CONFIG_FILE=regtest-all-keyfiles.js
 LOG_HOME=/usr/src/rit/logs
 BITCOIND_BIN_PATH=/usr/local/bin/bitcoind
 BITCOIN_DATA_DIR=/usr/src/bitcoindata

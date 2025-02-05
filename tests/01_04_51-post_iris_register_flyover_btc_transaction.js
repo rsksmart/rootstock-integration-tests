@@ -22,7 +22,7 @@ describe.skip('Calling registerFastBtcTransaction after iris', () => {
     rskTxHelpers = getRskTransactionHelpers();
     rskTxHelper = rskTxHelpers[0];
     btcTxHelper = getBtcClient();
-    bridge = getBridge(rskTxHelper.getClient(), Runners.common.forks.iris300.name);
+    bridge = await getBridge(rskTxHelper.getClient(), Runners.common.forks.iris300.name);
   });
   
   it('should return value transferred when calling registerFastBtcTransaction method', async () => {

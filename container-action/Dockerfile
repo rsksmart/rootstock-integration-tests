@@ -45,7 +45,7 @@ RUN mkdir -p /usr/src/logbacks
 WORKDIR /usr/src
 
 COPY entrypoint.sh /usr/src/entrypoint.sh
-COPY rit-local-configs/regtest-all-keys.js /usr/src/regtest.js
+COPY rit-local-configs/regtest-all-keyfiles.js /usr/src/regtest-all-keyfiles.js
 COPY rit-local-configs/logbacks/* /usr/src/logbacks/
 COPY scripts/* /usr/src/
 

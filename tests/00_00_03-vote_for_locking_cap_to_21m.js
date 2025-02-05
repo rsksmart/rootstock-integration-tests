@@ -21,7 +21,7 @@ describe('Vote for locking cap to the max 21 million btc', function() {
         const authAddress = await rskTxHelper.getClient().eth.personal.importRawKey(lockingCapAuthorizerPrivateKey, '');
         await rskUtils.sendFromCow(rskTxHelper, authAddress, btcToWeis(1));
 
-        const bridge = getBridge(rskTxHelper.getClient());
+        const bridge = await getBridge(rskTxHelper.getClient());
 
         const MAX_BTC = 21_000_000;
 

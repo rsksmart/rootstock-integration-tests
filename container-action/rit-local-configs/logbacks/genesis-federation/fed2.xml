@@ -19,7 +19,7 @@
 
     <appender name="FILE-AUDIT"
               class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>/usr/src/logs/rsk-fed-3.log</file>
+        <file>/usr/src/logs/fed2-genesis-federation.log</file>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <Pattern>
                 %date{yyyy-MM-dd-HH:mm:ss.SSS} %p [%c{1}]  %m%n
