@@ -22,7 +22,7 @@ describe('RFS-170 test after fork', () => {
         btcTxHelper = getBtcClient();
         rskTxHelpers = getRskTransactionHelpers();
         rskTxHelper = rskTxHelpers[0];
-        bridge = getBridge(rskTxHelper.getClient());
+        bridge = await getBridge(rskTxHelper.getClient());
 
     });
 

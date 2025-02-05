@@ -11,7 +11,7 @@ describe.skip('getEstimatedFeesForNextPegOutEvent - post fingerroot', () => {
   before(async () => {
     const rskTxHelper = getRskTransactionHelper();
 
-    bridge = getBridge(rskTxHelper.getClient());
+    bridge = await getBridge(rskTxHelper.getClient());
   });
 
   it('getEstimatedFeesForNextPegOutEvent bridge method returns fee estimation for one pegout when there are no pegout requests', async () => {

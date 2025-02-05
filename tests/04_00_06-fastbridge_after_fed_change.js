@@ -23,7 +23,7 @@ describe('Executing registerFastBtcTransaction after hop and federation changed'
     rskTxHelpers = getRskTransactionHelpers();
     rskTxHelper = rskTxHelpers[rskTxHelpers.length - 1];
     btcTxHelper = getBtcClient();
-    bridge = getBridge(rskTxHelper.getClient());
+    bridge = await getBridge(rskTxHelper.getClient());
   });
 
   it(`should return UNPROCESSABLE_TX_AMOUNT_SENT_BELOW_MINIMUM_ERROR(${UNPROCESSABLE_TX_AMOUNT_SENT_BELOW_MINIMUM_ERROR}) when calling registerFastBtcTransaction method sending amount below minimum after fed changed`, async () => {

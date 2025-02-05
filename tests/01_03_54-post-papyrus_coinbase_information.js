@@ -50,7 +50,7 @@ describe('Calling coinbase information methods after papyrus', () => {
 
         const pmt = `0100000001${coinbaseTx.getHash().toString('hex')}0101`;
 
-        const bridge = getBridge(rskTxHelper.getClient());
+        const bridge = await getBridge(rskTxHelper.getClient());
 
         const registerBtcCoinbaseTransactionMethod = bridge.methods.registerBtcCoinbaseTransaction(
           ensure0x(coinbaseTxWithoutWitness.toHex()), 

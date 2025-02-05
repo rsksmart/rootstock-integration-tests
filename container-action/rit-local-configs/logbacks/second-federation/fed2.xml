@@ -19,7 +19,7 @@
 
     <appender name="FILE-AUDIT"
               class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>/usr/src/logs/rsk-fed-1.log</file>
+        <file>/usr/src/logs/fed2-second-federation.log</file>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <Pattern>
                 %date{yyyy-MM-dd-HH:mm:ss.SSS} %p [%c{1}]  %m%n
@@ -93,7 +93,7 @@
     <logger name="blockprocessor" level="WARN"/>
     <logger name="state" level="WARN"/>
     <logger name="org.bitcoinj" level="WARN"/>
-    <logger name="metrics" level="WARN"/>
+    <logger name="metrics" level="WARN"/>\
     <logger name="messageProcess" level="WARN"/>
     <logger name="co.rsk.federate.bitcoin.BitcoinWrapperImpl" level="DEBUG"/>
     <logger name="org.ethereum.db.ReceiptStoreImpl" level="DEBUG"/>

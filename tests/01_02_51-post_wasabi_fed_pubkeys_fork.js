@@ -17,7 +17,7 @@ describe('Multiple federation member keys test after fork', () => {
     before(async () => {
         rskTxHelper = getRskTransactionHelper();
         fedChangeAddress = await rskTxHelper.importAccount(FEDERATION_CHANGE_PK);
-        bridge = getBridge(rskTxHelper.getClient());
+        bridge = await getBridge(rskTxHelper.getClient());
     });
 
     it('method getFederatorPublicKey should NOT work', () => {
