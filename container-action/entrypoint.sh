@@ -58,6 +58,15 @@ chmod +x ./configure.sh
 ./container-action/scripts/configure_rit_locally.sh "${POWPEG_VERSION}"
 export LOG_LEVEL="$LOG_LEVEL"
 
+echo -e "\n\n--------- Listing directories after configuration ---------\n\n"
+ls
+echo "---Listing container-action directory---"
+ls container-action
+echo "---Listing container-action/scripts directory---"
+ls container-action/scripts
+echo "---Listing container-action/rit-local-configs directory---"
+ls config
+
 echo -e "\n\n--------- Executing Rootstock Integration Tests ---------\n\n"
 npm install -y
 npm run test-fail-fast
