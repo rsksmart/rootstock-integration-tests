@@ -49,14 +49,13 @@ echo "POWPEG_VERSION=$POWPEG_VERSION"
 echo -e "\n\n--------- Starting the configuration of RIT ---------\n\n"
 cd /usr/src/
 git clone https://github.com/rsksmart/rootstock-integration-tests.git rit
-mv configure_rit_locally.sh rit
-mv regtest-all-keyfiles.js rit/config/regtest-all-keyfiles.js
-mv /usr/src/logbacks/* /usr/src/rit/logbacks/
 cd rit
 git checkout "$RIT_BRANCH"
+mv container-action/rit-local-configs/regtest-all-keyfiles.js config/regtest-all-keyfiles.js
+
 chmod +x ./configure.sh
 ./configure.sh
-./configure_rit_locally.sh "${POWPEG_VERSION}"
+./container-action/scripts/configure_rit_locally.sh "${POWPEG_VERSION}"
 export LOG_LEVEL="$LOG_LEVEL"
 
 echo -e "\n\n--------- Executing Rootstock Integration Tests ---------\n\n"

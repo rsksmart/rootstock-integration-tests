@@ -19,4 +19,4 @@ WAIT_FOR_BLOCK_MAX_ATTEMPTS=1200
 EOF
 
 echo -e  "\n\n---------- Configuring RIT to run the tests locally -----------\n\n"
-echo -e "$SETTINGS_RIT" > .env
+echo -e "$SETTINGS_RIT" > ../../.env
