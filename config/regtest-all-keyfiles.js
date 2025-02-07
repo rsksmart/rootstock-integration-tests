@@ -126,7 +126,7 @@ module.exports = {
                 {
                     id: 'federator-1-second-federation',
                     federationId: 'second-federation',
-                    logbackFile: `${federatesLogbackPath}/second-federation/fed4.xml`,
+                    logbackFile: `${federatesLogbackPath}/second-federation/fed1.xml`,
                     classpath: powpegNodeJarPath,
                     configFile: `${nodesConfigPath}/second-federation/fed1.conf`,
                     publicKeys: {
@@ -157,7 +157,7 @@ module.exports = {
                 {
                     id: 'federator-2-second-federation',
                     federationId: 'second-federation',
-                    logbackFile: `${federatesLogbackPath}/second-federation/fed5.xml`,
+                    logbackFile: `${federatesLogbackPath}/second-federation/fed2.xml`,
                     classpath: powpegNodeJarPath,
                     configFile: `${nodesConfigPath}/second-federation/fed2.conf`,
                     publicKeys: {
@@ -188,7 +188,7 @@ module.exports = {
                 {
                     id: 'federator-3-second-federation',
                     federationId: 'second-federation',
-                    logbackFile: `${federatesLogbackPath}/second-federation/fed6.xml`,
+                    logbackFile: `${federatesLogbackPath}/second-federation/fed3.xml`,
                     classpath: powpegNodeJarPath,
                     configFile: `${nodesConfigPath}/second-federation/fed3.conf`,
                     publicKeys: {
