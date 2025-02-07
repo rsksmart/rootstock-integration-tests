@@ -272,7 +272,7 @@ const startFederates = async (fedIndexStartsAt, configs, latestBlockHash) => {
       );
     }
   } catch(ex) {
-    stdout.write(`There was a problem starting a Federate. ${ex}\n`);
+    process.stdout.write(`There was a problem starting a Federate. ${ex}\n`);
     throw new Error(ex.toString());
   }
 };
