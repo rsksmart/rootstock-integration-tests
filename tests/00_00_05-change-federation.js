@@ -1,3 +1,5 @@
 const federationChangeTests = require('../lib/tests/change-federation');
 
-federationChangeTests.execute('Initial Federation change', Runners.config.federations.secondFederation);
+const makeDonationPegins = true;
+
+federationChangeTests.execute('Initial Federation change', Runners.config.federations.secondFederation, makeDonationPegins);
