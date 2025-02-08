@@ -3,13 +3,13 @@ const rskUtils = require('../rsk-utils');
 const CustomError = require('../CustomError');
 const { getRskTransactionHelpers } = require('../rsk-tx-helper-provider');
 
-const execute = (fork, getFederates) => {
+const execute = (fork) => {
   
   describe(`Activate ${fork.name} fork`, () => {
 
       it(`should mine blocks until reach ${fork.activationHeight}th block in order to activate the fork`, async () => {
         try {
-          const rskTransactionHelpers = getRskTransactionHelpers(getFederates());
+          const rskTransactionHelpers = getRskTransactionHelpers();
           const currentBlockNumber = await rskTransactionHelpers[0].getBlockNumber();
           expect(currentBlockNumber).to.be.below(fork.activationHeight);
           
