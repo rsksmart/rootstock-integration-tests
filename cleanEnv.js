@@ -25,7 +25,7 @@ async function clearLogFiles(directory) {
   }
 }
 
-function deleteBitcoinDataDirectory() {
+function clearBitcoinDataDirectory() {
   return new Promise((resolve, reject) => {
     const directory = process.env.BITCOIN_DATA_DIR;
 
@@ -33,20 +33,28 @@ function deleteBitcoinDataDirectory() {
       return reject(new Error("BITCOIN_DATA_DIR is not set."));
     }
 
-    fs.rm(directory, { recursive: true, force: true }, (err) => {
+    fs.readdir(directory, (err, files) => {
       if (err) {
-        reject(new Error(`Error deleting directory ${directory}: ${err.message}`));
-      } else {
-        console.log(`Successfully deleted directory: ${directory}`);
-        resolve();
+        return reject(new Error(`Error reading directory ${directory}: ${err.message}`));
       }
+
+      const deletePromises = files.map(file => {
+        const filePath = path.join(directory, file);
+        return fs.promises.rm(filePath, { recursive: true, force: true });
+      });
+
+      Promise.all(deletePromises)
+        .then(() => {
+          console.log(`Successfully cleared contents of: ${directory}`);
+          resolve();
+        })
+        .catch(reject);
     });
   });
 }
-
 const cleanEnvironment = async () => {
     console.info('Cleaning environment...');
-    await deleteBitcoinDataDirectory();
+    await clearBitcoinDataDirectory();
     await clearLogFiles(process.env.LOG_HOME);
     shell.exec(killServicesCommand);
     console.info('Environment cleaned.');
