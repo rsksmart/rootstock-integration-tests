@@ -4,12 +4,12 @@ const { UNPROCESSABLE_TX_AMOUNT_SENT_BELOW_MINIMUM_ERROR } = require("../lib/fly
 const CustomError = require('../lib/CustomError');
 const lbc = require('../lib/liquidity-bridge-contract');
 const { sendTxWithCheck, getFedsPubKeys } = require('../lib/rsk-utils');
-const { ERP_PUBKEYS, ERP_CSV_VALUE } = require("../lib/constants")
+const { ERP_PUBKEYS, ERP_CSV_VALUE } = require("../lib/constants/federation-constants")
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const { ensure0x } = require('../lib/utils');
 const { fundAddressAndGetData } = require('../lib/btc-utils');
-const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/bridge-provider');
 const { mineForPeginRegistration } = require('../lib/2wp-utils');
 
 describe('Executing registerFastBtcTransaction after hop and federation changed', () => {
@@ -23,8 +23,7 @@ describe('Executing registerFastBtcTransaction after hop and federation changed'
     rskTxHelpers = getRskTransactionHelpers();
     rskTxHelper = rskTxHelpers[rskTxHelpers.length - 1];
     btcTxHelper = getBtcClient();
-    const latestActiveForkName = await getLatestActiveForkName();
-    bridge = getBridge(rskTxHelper.getClient(), latestActiveForkName);
+    bridge = await getBridge(rskTxHelper.getClient());
   });
 
   it(`should return UNPROCESSABLE_TX_AMOUNT_SENT_BELOW_MINIMUM_ERROR(${UNPROCESSABLE_TX_AMOUNT_SENT_BELOW_MINIMUM_ERROR}) when calling registerFastBtcTransaction method sending amount below minimum after fed changed`, async () => {

@@ -2,7 +2,7 @@ const whitelistingAssertions = require('../lib/assertions/whitelisting');
 const contractMethodAssertions = require('../lib/assertions/contractMethods');
 const { getBtcClient } = require('../lib/btc-client-provider');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
-const { getBridge, getLatestActiveForkName } = require('../lib/precompiled-abi-forks-util');
+const { getBridge } = require('../lib/bridge-provider');
 
 const WHITELIST_ADDRESSES = {
     'mq4w7mWwCtCURdbB3m3EVXqtJiVBdXcEaK' : 100000000000,
@@ -22,7 +22,7 @@ describe('RFS-170 test after fork', () => {
         btcTxHelper = getBtcClient();
         rskTxHelpers = getRskTransactionHelpers();
         rskTxHelper = rskTxHelpers[0];
-        bridge = getBridge(await getLatestActiveForkName());
+        bridge = await getBridge(rskTxHelper.getClient());
 
     });
 

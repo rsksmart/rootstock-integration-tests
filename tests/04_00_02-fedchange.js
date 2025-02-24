@@ -28,7 +28,7 @@ const {
     REGTEST_FEDERATION_CHANGE_PRIVATE_KEYS,
     REGTEST_FEDERATION_CHANGE_ADDRESSES,
     FEDERATION_ACTIVATION_AGE
-} = require('../lib/constants');
+} = require('../lib/constants/federation-constants');
 
 const OTHER_PKS = [
   '1722c8adb8a702553bb2b4fa7c8de97e0b572e13404a1263b5b31fead3d9784f',
@@ -77,14 +77,10 @@ let rskTxHelpers;
 let btcTxHelper;
 let rskTxHelper;
 
-/**
- * Takes the blockchain to the required state for this test file to run in isolation.
- */
-const fulfillRequirementsToRunAsSingleTestFile = async (rskTxHelper, btcTxHelper) => {
-  await rskUtils.activateFork(rskUtils.getLatestForkName());
-};
-
-describe('RSK Federation change', function() {
+// Skipped by now because these tests, as the are right now, create a federation with 2 members, and we already
+// have a federation with 5 members. We should create a new one with 5 or more members, not less.
+// Also, we already have some federation change tests in 00_00_04-change-federation.js, we should reuse those and add more scenarios.
+describe.skip('RSK Federation change', function() {
   let addresses;
 
   before(async () => {
@@ -103,10 +99,6 @@ describe('RSK Federation change', function() {
       rskTxHelpers = getRskTransactionHelpers();
       rskTxHelper = rskTxHelpers[0];
       btcTxHelper = getBtcClient();
-
-      if(process.env.RUNNING_SINGLE_TEST_FILE) {
-        await fulfillRequirementsToRunAsSingleTestFile(rskTxHelper, btcTxHelper);
-      }
 
       // Assume the last of the running federators belongs to the new federation
       rskClientNewFed = rskClients[rskClients.length-1];
@@ -671,6 +663,10 @@ describe('RSK Federation change', function() {
       ];
       
       await test.assertLock(addresses, outputs);
+
+      // Pushing any migration pegout that might be pending.
+      await rskUtils.triggerRelease(rskTxHelpers, btcTxHelper);
+
     }
     catch (err) {
       throw new CustomError('Transfer BTC to RBTC with outputs both federations failure', err);

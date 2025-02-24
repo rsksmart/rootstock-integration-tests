@@ -6,7 +6,6 @@ const expect = require('chai').expect;
 const path = require('path');
 
 const BitcoinRunner = require('./lib/bitcoin-runner').Runner;
-const portUtils = require('./lib/port-utils');
 
 const federateStarter = require('./lib/federate-starter');
 const rskUtils = require('./lib/rsk-utils');
@@ -21,7 +20,7 @@ if (global.describe == null || global.it == null) {
 }
 
 // Load the configuration, regtest by default
-const configFileName = process.env.NODE_ENV || 'regtest';
+const configFileName = process.env.CONFIG_FILE || 'regtest';
 const config = require(`./config/${configFileName}`);
 
 // Load cases to test, everything by default
@@ -78,29 +77,33 @@ const createForkObject = (name, activationHeight) => {
 
 };
 
+
 // ***** GLOBALS ***** //
 global.Runners = {
   hosts: {},
   common: {
     forks: {
-      orchid: createForkObject('orchid', 100),
-      wasabi100: createForkObject('wasabi', 250),
-      papyrus200: createForkObject('papyrus', 450),
-      iris300: createForkObject('iris', 700),
-      hop400: createForkObject('hop', 1000),
-      hop401: createForkObject('hop401', 1010),
-      fingerroot500: createForkObject('fingerroot', 1350),
-      arrowhead600: createForkObject('arrowhead', 1600),
-      lovell700: createForkObject('lovell', 1850)
+      orchid: createForkObject('orchid', 1),
+      wasabi100: createForkObject('wasabi100', 1),
+      papyrus200: createForkObject('papyrus200', 1),
+      iris300: createForkObject('iris300', 1),
+      hop400: createForkObject('hop400', 1),
+      hop401: createForkObject('hop401', 1),
+      fingerroot500: createForkObject('fingerroot500', 1),
+      arrowhead600: createForkObject('arrowhead600', 1),
+      arrowhead631: createForkObject('arrowhead631', 1),
+      lovell700: createForkObject('lovell700', 1100),
     },
     additionalFederationAddresses: []
   }
 };
 
+Runners.config = config;
+
 function validateBitcoinRunnerConfig(bitcoinConf, configs){
   configs.forEach(function(config){
     if(!bitcoinConf[config]) {
-      process.stdout.write(`NO runnersConfig.bitcoin.${config} defined on regtest.js\n`);
+      process.stdout.write(`NO runnersConfig.bitcoin.${config} defined on ${configFileName}.js\n`);
       process.exit(1);
     };
   });
@@ -186,6 +189,7 @@ before(async () => {
     if (runnersConfig.federates != null) {
       runnersConfig.federates.forEach((federateRunnerConfig) => {
         const federateRunner = {
+          federationId: federateRunnerConfig.federationId,
           host: federateRunnerConfig.host,
           publicKeys: federateRunnerConfig.publicKeys,
         };
@@ -197,70 +201,26 @@ before(async () => {
     }
 
     // Start desired federates
-    const federatesToStart = Array.isArray(config.federate) ? config.federate : [config.federate];
-    const additionalFederateNodes = config.additionalFederateNodes ? config.additionalFederateNodes : [];
-    const totalAmountOfFederateNodesToStart = federatesToStart.length + additionalFederateNodes.length;
-    // Find random ports for all federates
-    selectedPorts = await portUtils.findFreePorts(30000, 30100, totalAmountOfFederateNodesToStart * 2, HOST);
-    // Configure the ports and peers for each federate
-    let assignedFedConfigIndex = 0;
+    const federatesToStart = config.federations.genesisFederation.members;
     const getConfigForFederateNodes = (federateToStart) => {
       // Configure ports
       var config = {
         ...federateToStart,
-        port: selectedPorts[assignedFedConfigIndex*2],
-        rpcPort: selectedPorts[assignedFedConfigIndex*2+1]
+        port: federateToStart.port,
+        rpcPort: federateToStart.rpcPort,
       };
       if (!config.customConfig) {
         config.customConfig = {};
       }
       // Set amountOfHeadersToSend to 500 to avoid having to inform headers in separated calls
       config.customConfig[`federator.amountOfHeadersToSend`] = 500;
-      
-      // TODO: Remove once RIT refactors have been completed
-      config.customConfig[`blockchain.config.consensusRules.rskip427`] = -1;
-      config.customConfig[`blockchain.config.consensusRules.rskip419`] = -1;
 
-      // federatesToStart: [1, 2, 3]
-      // additionalFederateNodes: [4, 5]
-      // Configure peers
-      let peerIndex = 0;
-      for (let i = 0; i < federatesToStart.length; i++) {
-        if (federatesToStart[i] !== federateToStart) {
-          config.customConfig[`peer.active.${peerIndex}.ip`] = '127.0.0.1';
-          config.customConfig[`peer.active.${peerIndex}.port`] = selectedPorts[i*2];
-          config.customConfig[`peer.active.${peerIndex}.nodeId`] = federatesToStart[i].nodeId;
-          peerIndex++;
-        }
-      }
-      for (let i = federatesToStart.length; i < federatesToStart.length + additionalFederateNodes.length; i++) {
-        const realIdx = i - federatesToStart.length;
-        if (additionalFederateNodes[realIdx] !== federateToStart) {
-          config.customConfig[`peer.active.${peerIndex}.ip`] = '127.0.0.1';
-          config.customConfig[`peer.active.${peerIndex}.port`] = selectedPorts[realIdx*2];
-          config.customConfig[`peer.active.${peerIndex}.nodeId`] = additionalFederateNodes[realIdx].nodeId;
-          peerIndex++;
-        }
-      }
-      // Configure any manually started federate node as a peer too
-      (runnersConfig.federates || []).forEach((federateRunnerConfig) => {
-        const parts = federateRunnerConfig.host.split(':');
-        config.customConfig[`peer.active.${peerIndex}.ip`] = parts[0];
-        config.customConfig[`peer.active.${peerIndex}.port`] = parts[1];
-        config.customConfig[`peer.active.${peerIndex}.nodeId`] = federateRunnerConfig.nodeId;
-        peerIndex++;
-      });
-      assignedFedConfigIndex++;
       return config;
     };
 
     await startFederates(
       1, 
       federatesToStart.map(getConfigForFederateNodes), 
-      process.stderr, 
-      process.stdout, 
-      Runners, 
-      initConfig.federatesLogbackFile
     );
     config.additionalFederateNodes = config.additionalFederateNodes || [];
     Runners.startAdditionalFederateNodes = Promise.resolve();
@@ -280,10 +240,6 @@ before(async () => {
         return startFederates(
           federatesToStart.length + 1, 
           config.additionalFederateNodes.map(getConfigForFederateNodes), 
-          process.stderr, 
-          process.stdout, 
-          Runners, 
-          initConfig.federatesLogbackFile, 
           latestBlock.hash
         );
       };
@@ -301,7 +257,7 @@ beforeEach(() => {
   expect(Runners.fedRunner == null || Runners.fedRunner.isRunning(), "Federate node is not running").to.be.ok;
 });
 
-const startFederates = async (fedIndexStartsAt, configs, stderr, stdout, runners, logbackFile, latestBlockHash) => {
+const startFederates = async (fedIndexStartsAt, configs, latestBlockHash) => {
   if (configs.length === 0) {
     return Promise.resolve();
   }
@@ -311,16 +267,12 @@ const startFederates = async (fedIndexStartsAt, configs, stderr, stdout, runners
       await federateStarter.startFederate(
         fedIndexStartsAt + i, 
         configs[i], 
-        stderr, 
-        stdout, 
-        runners, 
-        logbackFile, 
         latestBlockHash, 
         bookkeepingConfigurations
       );
     }
   } catch(ex) {
-    stdout.write(`There was a problem starting a Federate. ${ex}\n`);
+    process.stdout.write(`There was a problem starting a Federate. ${ex}\n`);
     throw new Error(ex.toString());
   }
 };
@@ -373,6 +325,6 @@ glob.sync('./tests/**/*.js')
   .forEach(test => {
     for(let i = 0; i < runTestThisTimes; i++) {
       delete require.cache[require.resolve(test)];
-      require(test)
+      require(test);
     }
 });

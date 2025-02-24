@@ -12,11 +12,12 @@ All private keys used in the library are for testing only and not used in any pr
 ## Prerequisites
 
 ### bitcoind
+
 - download
-  Current pipeline in jenkins is running bitcoind 0.17, 0.18.1 works for local execution.
+  Current Github Actions job is running bitcoind 0.18.1.
   - Go to https://bitcoin.org/en/release/v0.18.1 in this page there is the link to the download sources
   https://bitcoincore.org/bin/bitcoin-core-0.18.1/
-  Select the *.tar.gz file according to your OS (for MacOS sillicon [bitcoin-0.18.1-osx64.tar.gz](https://bitcoincore.org/bin/bitcoin-core-0.18.1/bitcoin-0.18.1-osx64.tar.gz))
+  Select the *.tar.gz file according to your OS (for MacOS silicon [bitcoin-0.18.1-osx64.tar.gz](https://bitcoincore.org/bin/bitcoin-core-0.18.1/bitcoin-0.18.1-osx64.tar.gz))
     to use curl instead use `curl -O https://bitcoin.org/bin/bitcoin-core-0.18.1/bitcoin-0.18.1-osx64.tar.gz`
   - Decompress and copy the path to the folder.
   - run in terminal `sudo cp <path to bitcoin-core folder>/bin/bitcoin* /usr/local/bin`
@@ -24,66 +25,80 @@ All private keys used in the library are for testing only and not used in any pr
   - run to test the bitcoind installation standalone `bitcoind -deprecatedrpc=generate -addresstype=legacy -regtest -printtoconsole -server -rpcuser=rsk -rpcpassword=rsk -rpcport=18332 -txindex -datadir=<path to bitcoindata> $@`
 
 ### Federate node setup
-- install java the x86 version to be used with rossetta in case of ARM arch (1.8, 11 and 17 can be used).
-- A fatjar of the federate node can be used or follow the setup steps in the powpeg-node to run from scratch.
 
+- Install java the x86 version to be used with Rosetta in case of ARM arch (1.8, 11 and 17 can be used).
+- A fatjar of the federate node can be used or follow the setup steps in the powpeg-node to run from scratch. Check: https://github.com/rsksmart/powpeg-node/blob/master/README.md
 
-### HSM 
-- Clone the HSM repository https://github.com/rootstock/hsm
-- Install python 2.7.16 from the python official site https://www.python.org/downloads/release/python-2716/
-- In terminal execute
-  - `pip install wheel`
-  - `pip install --no-cache secp256k1==0.13.2` (last version 0.14.0 is not working correctly with python 2)
-  - test the hsm1 by executing `python fedhm-mockup.py`
-  - follow the readme in hsm repository for hsm2 config.
-
-  The pipeline uses the same configuration as in `regtest.js` 
-  There is a `regtest.js.sample.hsm1only` that can be set as `regtest.js` to avoid usage of hsm2 if required.
 ### NODE.JS
 - Install node.js latest LTS version (recommendation use [nvm](https://formulae.brew.sh/formula/nvm))
 
-### OPTIONAL (LOGS)
+## Initial Configuration using .env file
 
-In order to keep a log of each federate node a logback can be setup from the `regtest.js` file per each federate.
-There is sample in the logbacks folder that can be copied into each of the federate nodes.
-The sample name is `logback-fed1.xml.sample` and inside the change is in the line
+After cloning this project and `cd` to it, you can make a copy to the `.env-example` file and rename it `.env` and setup the environment variables that you need.
+
+You will need to provide values for most these variables:
+
 ```
-<file>/PATH/TO/LOGS/fed1.log</file>
+POWPEG_NODE_JAR_PATH=/Users/<your_user>/repos/powpeg-node/build/libs/federate-node-SNAPSHOT-<version>all.jar
+CONFIG_FILE=regtest-all-keyfiles
+LOG_HOME=/Users/<your_user>/config/logs-config
+BITCOIND_BIN_PATH=/Users/<your_user>/bitcoind/bin/bitcoind
+JAVA_BIN_PATH=/Library/Java/JavaVirtualMachines/adoptopenjdk-17.jdk/Contents/Home/bin/java
+BITCOIN_DATA_DIR=/Users/<your_user>/bitcoin-data
 ```
-to determine where the logs are going to be written.
-Inside the `regtest.js` file the logbacks per federate node can be setup and mapped as
+
+There are more variables in the `.env-example` files, but they already have default values and are a bit less important. You can find more details about them in th e`.env-example` file and there is a section dedicated them below in this document.
+
+`POWPEG_NODE_JAR_PATH` should point to the absolute path of the powpeg-node .jar file in your system to be executed.
+
+You can leave this value as the example or set `CONFIG_FILE` to the actual name of the configuration file you are going to use. If you don't provide a value, it will use `regtest.js` instead.
+Notice that there is a `regtest-all-keyfiles.js` file in the `config` directory. You can either use that one, rename it, modify it or use a new one.
+At the moment, we are running the tests with `keyfiles` nodes. When we setup the tests to run with the `tcpsigner`, then we will update this guide to include that.
+
+Optional. If you want to see the logs of the federators (recommended), then `LOG_HOME` should point the directory where the logback configurations files are. Keep in mind that these logback `.xml` files should be contained in another directory inside this `LOG_HOME` directory called `genesis-federation` and `second-federation` and each of these directories should contain a `fed1.xml`, `fed2.xml` and `fed3.xml` files. You can always modify this in the `regtest-all-keyfiles.js` file.
+
+Example:
+
 ```
-const federatesLogbackPath = '/PATH/TO/logbacks/'
-const customLogbackFile1 = federatesLogbackPath + 'logback-fed1.xml';
-const customLogbackFile2 = federatesLogbackPath + 'logback-fed2.xml';
-const customLogbackFile3 = federatesLogbackPath + 'logback-fed3.xml';
-const customLogbackFile4 = federatesLogbackPath + 'logback-fed4.xml';
-const customLogbackFile5 = federatesLogbackPath + 'logback-fed5.xml';
-``` 
-(The names of the logback files are suggestions)
+<LOG_HOME>
+  - genesis-federation/
+    - fed1.xml
+    - fed2.xml
+    - fed3.xml
+  - second-federation/
+    - fed1.xml
+    - fed2.xml
+    - fed3.xml
+```
+
+Use `container-action/rit-local-configs/logbacks` as an example.
+
+You you already have `bitcoind` installed in your system, you can leave `BITCOIND_BIN_PATH` empty, the tests will use the one available from the system. If you have the `bitcoind` binaries in a specific directory, you can specify that directory in this variable. This way you don't have to fully install `bitcoind` in your system.
+
+If you already have the correct `java` version installed in your system, you can leave `JAVA_BIN_PATH` empty, the tests will use the one available from the system. If you have the java binaries in a specific directory, you can specify that directory in this variable.
+
+Set the directory where you want the bitcoin database to be located at here `BITCOIN_DATA_DIR`.
 
 ## Running the tests
 
-1. Clone this repo.
-2. Run `npm ci`.
-3. Generate a configuration for a standalone execution:
-  - Copy the sample: `cp config/regtest.js.sample config/regtest.js`
-  - Set `federate.classpath` to your local federate node fatjar. Additionally you can set `federate.configFile` to your local configuration files, if you need to test special conditions or your configuration files are located in a different path.
-  - Set `federate.hsmConfigs.serverPath` to your local HSM emulator script.
-  - Optionally specify `federate.hsmConfigs.keyPath` to your local keys, if you happen to be testing different keys or your keys are located in a different path.
-4. Run `npm test` to run testcases without interruption or `npm run test-fail-fast` to stop execution at first testcase failure.
-  
-### Notes for regtest
-- `regtest.js` by default has the following mapping:
-    - federate1: key file (no hsm)
-    - federate2 and federate3: hsm1
-    - federate4 and federate5: hsm2 (modify using the same logic that in federate2 and 3 for changing to hsm1 in case of hsm2 not working as explained in the HSM setup section).
+Make sure to make the `configure.sh` file executable with the command `chmod +x configure.sh`, then execute it like `./configure.sh` so the `keyfiles` nodes can use the private keys specified in the `config/node-keys` directory.
 
+1. Run `npm ci`
+2. Run `npm test` to run testcases without interruption
+3. Run `npm run test-fail-fast` to stop execution at first testcase failure.
+
+Sometimes after running the tests, some federate nodes stay running in the background and using the assigned port. Also bitcoind can do this.
+You might notice this when the `sync` test case fails.
+We can use the `cleanEnv.js` file to stop these services and also clean the logs files.
+
+Simply run:
+
+> sudo node cleanEnv.js
 
 ## Running the tests with a different configuration file
 
 1. Create a configuration file, e.g., `config/anotherconfig.js`.
-2. Run `NODE_ENV=anotherconfig npm test`.
+2. Run `CONFIG_FILE=anotherconfig npm test` or simply set the `CONFIG_FILE` value in the `.env` file.
 
 ## Including/Excluding test cases
 
@@ -99,61 +114,13 @@ b. `EXCLUDE_CASES=file3,file4 npm test`
 
 which will test everything under `tests` except for test scripts that begin with either `file3` or `file4`.
 
-### Important notice
-
-The test 015 works as a fork test and at the same time is required for the subsequent tests, as it enables the whitelisting HF.
-If you are going to run a test that uses whitelisting (020,030,040,050 ATM) make sure to include the case 015 in your custom run.
-
 ## Running the tests on an existing running bitcoind and/or federate node(s)
 
-1. Copy the sample: `cp config/regtest.js.sample config/mynewenv.js`
-2. If you want to run your own bitcoin node, delete the `btc` section and set `mineInitialBitcoin` to `false`. Then add a `runners.bitcoin` section and set the entries `host`, `rpcUser` and `rpcPassword` with the information of your locally running bitcoin node. For example:
+Coming soon...
 
-```
-runners {
-  ...,
-  bitcoin: {
-    host: '127.0.0.1:18332',
-    rpcUser: 'myuser',
-    rpcPassword: 'mypassword'
-  },
-  ...
-},
-...
-```
+## Running the tests with the TCP Signer
 
-3. If you want to run one or more of your own federate nodes, add a section `runners.federates` with an array of manually started nodes. Each of these must have: `host` and `publicKeys` with the RPC host and public keys of the already running node, respectively. You can still keep automatically started federate nodes if you want to. Then, you can mix manually and automatically started nodes for e.g. debugging. For example:
-
-```
-runners {
-  ...,
-  federates: [{
-    host: '127.0.0.1:5555',
-    publicKeys: {
-      btc: '02cd53fc53a07f211641a677d250f6de99caf620e8e77071e811a28b3bcddf0be1',
-      rsk: '02cd53fc53a07f211641a677d250f6de99caf620e8e77071e811a28b3bcddf0be1',
-      mst: '02cd53fc53a07f211641a677d250f6de99caf620e8e77071e811a28b3bcddf0be1',
-    },
-    nodeId: '62634ab57dae9cb373a5d536e66a8c4f67468bbcfb063809bab643072d78a1243bd206c2c7a218d6ff4c9a185e71f066bd354e5267875b7683fbc70a1d455e87'
-  }, {
-    host: '127.0.0.1:6666',
-    publicKeys: {
-      btc: '031da807c71c2f303b7f409dd2605b297ac494a563be3b9ca5f52d95a43d183cc5',
-      rsk: '031da807c71c2f303b7f409dd2605b297ac494a563be3b9ca5f52d95a43d183cc5',
-      mst: '031da807c71c2f303b7f409dd2605b297ac494a563be3b9ca5f52d95a43d183cc5',
-    },
-    nodeId: '72634ab57dae9cb373a5d536e76a8c4f67468bbcfb063809bab643072d78a1243bd206c2c7a218d6ff4c9a185e71f066bd354e5267875b7683fbc70a1d455e84'
-  }],
-  ...
-},
-...
-```
-
-4. Run the tests on the `mynewenv` environment like so:
-
-```
-NODE_ENV=mynewenv npm test
-```
+Coming soon...
 
 ## Configurations
 
@@ -163,91 +130,6 @@ Some of them are listed below:
 
 * General configurations. We will send the command argument `--regtest` to use the default regtest configurations for the node.
 * Miner. the node miner will be disabled by manual configuration to let the test mine manually using evm_mine.
-* Signers. Using the configuration from each federate node we will decide whether we need or not to start HSM signers. Additionally we will override the signer's configuration on each node. See [here](#using-hsm) for more details about HSM specific configurations. If you don't have/want to use HSM, use [this guide](#not-using-hsm) instead.
-* RPC port. The port used for RPC communication will be overriden using a tool to detect available ports (between 30000 and 30100)
-* Peer port. Same as RPC port, we are using the same port range to get available ports.
-
-### Important information regarding config files
-
-One of the settings in regtest.js `nodeId` MUST match the value for each node in its corresponding config file. You can find this value under `peer`.
-The config file will have at least 2 values under `peer`:
-* nodeId: just for reference, to be used in the regtest.js configuration.
-* privateKey: the value that the node will use to obtain the corresponding `nodeId` and `publicKey`.
-It's important to note that both `nodeId` and `privateKey` must be in sync, or else the integration test will fail.
-
-### Using HSM
-
-There is a specific section in each federate element to determine how to start the HSM signer.
-```
-hsmConfigs: {
-  version: '1',
-  keyPath: '../configs/keys/reg1.key',
-  serverPath: '/your-path-to-hsm-source-code/simulator/fedhm-mockup.py',
-  port: '9999'
-  printOutput: true
-}
-```
-
-* version: indicates which version of HSM should be used. By default uses '1'. Accepted values are: 1, 2, 2_stateless (this version is just temporary required and will be removed in the future).
-* keyPath: only needed if you are using the mockup or the emulator. The format of this file depends on the version of the HSM used.
-* serverPath: path to the source code of the HSM signer.
-* port: only needed if you want to use a fixed port. By default it will try to get a free port from the range 40000 to 40100.
-* printOutput: enables/disables the specific output of the HSM server.
-
-#### keyPath for HSM 2
-The emulator expects to receive a valid JSON file that must respect the following format:
-```
-{
-  "m/44'/1'/0'/0/0": "PRIVATE_KEY",
-  "m/44'/1'/0'/0/1": "PRIVATE_KEY",
-  "m/44'/1'/0'/0/2": "PRIVATE_KEY"
-}
-```
-These derivation paths correspond to the following key ids:
-```
-BTC key id - m/44'/1'/0'/0/0
-RSK key id - m/44'/1'/0'/0/1
-MST key id - m/44'/1'/0'/0/2
-```
-
-### Not using HSM
-
-If you don't want to use HSM you can fallback to keyfile signer. To do this you will have to do three things:
-1. delete/comment the hsmConfigs section in your federate elements.
-2. override the default config file settings to use keyfile.
-3. add `publicKeys` config with each key type (`btc`, `rsk` and `mst`). This is required due to key control and federation change testing (the latter only for non-genesis federate members). The public key must be obtained deriving it from the private key specified in the config files (see #2). If you don't know how to calculate it, you can use this website [www.bitaddress.org](https://www.bitaddress.org) going directly to the wallet details tab and copy/pasting the private key there. The value you want is the public key compressed.
-
-To override the settings you have two ways:
-* Go directly to the config file and replace the signer section of the federator to match the following:
-```
-signers {
-  BTC {
-    type = "keyFile"
-    path = "/path-to-utilities/configs/keys/reg1-btc.key"
-  }
-  RSK {
-    type = "keyFile"
-    path = "/path-to-utilities/configs/keys/reg1-rsk.key"
-  }
-}
-```
-* Specify a custom config that overrides the original config. To do so you would have to add a customConfig element in the federate elements as follows:
-```
-customConfig: {
-  'federator.signers.BTC.type': 'keyFile',
-  'federator.signers.BTC.path': '/path-to-utilities/configs/keys/reg1-btc.key',
-  'federator.signers.BTC.type': 'keyFile',
-  'federator.signers.BTC.path': '/path-to-utilities/configs/keys/reg1-rsk.key'
-}
-```
-
-Both ways are valid, but keep in mind that the config files are controlled by git so make sure to avoid pushing an unwanted modification.
-
-## Additional considerations
-
-- Run ``` bash configure.sh ``` in order to run ``` chmod 400 ``` to the keys on ``` config/node-keys ```.
-
-- In case ```Sync ``` testcase fails, run command ``` ps aux | grep java ``` and check services. In case of having related processes running, kill them or reboot your system. It could also be related to having an instance of bitcoind running.
 
 ## Running the tests multiple times
 
@@ -329,13 +211,3 @@ The command `run-single-test-file` will execute the file `singleTestFileRunner.j
 1 - It will assign the `01_02_51-post_wasabi_fed_pubkeys_fork.js` test file name to the `process.env.INCLUDE_CASES` variable. Since it will be the one in that `INCLUDE_CASES` variable, then only that test file will be run.
 
 2 - It will setup a boolean `process.env.RUNNING_SINGLE_TEST_FILE` variable to `true` so the `fulfillRequirementsToRunAsSingleTestFile` function can check if it needs to manually take the blockchain to a state where the test file can run or not.
-
-The test file should have a `fulfillRequirementsToRunAsSingleTestFile` function to be called in the `before` function because each test file has different requirements to be able to run. Some will need to mine blocks, fund the bridge, activate 1 or more forks, etc. Some will be able to run without any prior preparation.
-
-Another advantage of this is that it will allow us to understand exactly what each test really needs in order to run, reducing uncertainties.
-
-To indicate a fork name to be used in the `fulfillRequirementsToRunAsSingleTestFile` function, you can specify it as the last argument of the command like this, passing the fork name `fingerroot500`:
-
-> npm run run-single-test-file 02_00_01-2wp.js fingerroot500
-
-This is when the `fulfillRequirementsToRunAsSingleTestFile` function needs a fork name that needs to be dynamically passed. For example, the `2wp.js` file is run multiple times with different forks. We cannot simply hardcode which fork to use or to use the latest, because sometimes we will need to run it with a fork passed dynamically.
