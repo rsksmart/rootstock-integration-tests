@@ -40,7 +40,7 @@ You will need to provide values for most these variables:
 
 ```
 POWPEG_NODE_JAR_PATH=/Users/<your_user>/repos/powpeg-node/build/libs/federate-node-SNAPSHOT-<version>all.jar
-CONFIG_FILE=regtest-all-keyfiles
+CONFIG_FILE_PATH=./config/regtest-all-keyfiles
 LOG_HOME=/Users/<your_user>/config/logs-config
 BITCOIND_BIN_PATH=/Users/<your_user>/bitcoind/bin/bitcoind
 JAVA_BIN_PATH=/Library/Java/JavaVirtualMachines/adoptopenjdk-17.jdk/Contents/Home/bin/java
@@ -51,7 +51,7 @@ There are more variables in the `.env-example` files, but they already have defa
 
 `POWPEG_NODE_JAR_PATH` should point to the absolute path of the powpeg-node .jar file in your system to be executed.
 
-You can leave this value as the example or set `CONFIG_FILE` to the actual name of the configuration file you are going to use. If you don't provide a value, it will use `regtest.js` instead.
+You can leave this value as the example or set `CONFIG_FILE_PATH` to the actual path of the configuration file you are going to use. If you don't provide a value, it will try to use `./config/regtest.js` instead.
 Notice that there is a `regtest-all-keyfiles.js` file in the `config` directory. You can either use that one, rename it, modify it or use a new one.
 At the moment, we are running the tests with `keyfiles` nodes. When we setup the tests to run with the `tcpsigner`, then we will update this guide to include that.
 
@@ -97,8 +97,8 @@ Simply run:
 
 ## Running the tests with a different configuration file
 
-1. Create a configuration file, e.g., `config/anotherconfig.js`.
-2. Run `CONFIG_FILE=anotherconfig npm test` or simply set the `CONFIG_FILE` value in the `.env` file.
+1. Create a configuration file, e.g., `config/another_config.js`.
+2. Run `CONFIG_FILE_PATH=path_to_another_config_file npm test` or simply set the `CONFIG_FILE_PATH` value in the `.env` file.
 
 ## Including/Excluding test cases
 

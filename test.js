@@ -20,8 +20,9 @@ if (global.describe == null || global.it == null) {
 }
 
 // Load the configuration, regtest by default
-const configFileName = process.env.CONFIG_FILE || 'regtest';
-const config = require(`./config/${configFileName}`);
+const configFileName = process.env.CONFIG_FILE_PATH || './config/regtest';
+
+const config = require(configFileName);
 
 // Load cases to test, everything by default
 const testCasesInclude = process.env.INCLUDE_CASES != null ? process.env.INCLUDE_CASES.split(',') : null;
