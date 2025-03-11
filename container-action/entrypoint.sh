@@ -25,7 +25,7 @@ else
   echo "Found matching branch name in rsksmart/rskj.git repo"
   git clone "https://github.com/rsksmart/rskj.git" rskj
 fi
-cd rskj && git checkout "$RSKJ_BRANCH"
+cd rskj && git checkout -f "$RSKJ_BRANCH"
 chmod +x ./configure.sh && chmod +x gradlew
 ./configure.sh
 
@@ -39,7 +39,7 @@ else
   git clone "https://github.com/rsksmart/powpeg-node.git" powpeg
 fi
 cp configure_gradle_powpeg.sh powpeg
-cd powpeg && git checkout "$POWPEG_NODE_BRANCH"
+cd powpeg && git checkout -f "$POWPEG_NODE_BRANCH"
 chmod +x ./configure.sh && chmod +x gradlew
 POWPEG_VERSION=$(bash configure_gradle_powpeg.sh)
 echo "POWPEG_VERSION=$POWPEG_VERSION"
@@ -53,7 +53,7 @@ mv configure_rit_locally.sh rit
 mv regtest-all-keyfiles.js rit/config/regtest-all-keyfiles.js
 mv /usr/src/logbacks/* /usr/src/rit/logbacks/
 cd rit
-git checkout "$RIT_BRANCH"
+git checkout -f "$RIT_BRANCH"
 chmod +x ./configure.sh
 ./configure.sh
 ./configure_rit_locally.sh "${POWPEG_VERSION}"
