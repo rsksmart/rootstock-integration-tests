@@ -133,6 +133,10 @@ jobs:
           echo "RIT_BRANCH=$RIT_BRANCH" >> $GITHUB_ENV
           echo "POWPEG_BRANCH=$POWPEG_BRANCH" >> $GITHUB_ENV
 
+          echo "RSKJ_BRANCH=$RSKJ_BRANCH" >> $GITHUB_OUTPUT
+          echo "RIT_BRANCH=$RIT_BRANCH" >> $GITHUB_OUTPUT
+          echo "POWPEG_BRANCH=$POWPEG_BRANCH" >> $GITHUB_OUTPUT
+
       - name: Test the RIT Container Action
         id: test-container
         env:
@@ -181,10 +185,9 @@ jobs:
         id: test-rit-action
         uses: ./
         with:
-          rskj-branch: ${{ env.RSKJ_BRANCH }}
-          powpeg-node-branch: ${{ env.POWPEG_BRANCH }}
-          rit-branch: ${{ env.RIT_BRANCH }}
-
+          rskj-branch: ${{ needs.build-push-rit-action-container-action.outputs.RSKJ_BRANCH }}
+          powpeg-node-branch: ${{ needs.build-push-rit-action-container-action.outputs.POWPEG_BRANCH }}
+          rit-branch: ${{ needs.build-push-rit-action-container-action.outputs.RIT_BRANCH }}
 
       - name: Print RIT Status and Message
         id: output
