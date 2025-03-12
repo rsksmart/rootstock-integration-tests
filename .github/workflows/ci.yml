@@ -128,21 +128,17 @@ jobs:
             echo "rit: invalid branch name: $RIT_BRANCH" >&2
             exit 1
           fi
-
-          echo "RSKJ_BRANCH=$RSKJ_BRANCH" >> $GITHUB_ENV
-          echo "RIT_BRANCH=$RIT_BRANCH" >> $GITHUB_ENV
-          echo "POWPEG_BRANCH=$POWPEG_BRANCH" >> $GITHUB_ENV
-
-          echo "RSKJ_BRANCH=$RSKJ_BRANCH" >> $GITHUB_OUTPUT
-          echo "RIT_BRANCH=$RIT_BRANCH" >> $GITHUB_OUTPUT
-          echo "POWPEG_BRANCH=$POWPEG_BRANCH" >> $GITHUB_OUTPUT
+          
+          echo "::set-output name=RSKJ_BRANCH::$RSKJ_BRANCH"
+          echo "::set-output name=RIT_BRANCH::$RIT_BRANCH"
+          echo "::set-output name=POWPEG_BRANCH::$POWPEG_BRANCH"
 
       - name: Test the RIT Container Action
         id: test-container
         env:
-          INPUT_RSKJ_BRANCH: ${{ env.RSKJ_BRANCH }}
-          INPUT_POWPEG_NODE_BRANCH: ${{ env.POWPEG_BRANCH }}
-          INPUT_RIT_BRANCH: ${{ env.RIT_BRANCH }}
+          INPUT_RSKJ_BRANCH: ${{ steps.set-branch-variables.outputs.RSKJ_BRANCH }}
+          INPUT_POWPEG_NODE_BRANCH: ${{ steps.set-branch-variables.outputs.POWPEG_BRANCH }}
+          INPUT_RIT_BRANCH: ${{steps.set-branch-variables.outputs.RIT_BRANCH }}
           INPUT_RIT_LOG_LEVEL: info
         run: |
           docker run \
