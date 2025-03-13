@@ -99,6 +99,7 @@ jobs:
           push: true
 
   test-rit-action:
+    if: ${{ github.ref == 'refs/heads/main' }}
     needs: build-push-rit-action-container-action
     name: GitHub Actions Test
     runs-on: ubuntu-latest
@@ -130,11 +131,11 @@ jobs:
           echo "RIT Message = ${{ steps.test-rit-action.outputs.message }}"
 
   publish-rit-action-tag:
+    if: github.ref == 'refs/heads/main'
     needs: test-rit-action
     name: Publish RIT Action tag
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    if: github.ref == 'refs/heads/main'
     permissions:
       contents: write
 
