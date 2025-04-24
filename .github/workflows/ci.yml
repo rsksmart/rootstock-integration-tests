@@ -18,14 +18,14 @@ on:
 
 permissions:
   contents: read
-  
+
 env:
   TEST_TAG:  ${{ github.event.repository.name }}/rit:test
   LATEST_TAG: ghcr.io/rsksmart/${{ github.event.repository.name }}/rit
 
 jobs:
   build-push-rit-action-container-action:
-    name: Test  RIT Action docker container-action
+    name: Test RIT Action docker container-action
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
@@ -35,6 +35,9 @@ jobs:
       - name: Checkout
         id: checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Prepare Docker build context
+        run: cp config/regtest-all-keyfiles.js container-action/rit-local-configs/
 
       - name: Docker meta
         id: meta
@@ -59,79 +62,11 @@ jobs:
           load: true
           tags: ${{ env.TEST_TAG }}
 
+      # Call the composite action to set branch variables
       - name: Set Branch Variables
-        id: set-branch-variables
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          github_event_inputs_powpeg_branch: ${{ github.event.inputs.powpeg-branch }}
-          github_event_inputs_rskj_branch: ${{ github.event.inputs.rskj-branch }}
-          github_event_name: ${{ github.event_name }}
-          github_event_pull_request_number: ${{ github.event.pull_request.number }}
-          github_head_ref: ${{ github.head_ref }}
-          github_ref_name: ${{ github.ref_name }}
-        run: |
-          PR_DESCRIPTION=pr-description.txt
-
-          ALLOWED_BRANCH_CHARACTERS='[-+./0-9A-Z_a-z]'
-
-          default_rskj_branch=master
-          default_powpeg_branch=master
-          default_rit_branch=main
-
-          get_branch_from_description()
-          {
-            _prefix=$1
-
-            # On lines matching "`$_prefix:...`", replace the lines with the
-            # thing in ... and print the result.
-            _search_re='\@`'$_prefix:$ALLOWED_BRANCH_CHARACTERS'\{1,\}`@'
-            _replace_re='s@.*`'$_prefix:'\('$ALLOWED_BRANCH_CHARACTERS'\{1,\}\)`.*@\1@p'
-            _branch=$(sed -n "$_search_re $_replace_re" "$PR_DESCRIPTION")
-            echo "$_branch"
-          }
-
-          is_valid_branch_name()
-          {
-            echo "$1" | grep -qx "$ALLOWED_BRANCH_CHARACTERS\\{1,\\}"
-          }
-
-          if [ "$github_event_name" = workflow_dispatch ]; then
-            RSKJ_BRANCH=${github_event_inputs_rskj_branch:-$default_rit_branch}
-            POWPEG_BRANCH=${github_event_inputs_powpeg_branch:-$default_powpeg_branch}
-            RIT_BRANCH=$github_ref_name
-          elif [ "$github_event_name" = pull_request ]; then
-            gh pr view "$github_event_pull_request_number" --json body -q .body >"$PR_DESCRIPTION"
-
-            RSKJ_BRANCH=$(get_branch_from_description rskj)
-            : ${RSKJ_BRANCH:=$default_rskj_branch}
-
-            POWPEG_BRANCH=$(get_branch_from_description fed)
-            : ${POWPEG_BRANCH:=$default_powpeg_branch}
-
-            RIT_BRANCH=$(get_branch_from_description rit)
-            : ${RIT_BRANCH:=${github_head_ref:-$default_rskj_branch}}
-          else
-            RSKJ_BRANCH=$default_rskj_branch
-            POWPEG_BRANCH=$default_powpeg_branch
-            RIT_BRANCH=$default_rit_branch
-          fi
-
-          if ! is_valid_branch_name "$RSKJ_BRANCH"; then
-            echo "rskj: invalid branch name: $RSKJ_BRANCH" >&2
-            exit 1
-          fi
-          if ! is_valid_branch_name "$POWPEG_BRANCH"; then
-            echo "fed: invalid branch name: $POWPEG_BRANCH" >&2
-            exit 1
-          fi
-          if ! is_valid_branch_name "$RIT_BRANCH"; then
-            echo "rit: invalid branch name: $RIT_BRANCH" >&2
-            exit 1
-          fi
-
-          echo "RSKJ_BRANCH=$RSKJ_BRANCH" >> $GITHUB_ENV
-          echo "RIT_BRANCH=$RIT_BRANCH" >> $GITHUB_ENV
-          echo "POWPEG_BRANCH=$POWPEG_BRANCH" >> $GITHUB_ENV
+        uses: ./.github/actions/set-branch-variables
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Test the RIT Container Action
         id: test-container
@@ -142,13 +77,13 @@ jobs:
           INPUT_RIT_LOG_LEVEL: info
         run: |
           docker run \
-          --env GITHUB_OUTPUT="/github-output"  \
-          --env INPUT_RSKJ_BRANCH="${{ env.INPUT_RSKJ_BRANCH }}"  \
-          --env INPUT_POWPEG_NODE_BRANCH="${{ env.INPUT_POWPEG_NODE_BRANCH }}"  \
-          --env INPUT_RIT_BRANCH="${{ env.INPUT_RIT_BRANCH }}"  \
-          --env INPUT_RIT_LOG_LEVEL="${{ env.INPUT_RIT_LOG_LEVEL }}" \
-          -v "$GITHUB_OUTPUT:/github-output"  \
-          --rm ${{ env.TEST_TAG }} 
+            --env GITHUB_OUTPUT="/github-output"  \
+            --env INPUT_RSKJ_BRANCH="${{ env.RSKJ_BRANCH }}"  \
+            --env INPUT_POWPEG_NODE_BRANCH="${{ env.POWPEG_BRANCH }}"  \
+            --env INPUT_RIT_BRANCH="${{ env.RIT_BRANCH }}"  \
+            --env INPUT_RIT_LOG_LEVEL="${{ env.INPUT_RIT_LOG_LEVEL }}" \
+            -v "$GITHUB_OUTPUT:/github-output"  \
+            --rm ${{ env.TEST_TAG }}
 
       - name: GitHub container registry login
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
@@ -167,7 +102,8 @@ jobs:
           push: true
 
   test-rit-action:
-    needs:  build-push-rit-action-container-action
+    if: ${{ github.ref == 'refs/heads/main' }}
+    needs: build-push-rit-action-container-action
     name: GitHub Actions Test
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -177,6 +113,12 @@ jobs:
         id: checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
+      # Call the composite action here to set branch variables
+      - name: Set Branch Variables
+        uses: ./.github/actions/set-branch-variables
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Test RIT Action
         id: test-rit-action
         uses: ./
@@ -185,7 +127,6 @@ jobs:
           powpeg-node-branch: ${{ env.POWPEG_BRANCH }}
           rit-branch: ${{ env.RIT_BRANCH }}
 
-
       - name: Print RIT Status and Message
         id: output
         run: |
@@ -193,13 +134,13 @@ jobs:
           echo "RIT Message = ${{ steps.test-rit-action.outputs.message }}"
 
   publish-rit-action-tag:
-    needs:  test-rit-action
+    if: github.ref == 'refs/heads/main'
+    needs: test-rit-action
     name: Publish RIT Action tag
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    if: github.ref == 'refs/heads/main'
     permissions:
-      contents:  write
+      contents: write
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2

@@ -45,13 +45,10 @@ RUN mkdir -p /usr/src/logbacks
 WORKDIR /usr/src
 
 COPY entrypoint.sh /usr/src/entrypoint.sh
-COPY rit-local-configs/regtest-all-keyfiles.js /usr/src/regtest-all-keyfiles.js
-COPY rit-local-configs/logbacks/* /usr/src/logbacks/
 COPY scripts/* /usr/src/
 
 RUN chmod +x /usr/src/entrypoint.sh  \
     && chmod +x /usr/src/configure_gradle_powpeg.sh \
-    && chmod +x /usr/src/configure_rit_locally.sh \
     && mkdir -p /usr/src/bitcoindata \
     && chmod -R 755 /usr/src/bitcoindata
 

@@ -176,7 +176,7 @@ module.exports = {
                         'peer.active.0.port': 40000,
                         'peer.active.0.nodeId': '328105ab6744914e61bcfcb729d741f23528fd6eb1b42628120ab027d82c9c2d8c445f8c6727e291e1abcaa8398bf47d4cca6ea6600b137b875b8df22251e325',
                         'peer.active.1.ip': '127.0.0.1',
-                        'peer.active.1.port': 40002,
+                        'peer.active.1.port': 40004,
                         'peer.active.1.nodeId': '5ba2b832b97cfba1626eb264bd1ec2733a7ca02602153c57c0c95c9700030dccb0edb612fd01bd806c0202aa3380fb8dcbeddb7a1386259d4b9679c0003d04bc',
                         'federator.amountOfHeadersToSend': 500,
                     },
@@ -215,6 +215,104 @@ module.exports = {
                     port: 40004,
                     rpcPort: 40005,
                     nodeId: '5ba2b832b97cfba1626eb264bd1ec2733a7ca02602153c57c0c95c9700030dccb0edb612fd01bd806c0202aa3380fb8dcbeddb7a1386259d4b9679c0003d04bc'
+                }
+            ]
+        },
+        thirdFederation: { // First svp federation
+            federationId: 'third-federation',
+            members: [
+                {
+                    id: 'federator-1-third-federation',
+                    federationId: 'third-federation',
+                    logbackFile: `${federatesLogbackPath}/third-federation/fed1.xml`,
+                    classpath: powpegNodeJarPath,
+                    configFile: `${nodesConfigPath}/third-federation/fed1.conf`,
+                    publicKeys: {
+                        btc: '0x034ba6ec42eab139697c3614653e130e76fc15d1d7e5c91b3df63d3c06195d4226',
+                        rsk: '0x034ba6ec42eab139697c3614653e130e76fc15d1d7e5c91b3df63d3c06195d4226',
+                        mst: '0x034ba6ec42eab139697c3614653e130e76fc15d1d7e5c91b3df63d3c06195d4226',
+                    },
+                    customConfig: {
+                        'federator.signers.BTC.type': 'keyFile',
+                        'federator.signers.BTC.path': path.resolve(__dirname, `${keysPathResolve}/third-federation/fed1.key`),
+                        'federator.signers.RSK.type': 'keyFile',
+                        'federator.signers.RSK.path': path.resolve(__dirname, `${keysPathResolve}/third-federation/fed1.key`),
+                        'federator.signers.MST.type': 'keyFile',
+                        'federator.signers.MST.path': path.resolve(__dirname, `${keysPathResolve}/third-federation/fed1.key`),
+                        'peer.active.0.ip': '127.0.0.1',
+                        'peer.active.0.port': 40000,
+                        'peer.active.0.nodeId': '328105ab6744914e61bcfcb729d741f23528fd6eb1b42628120ab027d82c9c2d8c445f8c6727e291e1abcaa8398bf47d4cca6ea6600b137b875b8df22251e325',
+                        'peer.active.1.ip': '127.0.0.1',
+                        'peer.active.1.port': 50002,
+                        'peer.active.1.nodeId': '0b1d25b03d041028326ac5b27af941524c31bf09df5fece7476d3940f9cd2394d3cd349b9b265b7427607736dcee323d9e4a893b1d15549c928278a4e6012c08',
+                        'federator.amountOfHeadersToSend': 500,
+                    },
+                    bookkeepingConfigurations,
+                    port: 50000,
+                    rpcPort: 50001,
+                    nodeId: '4ba6ec42eab139697c3614653e130e76fc15d1d7e5c91b3df63d3c06195d42265a5550cda65aa54de279a79a55e5513598b183e64f351e790d6370a6c67b141d'
+                },
+                {
+                    id: 'federator-2-third-federation',
+                    federationId: 'third-federation',
+                    logbackFile: `${federatesLogbackPath}/third-federation/fed2.xml`,
+                    classpath: powpegNodeJarPath,
+                    configFile: `${nodesConfigPath}/third-federation/fed2.conf`,
+                    publicKeys: {
+                        btc: '0x020b1d25b03d041028326ac5b27af941524c31bf09df5fece7476d3940f9cd2394',
+                        rsk: '0x020b1d25b03d041028326ac5b27af941524c31bf09df5fece7476d3940f9cd2394',
+                        mst: '0x020b1d25b03d041028326ac5b27af941524c31bf09df5fece7476d3940f9cd2394',
+                    },
+                    customConfig: {
+                        'federator.signers.BTC.type': 'keyFile',
+                        'federator.signers.BTC.path': path.resolve(__dirname, `${keysPathResolve}/third-federation/fed2.key`),
+                        'federator.signers.RSK.type': 'keyFile',
+                        'federator.signers.RSK.path': path.resolve(__dirname, `${keysPathResolve}/third-federation/fed2.key`),
+                        'federator.signers.MST.type': 'keyFile',
+                        'federator.signers.MST.path': path.resolve(__dirname, `${keysPathResolve}/third-federation/fed2.key`),
+                        'peer.active.0.ip': '127.0.0.1',
+                        'peer.active.0.port': 50000,
+                        'peer.active.0.nodeId': '4ba6ec42eab139697c3614653e130e76fc15d1d7e5c91b3df63d3c06195d42265a5550cda65aa54de279a79a55e5513598b183e64f351e790d6370a6c67b141d',
+                        'peer.active.1.ip': '127.0.0.1',
+                        'peer.active.1.port': 50004,
+                        'peer.active.1.nodeId': '501878fb22fdf374921d168bb1ea02b324f00eb2c7610cb452167a9dcdab01646d8c1f285b44074c45255fc693f19486819256ef98a9be8b62e4e9af4b54542c',
+                        'federator.amountOfHeadersToSend': 500,
+                    },
+                    bookkeepingConfigurations,
+                    port: 50002,
+                    rpcPort: 50003,
+                    nodeId: '0b1d25b03d041028326ac5b27af941524c31bf09df5fece7476d3940f9cd2394d3cd349b9b265b7427607736dcee323d9e4a893b1d15549c928278a4e6012c08'
+                },
+                {
+                    id: 'federator-3-third-federation',
+                    federationId: 'third-federation',
+                    logbackFile: `${federatesLogbackPath}/third-federation/fed3.xml`,
+                    classpath: powpegNodeJarPath,
+                    configFile: `${nodesConfigPath}/third-federation/fed3.conf`,
+                    publicKeys: {
+                        btc: '0x02501878fb22fdf374921d168bb1ea02b324f00eb2c7610cb452167a9dcdab0164',
+                        rsk: '0x02501878fb22fdf374921d168bb1ea02b324f00eb2c7610cb452167a9dcdab0164',
+                        mst: '0x02501878fb22fdf374921d168bb1ea02b324f00eb2c7610cb452167a9dcdab0164',
+                    },
+                    customConfig: {
+                        'federator.signers.BTC.type': 'keyFile',
+                        'federator.signers.BTC.path': path.resolve(__dirname, `${keysPathResolve}/third-federation/fed3.key`),
+                        'federator.signers.RSK.type': 'keyFile',
+                        'federator.signers.RSK.path': path.resolve(__dirname, `${keysPathResolve}/third-federation/fed3.key`),
+                        'federator.signers.MST.type': 'keyFile',
+                        'federator.signers.MST.path': path.resolve(__dirname, `${keysPathResolve}/third-federation/fed3.key`),
+                        'peer.active.0.ip': '127.0.0.1',
+                        'peer.active.0.port': 50000,
+                        'peer.active.0.nodeId': '4ba6ec42eab139697c3614653e130e76fc15d1d7e5c91b3df63d3c06195d42265a5550cda65aa54de279a79a55e5513598b183e64f351e790d6370a6c67b141d',
+                        'peer.active.1.ip': '127.0.0.1',
+                        'peer.active.1.port': 50002,
+                        'peer.active.1.nodeId': '0b1d25b03d041028326ac5b27af941524c31bf09df5fece7476d3940f9cd2394d3cd349b9b265b7427607736dcee323d9e4a893b1d15549c928278a4e6012c08',
+                        'federator.amountOfHeadersToSend': 500,
+                    },
+                    bookkeepingConfigurations,
+                    port: 50004,
+                    rpcPort: 50005,
+                    nodeId: '501878fb22fdf374921d168bb1ea02b324f00eb2c7610cb452167a9dcdab01646d8c1f285b44074c45255fc693f19486819256ef98a9be8b62e4e9af4b54542c'
                 }
             ]
         }
