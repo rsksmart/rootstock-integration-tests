@@ -1,5 +1,8 @@
 #!/bin/sh -l
 
+# Warning! As of now, if a modification is made to this entrypoint.sh file, the version/hash of the `Run Rootstock Integration Tests` step at rskj/.github/workflows/rit.yml will need to be updated to match the new commit hash or version of this file.
+# This is because the entrypoint.sh file is copied from this hash/version and not from the executing branch, hence, the changes will not be reflected when running the tests from rskj or powpeg-node actions.
+
 set -e
 RSKJ_BRANCH="${INPUT_RSKJ_BRANCH}"
 POWPEG_NODE_BRANCH="${INPUT_POWPEG_NODE_BRANCH}"
@@ -47,16 +50,24 @@ echo "POWPEG_VERSION=$POWPEG_VERSION"
 ./gradlew  --info --no-daemon clean build -x test
 
 echo -e "\n\n--------- Starting the configuration of RIT ---------\n\n"
+
 cd /usr/src/
 git clone https://github.com/rsksmart/rootstock-integration-tests.git rit
-mv configure_rit_locally.sh rit
-mv regtest-all-keyfiles.js rit/config/regtest-all-keyfiles.js
-mv /usr/src/logbacks/* /usr/src/rit/logbacks/
 cd rit
+
+echo -e "\n\n--------- Checking out the RIT branch: $RIT_BRANCH ---------\n\n"
 git checkout -f "$RIT_BRANCH"
+
+mv container-action/rit-local-configs/logbacks/* /usr/src/logbacks/
+mv container-action/scripts/configure_rit_locally.sh .
+
+echo -e "\n\n--------- Copying configuration files ---------\n\n"
 chmod +x ./configure.sh
+chmod +x ./configure_rit_locally.sh
+
 ./configure.sh
 ./configure_rit_locally.sh "${POWPEG_VERSION}"
+
 export LOG_LEVEL="$LOG_LEVEL"
 
 echo -e "\n\n--------- Executing Rootstock Integration Tests ---------\n\n"
