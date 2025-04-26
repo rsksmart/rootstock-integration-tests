@@ -52,6 +52,10 @@ RUN chmod +x /usr/src/entrypoint.sh  \
     && mkdir -p /usr/src/bitcoindata \
     && chmod -R 755 /usr/src/bitcoindata
 
+RUN apt-get update && \
+    apt-get install -y procps libsecp256k1-dev && \
+    rm -rf /var/lib/apt/lists/*
+
 ENTRYPOINT ["/usr/src/entrypoint.sh"]
 
 EXPOSE 18332
