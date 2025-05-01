@@ -5,9 +5,10 @@ const powpegNodeJarPath = process.env.POWPEG_NODE_JAR_PATH;
 const federatesLogbackPath = process.env.LOG_HOME || path.resolve(__dirname, '../logs');
 
 const bookkeepingConfigurations = {
-    difficultyTarget: 3,
-    informerInterval: 2000,
-    blockHeadersToSend: 27
+    difficultyTarget: "3",
+    informerInterval: "2000",
+    maxAmountBlockHeaders: "100",
+    maxChunkSizeToHsm: "100"
 };
 
 module.exports = {
@@ -88,7 +89,7 @@ module.exports = {
                     nodeId: 'c5946b3fbae03a654237da863c9ed534e0878657175b132b8ca630f245df04dbb0bde4f3854613b16032fb214f9cc00f75363976ee078cc4409cdc543036ccfd'
                 },
                 {
-                    id: 'federator-3-genesis-federation',
+                    id: 'federate-3-genesis-federation',
                     federationId: 'genesis-federation',
                     logbackFile: `${federatesLogbackPath}/genesis-federation/fed3.xml`,
                     classpath: powpegNodeJarPath,
@@ -126,6 +127,7 @@ module.exports = {
                 {
                     id: 'federator-1-second-federation',
                     federationId: 'second-federation',
+                    type: 'keyfile',
                     logbackFile: `${federatesLogbackPath}/second-federation/fed1.xml`,
                     classpath: powpegNodeJarPath,
                     configFile: `${nodesConfigPath}/second-federation/fed1.conf`,
@@ -155,8 +157,11 @@ module.exports = {
                     nodeId: '328105ab6744914e61bcfcb729d741f23528fd6eb1b42628120ab027d82c9c2d8c445f8c6727e291e1abcaa8398bf47d4cca6ea6600b137b875b8df22251e325'
                 },
                 {
-                    id: 'federator-2-second-federation',
+                    id: 'federate-2-second-federation',
                     federationId: 'second-federation',
+                    type: 'hsm',
+                    hsmPort: 9981,
+                    hsmDifficultyTarget: '0x03',
                     logbackFile: `${federatesLogbackPath}/second-federation/fed2.xml`,
                     classpath: powpegNodeJarPath,
                     configFile: `${nodesConfigPath}/second-federation/fed2.conf`,
@@ -166,12 +171,6 @@ module.exports = {
                         mst: '0x028ac219dc7ac6bfe401892ddd26c63f14e7cd5b62c750162c0889eee19c1725c2',
                     },
                     customConfig: {
-                        'federator.signers.BTC.type': 'keyFile',
-                        'federator.signers.BTC.path': path.resolve(__dirname, `${keysPathResolve}/second-federation/fed2.key`),
-                        'federator.signers.RSK.type': 'keyFile',
-                        'federator.signers.RSK.path': path.resolve(__dirname, `${keysPathResolve}/second-federation/fed2.key`),
-                        'federator.signers.MST.type': 'keyFile',
-                        'federator.signers.MST.path': path.resolve(__dirname, `${keysPathResolve}/second-federation/fed2.key`),
                         'peer.active.0.ip': '127.0.0.1',
                         'peer.active.0.port': 40000,
                         'peer.active.0.nodeId': '328105ab6744914e61bcfcb729d741f23528fd6eb1b42628120ab027d82c9c2d8c445f8c6727e291e1abcaa8398bf47d4cca6ea6600b137b875b8df22251e325',
@@ -186,8 +185,11 @@ module.exports = {
                     nodeId: '8ac219dc7ac6bfe401892ddd26c63f14e7cd5b62c750162c0889eee19c1725c29e52c00bc91ee260241d2e4ddcf72ed69746b226fc7c1c63f906d19a7a31988a'
                 },
                 {
-                    id: 'federator-3-second-federation',
+                    id: 'federate-3-second-federation',
                     federationId: 'second-federation',
+                    type: 'hsm',
+                    hsmPort: 9983,
+                    hsmDifficultyTarget: '0x03',
                     logbackFile: `${federatesLogbackPath}/second-federation/fed3.xml`,
                     classpath: powpegNodeJarPath,
                     configFile: `${nodesConfigPath}/second-federation/fed3.conf`,
@@ -197,12 +199,6 @@ module.exports = {
                         mst: '0x025ba2b832b97cfba1626eb264bd1ec2733a7ca02602153c57c0c95c9700030dcc',
                     },
                     customConfig: {
-                        'federator.signers.BTC.type': 'keyFile',
-                        'federator.signers.BTC.path': path.resolve(__dirname, `${keysPathResolve}/second-federation/fed3.key`),
-                        'federator.signers.RSK.type': 'keyFile',
-                        'federator.signers.RSK.path': path.resolve(__dirname, `${keysPathResolve}/second-federation/fed3.key`),
-                        'federator.signers.MST.type': 'keyFile',
-                        'federator.signers.MST.path': path.resolve(__dirname, `${keysPathResolve}/second-federation/fed3.key`),
                         'peer.active.0.ip': '127.0.0.1',
                         'peer.active.0.port': 40000,
                         'peer.active.0.nodeId': '328105ab6744914e61bcfcb729d741f23528fd6eb1b42628120ab027d82c9c2d8c445f8c6727e291e1abcaa8398bf47d4cca6ea6600b137b875b8df22251e325',
@@ -222,8 +218,9 @@ module.exports = {
             federationId: 'third-federation',
             members: [
                 {
-                    id: 'federator-1-third-federation',
+                    id: 'federate-1-third-federation',
                     federationId: 'third-federation',
+                    type: 'keyfile',
                     logbackFile: `${federatesLogbackPath}/third-federation/fed1.xml`,
                     classpath: powpegNodeJarPath,
                     configFile: `${nodesConfigPath}/third-federation/fed1.conf`,
@@ -253,8 +250,11 @@ module.exports = {
                     nodeId: '4ba6ec42eab139697c3614653e130e76fc15d1d7e5c91b3df63d3c06195d42265a5550cda65aa54de279a79a55e5513598b183e64f351e790d6370a6c67b141d'
                 },
                 {
-                    id: 'federator-2-third-federation',
+                    id: 'federate-2-third-federation',
                     federationId: 'third-federation',
+                    type: 'hsm',
+                    hsmPort: 9987,
+                    hsmDifficultyTarget: '0x03',
                     logbackFile: `${federatesLogbackPath}/third-federation/fed2.xml`,
                     classpath: powpegNodeJarPath,
                     configFile: `${nodesConfigPath}/third-federation/fed2.conf`,
@@ -264,12 +264,6 @@ module.exports = {
                         mst: '0x020b1d25b03d041028326ac5b27af941524c31bf09df5fece7476d3940f9cd2394',
                     },
                     customConfig: {
-                        'federator.signers.BTC.type': 'keyFile',
-                        'federator.signers.BTC.path': path.resolve(__dirname, `${keysPathResolve}/third-federation/fed2.key`),
-                        'federator.signers.RSK.type': 'keyFile',
-                        'federator.signers.RSK.path': path.resolve(__dirname, `${keysPathResolve}/third-federation/fed2.key`),
-                        'federator.signers.MST.type': 'keyFile',
-                        'federator.signers.MST.path': path.resolve(__dirname, `${keysPathResolve}/third-federation/fed2.key`),
                         'peer.active.0.ip': '127.0.0.1',
                         'peer.active.0.port': 50000,
                         'peer.active.0.nodeId': '4ba6ec42eab139697c3614653e130e76fc15d1d7e5c91b3df63d3c06195d42265a5550cda65aa54de279a79a55e5513598b183e64f351e790d6370a6c67b141d',
@@ -284,8 +278,11 @@ module.exports = {
                     nodeId: '0b1d25b03d041028326ac5b27af941524c31bf09df5fece7476d3940f9cd2394d3cd349b9b265b7427607736dcee323d9e4a893b1d15549c928278a4e6012c08'
                 },
                 {
-                    id: 'federator-3-third-federation',
+                    id: 'federate-3-third-federation',
                     federationId: 'third-federation',
+                    type: 'hsm',
+                    hsmPort: 9989,
+                    hsmDifficultyTarget: '0x03',
                     logbackFile: `${federatesLogbackPath}/third-federation/fed3.xml`,
                     classpath: powpegNodeJarPath,
                     configFile: `${nodesConfigPath}/third-federation/fed3.conf`,
@@ -295,12 +292,6 @@ module.exports = {
                         mst: '0x02501878fb22fdf374921d168bb1ea02b324f00eb2c7610cb452167a9dcdab0164',
                     },
                     customConfig: {
-                        'federator.signers.BTC.type': 'keyFile',
-                        'federator.signers.BTC.path': path.resolve(__dirname, `${keysPathResolve}/third-federation/fed3.key`),
-                        'federator.signers.RSK.type': 'keyFile',
-                        'federator.signers.RSK.path': path.resolve(__dirname, `${keysPathResolve}/third-federation/fed3.key`),
-                        'federator.signers.MST.type': 'keyFile',
-                        'federator.signers.MST.path': path.resolve(__dirname, `${keysPathResolve}/third-federation/fed3.key`),
                         'peer.active.0.ip': '127.0.0.1',
                         'peer.active.0.port': 50000,
                         'peer.active.0.nodeId': '4ba6ec42eab139697c3614653e130e76fc15d1d7e5c91b3df63d3c06195d42265a5550cda65aa54de279a79a55e5513598b183e64f351e790d6370a6c67b141d',

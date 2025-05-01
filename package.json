@@ -7,7 +7,8 @@
     "test": "mocha --timeout 600000",
     "test-fail-fast": "mocha -b --timeout 600000",
     "run-tests-multiple-times": "node multipleTestExecutionsRunner.js",
-    "run-single-test-file": "node singleTestFileRunner.js"
+    "run-single-test-file": "node singleTestFileRunner.js",
+    "run-with-docker": "node runWithDocker.js"
   },
   "author": "",
   "license": "GPL3",

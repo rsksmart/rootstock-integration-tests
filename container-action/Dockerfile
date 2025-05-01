@@ -40,8 +40,6 @@ RUN cd /tmp \
 
 # -- configure entrypoint to run RIT--------------------------------------------
 
-RUN mkdir -p /usr/src/logbacks
-
 WORKDIR /usr/src
 
 COPY entrypoint.sh /usr/src/entrypoint.sh
@@ -52,6 +50,7 @@ RUN chmod +x /usr/src/entrypoint.sh  \
     && mkdir -p /usr/src/bitcoindata \
     && chmod -R 755 /usr/src/bitcoindata
 
+# tpc signer dependencies
 RUN apt-get update && \
     apt-get install -y procps libsecp256k1-dev && \
     rm -rf /var/lib/apt/lists/*

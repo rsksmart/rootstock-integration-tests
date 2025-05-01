@@ -9,12 +9,19 @@ while getopts ":p:" opt; do
     esac
 done
 
-echo "Parameters: $@"
+DOCKER_CONTAINER_NAME=""
+NEW_ARGS=()
 
-DOCKNAME=tcpsigner-bundle
+for arg in "$@"; do
+  if [[ "$arg" == --docker-container-name=* ]]; then
+    DOCKER_CONTAINER_NAME="${arg#--docker-container-name=}"
+  else
+    NEW_ARGS+=("$arg")
+  fi
+done
 
-echo "The port $PORT"
+DOCKER_IMAGE_NAME=tcpsigner-bundle
 
-docker buildx build --platform linux/amd64 -t $DOCKNAME .
+docker buildx build --platform linux/amd64 -t $DOCKER_IMAGE_NAME .
 
-docker run --platform linux/amd64 -ti --rm -p $PORT:$PORT $DOCKNAME ./entrypoint.sh -p$PORT $@
+docker run --name $DOCKER_CONTAINER_NAME --platform linux/amd64 -ti --rm -p $PORT:$PORT $DOCKER_IMAGE_NAME ./entrypoint.sh -p$PORT "${NEW_ARGS[@]}"

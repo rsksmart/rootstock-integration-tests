@@ -7,3 +7,13 @@ logs
 .env
 .DS_Store
 .idea/
+_internal/
+manager-tcp
+bitcoin-data/
+key.json
+tcpsigner-manager.log
+tcpsigner.log
+*.xml
+!base-logback-config.xml
+logs/
+federate-node.jar

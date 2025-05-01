@@ -20,7 +20,7 @@ if (global.describe == null || global.it == null) {
 }
 
 // Load the configuration, regtest by default
-const configFileName = process.env.CONFIG_FILE_PATH || './config/regtest';
+const configFileName = process.env.CONFIG_FILE_PATH || './config/regtest-all-keyfiles';
 
 const config = require(configFileName);
 
@@ -37,9 +37,10 @@ const HOST = '127.0.0.1';
 const BTC_HOST = '127.0.0.1';
 
 const bookkeepingConfigurations = {
-  difficultyTarget: 3,
-  informerIntervalInMs: 2000,
-  blockHeadersToSend: 27
+  difficultyTarget: "3",
+  informerInterval: "2000",
+  maxAmountBlockHeaders: "100",
+  maxChunkSizeToHsm: "100",
 };
 
 /**
@@ -93,7 +94,7 @@ global.Runners = {
       fingerroot500: createForkObject('fingerroot500', 1),
       arrowhead600: createForkObject('arrowhead600', 1),
       arrowhead631: createForkObject('arrowhead631', 1),
-      lovell700: createForkObject('lovell700', 1100),
+      lovell700: createForkObject('lovell700', 1750),
     },
     additionalFederationAddresses: []
   }
@@ -238,7 +239,7 @@ before(async () => {
         }
 
         process.stdout.write(`\n Starting additional Federate nodes from block ${latestBlock.hash}. Height: ${latestBlock.number} \n\n`);
-        return startFederates(
+        return await startFederates(
           federatesToStart.length + 1, 
           config.additionalFederateNodes.map(getConfigForFederateNodes), 
           latestBlock.hash
@@ -283,12 +284,9 @@ const shutdownHooks = () => {
   if (Runners.fedRunners != null) {
     Runners.fedRunners.forEach((fedRunner, index) => {
       fedRunner.stop();
-      // process.stdout.write(`${getFederateOutputPrefix(index)} stopped\n`);
-      if (fedRunner.hsms) {
-        for (const hsm in fedRunner.hsms) {
-          fedRunner.hsms[hsm].stop();
-          // process.stdout.write(`${getHsmOutputPrefix(index, hsm)} stopped\n`);
-        }
+      if (fedRunner.hsm) {
+        fedRunner.hsm.stop();
+        fedRunner.hsm = null;
       }
     });
   }

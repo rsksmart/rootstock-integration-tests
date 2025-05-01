@@ -58,7 +58,6 @@ cd rit
 echo -e "\n\n--------- Checking out the RIT branch: $RIT_BRANCH ---------\n\n"
 git checkout -f "$RIT_BRANCH"
 
-mv container-action/rit-local-configs/logbacks/* /usr/src/logbacks/
 mv container-action/scripts/configure_rit_locally.sh .
 
 echo -e "\n\n--------- Copying configuration files ---------\n\n"
