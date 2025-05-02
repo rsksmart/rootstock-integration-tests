@@ -26,7 +26,7 @@ env:
 jobs:
   build-push-rit-action-container-action:
     name: Test RIT Action docker container-action
-    runs-on: rit-8g
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
       packages: write
