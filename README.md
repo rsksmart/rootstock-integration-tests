@@ -56,7 +56,7 @@ Notice that there is a `regtest-all-keyfiles.js` file in the `config` directory.
 
 ### Running the tests using the Tcp Signer
 
-At the moment, we are running the tests with `keyfiles` nodes by default. If you want to run the tests with nodes using the tcp signer, then change the value of the `CONFIG_FILE_PATH` environment variable to `regtest-key-files-and-hsms`. Using this configuration file will load one tcp signer instance for each federator that has an `hsm` type.
+At the moment, we are running the tests with `keyfiles` nodes by default. If you want to run the tests with nodes using the tcp signer, then change the value of the `CONFIG_FILE_PATH` environment variable to `./config/regtest-key-files-and-hsms`. Using this configuration file will load one tcp signer instance for each federator that has an `hsm` type.
 
 ### Logs
 
