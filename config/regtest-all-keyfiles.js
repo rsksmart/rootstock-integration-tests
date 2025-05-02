@@ -5,9 +5,9 @@ const powpegNodeJarPath = process.env.POWPEG_NODE_JAR_PATH;
 const federatesLogbackPath = process.env.LOG_HOME || path.resolve(__dirname, '../logs');
 
 const bookkeepingConfigurations = {
-    difficultyTarget: 3,
-    informerInterval: 2000,
-    blockHeadersToSend: 27
+    difficultyTarget: "3",
+    informerInterval: "8000",
+    blockHeadersToSend: "50"
 };
 
 module.exports = {

@@ -6,9 +6,9 @@ const federatesLogbackPath = process.env.LOG_HOME || path.resolve(__dirname, '..
 
 const bookkeepingConfigurations = {
     difficultyTarget: "3",
-    informerInterval: "2000",
-    maxAmountBlockHeaders: "100",
-    maxChunkSizeToHsm: "100"
+    informerInterval: "8000",
+    maxAmountBlockHeaders: "50",
+    maxChunkSizeToHsm: "50"
 };
 
 module.exports = {

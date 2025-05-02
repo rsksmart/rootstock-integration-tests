@@ -38,9 +38,9 @@ const BTC_HOST = '127.0.0.1';
 
 const bookkeepingConfigurations = {
   difficultyTarget: "3",
-  informerInterval: "2000",
-  maxAmountBlockHeaders: "100",
-  maxChunkSizeToHsm: "100",
+  informerInterval: "8000",
+  maxAmountBlockHeaders: "50",
+  maxChunkSizeToHsm: "50",
 };
 
 /**
