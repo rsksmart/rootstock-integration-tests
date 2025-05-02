@@ -4,7 +4,7 @@ const { execSync } = require('child_process');
 require('dotenv').config();
 
 const jarPath = process.env.POWPEG_NODE_JAR_PATH;
-const removeContainerAfterExecution = Boolean(process.env.DOCKER_REMOVE_CONTAINER_AFTER_EXECUTION);
+const removeContainerAfterExecution = process.env.DOCKER_REMOVE_CONTAINER_AFTER_EXECUTION === 'true';
 
 const removeContainerAfterExecutionFlag = removeContainerAfterExecution ? '--rm' : '';
 
