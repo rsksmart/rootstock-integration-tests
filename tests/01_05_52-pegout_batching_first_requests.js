@@ -4,12 +4,17 @@ const CustomError = require('../lib/CustomError');
 const _2wpUtilsLegacy = require('../lib/2wp-utils-legacy');
 const pegAssertions = require('../lib/assertions/2wp');
 
-let pegoutCount = 0;
 
 // TODO: Refactor these tests
 // Some tests fail after running all tests with all forks active from scratch.
 // More analysis need to be done. Also, these tests use legacy functions. We need to refactor them.
 describe.skip('Pegout Batching - New Pegout Requests Then Call new bridge methods', function () {
+
+    let pegoutCount = 0;
+    let rskClient;
+    let btcClient;
+    let pegClient;
+    let assertCallToBridgeMethodsRunner;
 
     before(() => {
         rskClient = rsk.getClient(Runners.hosts.federate.host);
