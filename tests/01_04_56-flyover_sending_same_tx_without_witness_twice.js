@@ -12,7 +12,8 @@ const { fundAddressAndGetData } = require('../lib/btc-utils');
 const { getBridge } = require('../lib/bridge-provider');
 const { mineForPeginRegistration } = require('../lib/2wp-utils');
 
-describe.skip('Executing registerFastBtcTransaction post hop - sending same tx without witness twice', () => {
+// TODO: Fails with 'Internal AssertionError: expected 40000000000000000 to equal -304' error. Pending to analyze.
+describe.skip('Executing registerFastBridgeBtcTransaction post hop - sending same tx without witness twice', () => {
 
   let rskTxHelpers;
   let rskTxHelper;
@@ -26,7 +27,7 @@ describe.skip('Executing registerFastBtcTransaction post hop - sending same tx w
     bridge = await getBridge(rskTxHelper.getClient());
   });
 
-  it(`should execute first tx successfully and fail executing second tx due to hash already used when calling registerFastBtcTransaction sending same tx twice`, async () => {
+  it(`should execute first tx successfully and fail executing second tx due to hash already used when calling registerFastBridgeBtcTransaction sending same tx twice`, async () => {
     try {
 
       const liquidityBridgeContract = await lbc.getLiquidityBridgeContract(Runners.hosts.federate.host);
@@ -112,7 +113,7 @@ describe.skip('Executing registerFastBtcTransaction post hop - sending same tx w
       expect(finalLbcBalance).to.equal(finalBalance);
 
     } catch (err) {
-      throw new CustomError('registerFastBtcTransaction call failure', err);
+      throw new CustomError('registerFastBridgeBtcTransaction call failure', err);
     }
 
   });

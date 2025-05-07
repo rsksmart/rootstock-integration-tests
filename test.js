@@ -94,7 +94,7 @@ global.Runners = {
       fingerroot500: createForkObject('fingerroot500', 1),
       arrowhead600: createForkObject('arrowhead600', 1),
       arrowhead631: createForkObject('arrowhead631', 1),
-      lovell700: createForkObject('lovell700', 1750),
+      lovell700: createForkObject('lovell700', 1),
     },
     additionalFederationAddresses: []
   }

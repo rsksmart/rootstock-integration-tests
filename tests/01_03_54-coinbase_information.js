@@ -4,13 +4,13 @@ const rskUtils = require('../lib/rsk-utils');
 const { wait, ensure0x, retryWithCheck }  = require('../lib/utils');
 const CustomError = require('../lib/CustomError');
 const { getBridge } = require('../lib/bridge-provider');
-const { getBtcClient } = require('../lib//btc-client-provider');
+const { getBtcClient } = require('../lib/btc-client-provider');
 const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 
 const { getLogger } = require('../logger');
 
-describe('Calling coinbase information methods after papyrus', () => {
+describe('Calling coinbase information methods', () => {
 
     const logger = getLogger();
     let btcClient;
@@ -23,7 +23,7 @@ describe('Calling coinbase information methods after papyrus', () => {
       rskTxHelper = rskTxHelpers[0];
     });
   
-    it('should return true when calling hasBtcBlockCoinbaseTransactionInformation method', async () => {
+    it('should work when calling Bridge coinbase related methods', async () => {
       try {
 
         const rskTxSenderAddress = await rskTxHelper.newAccountWithSeed('test'); 

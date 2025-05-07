@@ -11,8 +11,7 @@ const {
   GENESIS_FEDERATION_REDEEM_SCRIPT,
 } = require('../lib/constants/federation-constants');
 
-// No need for this test now since it is checking the genesis regtest fed address but we changed the federation at the start of the test.
-describe.skip('Calling getActivePowpegRedeemScript method after last fork before fedchange', function() {
+describe('Calling getActivePowpegRedeemScript method before federation change', function() {
   let rskTxHelpers;
   let rskTxHelper;
   let bridge;
