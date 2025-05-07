@@ -9,7 +9,7 @@ const CustomError = require('../lib/CustomError');
 
 const NETWORK = bitcoin.networks.testnet;
 
-describe('Calling registerFastBridgeBtcTransaction after iris', function() {
+describe('Calling registerFastBridgeBtcTransaction', function() {
   
     before(() => {
       rskClient = rsk.getClient(Runners.hosts.federate.host);

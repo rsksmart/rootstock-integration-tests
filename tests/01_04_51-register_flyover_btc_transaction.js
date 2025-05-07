@@ -16,7 +16,8 @@ let rskTxHelper;
 let btcTxHelper;
 let bridge;
 
-describe.skip('Calling registerFastBtcTransaction after iris', () => {
+// TODO: Fails with 'Internal AssertionError: expected -304 to equal 20000000000000000000' error. Pending to analyze.
+describe.skip('Calling registerFastBridgeBtcTransaction after iris', () => {
   
   before(async () => {
     rskTxHelpers = getRskTransactionHelpers();
@@ -25,7 +26,7 @@ describe.skip('Calling registerFastBtcTransaction after iris', () => {
     bridge = await getBridge(rskTxHelper.getClient(), Runners.common.forks.iris300.name);
   });
   
-  it('should return value transferred when calling registerFastBtcTransaction method', async () => {
+  it('should return value transferred when calling registerFastBridgeBtcTransaction method', async () => {
 
     try {
 
