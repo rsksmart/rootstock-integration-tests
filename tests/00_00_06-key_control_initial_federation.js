@@ -1,6 +1,6 @@
 const fedAssertions = require('../lib/assertions/fed');
 
-var fedAssert;
+let fedAssert;
 
 const INITIAL_FEDERATION_SIZE = 3;
 

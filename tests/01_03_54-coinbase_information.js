@@ -8,11 +8,9 @@ const { getBtcClient } = require('../lib/btc-client-provider');
 const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 
-const { getLogger } = require('../logger');
 
 describe('Calling coinbase information methods', () => {
 
-    const logger = getLogger();
     let btcClient;
     let rskTxHelper;
     let rskTxHelpers;

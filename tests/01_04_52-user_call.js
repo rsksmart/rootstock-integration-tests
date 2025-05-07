@@ -10,6 +10,11 @@ const CustomError = require('../lib/CustomError');
 const NETWORK = bitcoin.networks.testnet;
 
 describe('Calling registerFastBridgeBtcTransaction', function() {
+
+    let rskClient;
+    let btcClient;
+    let pegClient;
+    let utils;
   
     before(() => {
       rskClient = rsk.getClient(Runners.hosts.federate.host);
