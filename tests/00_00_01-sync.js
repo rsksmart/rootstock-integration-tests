@@ -14,7 +14,8 @@ describe('Federators sync', () => {
       expect(Runners.hosts.federates.length).to.be.greaterThan(0, 'Federates array cannot be empty');
       const rskTransactionHelpers = getRskTransactionHelpers();
 
-      const blocksToMine = 20;
+      // Mining 515 blocks so we are ready to start using the tcpsigner.
+      const blocksToMine = 515;
       
       // Should mine and sync all the fed nodes and return the latest block number for each fed
       const federatorsLatestBlocks = await rskUtils.mineAndSync(rskTransactionHelpers, blocksToMine);

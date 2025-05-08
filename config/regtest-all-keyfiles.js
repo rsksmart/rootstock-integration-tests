@@ -2,12 +2,12 @@ const path = require('path');
 const nodesConfigPath = 'config/node-configs';
 const keysPathResolve = 'node-keys';
 const powpegNodeJarPath = process.env.POWPEG_NODE_JAR_PATH;
-const federatesLogbackPath = process.env.LOG_HOME;
+const federatesLogbackPath = process.env.LOG_HOME || path.resolve(__dirname, '../logs');
 
 const bookkeepingConfigurations = {
-    difficultyTarget: 3,
-    informerIntervalInMs: 2000,
-    blockHeadersToSend: 27
+    difficultyTarget: "3",
+    informerInterval: "8000",
+    blockHeadersToSend: "50"
 };
 
 module.exports = {
@@ -18,7 +18,7 @@ module.exports = {
     btc: {
         rpcUser: 'test',
         rpcPassword: 'test',
-        dir: process.env.BITCOIN_DATA_DIR,
+        dir: process.env.BITCOIN_DATA_DIR || path.resolve(__dirname, '../bitcoin-data'),
     },
     federations: {
         genesisFederation: {

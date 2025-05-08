@@ -10,12 +10,13 @@ echo "POWPEG_VERSION received as parameter: $POWPEG_VERSION"
 
 read -r -d '' SETTINGS_RIT <<EOF
 POWPEG_NODE_JAR_PATH=/usr/src/powpeg/build/libs/federate-node-$POWPEG_VERSION-all.jar
-CONFIG_FILE_PATH=./config/regtest-all-keyfiles.js
-LOG_HOME=/usr/src/rit/logs
+CONFIG_FILE_PATH=./config/regtest-key-files-and-hsms.js
+LOG_HOME=/usr/src/logs
 BITCOIND_BIN_PATH=/usr/local/bin/bitcoind
 BITCOIN_DATA_DIR=/usr/src/bitcoindata
 WAIT_FOR_BLOCK_ATTEMPT_TIME_MILLIS=800
 WAIT_FOR_BLOCK_MAX_ATTEMPTS=1200
+LOG_LEVEL=trace
 EOF
 
 echo -e  "\n\n---------- Configuring RIT to run the tests locally -----------\n\n"

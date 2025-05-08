@@ -51,29 +51,28 @@ There are more variables in the `.env-example` files, but they already have defa
 
 `POWPEG_NODE_JAR_PATH` should point to the absolute path of the powpeg-node .jar file in your system to be executed.
 
-You can leave this value as the example or set `CONFIG_FILE_PATH` to the actual path of the configuration file you are going to use. If you don't provide a value, it will try to use `./config/regtest.js` instead.
+You can leave this value as the example or set `CONFIG_FILE_PATH` to the actual path of the configuration file you are going to use. If you don't provide a value, it will try to use `./config/regtest-all-keyfiles.js` instead.
 Notice that there is a `regtest-all-keyfiles.js` file in the `config` directory. You can either use that one, rename it, modify it or use a new one.
-At the moment, we are running the tests with `keyfiles` nodes. When we setup the tests to run with the `tcpsigner`, then we will update this guide to include that.
 
-Optional. If you want to see the logs of the federators (recommended), then `LOG_HOME` should point the directory where the logback configurations files are. Keep in mind that these logback `.xml` files should be contained in another directory inside this `LOG_HOME` directory called `genesis-federation` and `second-federation` and each of these directories should contain a `fed1.xml`, `fed2.xml` and `fed3.xml` files. You can always modify this in the `regtest-all-keyfiles.js` file.
+### Running the tests using the Tcp Signer
 
-Example:
+At the moment, we are running the tests with `keyfiles` nodes by default. If you want to run the tests with nodes using the tcp signer, then change the value of the `CONFIG_FILE_PATH` environment variable to `./config/regtest-key-files-and-hsms`. Using this configuration file will load one tcp signer instance for each federator that has an `hsm` type.
 
-```
-<LOG_HOME>
-  - genesis-federation/
-    - fed1.xml
-    - fed2.xml
-    - fed3.xml
-  - second-federation/
-    - fed1.xml
-    - fed2.xml
-    - fed3.xml
-```
+### Logs
 
-Use `container-action/rit-local-configs/logbacks` as an example.
+There is one `base-logback-config.xml` file in the `config` directory. It serves as an example of how the logback configuration files should look.
+
+In the `restest...` files in `config/` directory, each federator node has a reference to a logback configuration file path. By default, if the file doesn't exist in that path, then the setup process will create it automatically.
+
+You can update the `LOG_HOME` environment variable to point to where you have your logback configuration files. If you don't, then they will be created for you automatically at the root directory of this project, in a new `logs/` directory.
+
+The environment variable `LOG_HOME` should point the directory where the logback configurations files are.
+
+### Bitcoind
 
 You you already have `bitcoind` installed in your system, you can leave `BITCOIND_BIN_PATH` empty, the tests will use the one available from the system. If you have the `bitcoind` binaries in a specific directory, you can specify that directory in this variable. This way you don't have to fully install `bitcoind` in your system.
+
+### Java
 
 If you already have the correct `java` version installed in your system, you can leave `JAVA_BIN_PATH` empty, the tests will use the one available from the system. If you have the java binaries in a specific directory, you can specify that directory in this variable.
 
@@ -211,3 +210,33 @@ The command `run-single-test-file` will execute the file `singleTestFileRunner.j
 1 - It will assign the `01_02_51-post_wasabi_fed_pubkeys_fork.js` test file name to the `process.env.INCLUDE_CASES` variable. Since it will be the one in that `INCLUDE_CASES` variable, then only that test file will be run.
 
 2 - It will setup a boolean `process.env.RUNNING_SINGLE_TEST_FILE` variable to `true` so the `fulfillRequirementsToRunAsSingleTestFile` function can check if it needs to manually take the blockchain to a state where the test file can run or not.
+
+### Running with docker
+
+You can simply run the `npm` command:
+
+> npm run run-with-docker
+
+Running it this way is important. It will read the `.env` variables first to locale the `POWPEG_NODE_JAR_PATH` and copy it here so `Dockerfile` can copy it along with the rest of the project.
+
+Using docker to run the tests you don't have to worry about installing the right version of Java or Bitcoind.
+
+It will also read the `DOCKER_REMOVE_CONTAINER_AFTER_EXECUTION` variable from the `.env` file.
+
+So make sure you have the `.env` file ready. Then, the `Dockerfile` will replace the `.env` file's content with the `.env.docker` file's content.
+
+#### Building the docker image and running the container directly
+
+Building
+
+To build the docker image directly, on the root directory, run:
+
+> docker buildx build --platform linux/amd64 -t rits .
+
+The `--platform linux/amd64` is necessary because the bitcoind binary depends on that platform, or it will fail to run.
+
+Running
+
+To run it, execute:
+
+> docker run --platform linux/amd64 -it rits

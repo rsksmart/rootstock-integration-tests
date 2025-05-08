@@ -55,7 +55,7 @@ function clearBitcoinDataDirectory() {
 const cleanEnvironment = async () => {
     console.info('Cleaning environment...');
     await clearBitcoinDataDirectory();
-    await clearLogFiles(process.env.LOG_HOME);
+    await clearLogFiles(process.env.LOG_HOME || './logs');
     shell.exec(killServicesCommand);
     console.info('Environment cleaned.');
 };
