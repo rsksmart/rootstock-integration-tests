@@ -6,12 +6,14 @@ const { NUMBER_OF_BLOCKS_BTW_PEGOUTS } = require('../lib/constants/pegout-consta
 const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 
-let rskTxHelpers;
-
 // TODO: Refactor these tests
 // Some tests fail after running all tests with all forks active from scratch.
 // More analysis need to be done. Also, these tests use legacy functions. We need to refactor them.
 describe.skip('Pegout Batching - Advance the blockchain until the next pegout creation height (no pegout requests).', function () {
+
+    let rskTxHelpers;
+    let rskClient;
+    let assertCallToBridgeMethodsRunner;
 
     before(() => {
         rskClient = rsk.getClient(Runners.hosts.federate.host);
