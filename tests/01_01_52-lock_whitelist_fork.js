@@ -17,7 +17,7 @@ let rskTxHelper;
 let rskTxHelpers;
 let bridge;
 
-describe('RFS-170 test after fork', () => {
+describe('Whitelist methods tests', () => {
     before(async () => {
         btcTxHelper = getBtcClient();
         rskTxHelpers = getRskTransactionHelpers();

@@ -11,15 +11,20 @@ const { NUMBER_OF_BLOCKS_BTW_PEGOUTS } = require('../lib/constants/pegout-consta
 const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 
-let pegoutCount = 0;
-let currentBlockNumber;
-let assertCallToBridgeMethodsRunner;
-let rskTxHelpers;
 
 // TODO: Refactor these tests
 // Some tests fail after running all tests with all forks active from scratch.
 // More analysis need to be done. Also, these tests use legacy functions. We need to refactor them.
 describe.skip('Pegout Batching - Execute Pegout Transaction And Call New Bridge Methods', function () {
+
+    let pegoutCount = 0;
+    let currentBlockNumber;
+    let assertCallToBridgeMethodsRunner;
+    let rskClients;
+    let rskClient;
+    let btcClient;
+    let pegClient;
+    let rskTxHelpers;
 
     before(() => {
         rskClients = Runners.hosts.federates.map(federate => rsk.getClient(federate.host));

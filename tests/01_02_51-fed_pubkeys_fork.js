@@ -12,7 +12,7 @@ let rskTxHelper;
 let fedChangeAddress;
 let bridge;
 
-describe('Multiple federation member keys test after fork', () => {
+describe('Bridge federator methods tests', () => {
 
     before(async () => {
         rskTxHelper = getRskTransactionHelper();

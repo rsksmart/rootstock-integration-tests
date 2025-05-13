@@ -1,9 +1,10 @@
 const fedAssertions = require('../lib/assertions/fed');
 
-var fedAssert;
+let fedAssert;
 
-const INITIAL_FEDERATION_SIZE = 5;
+const INITIAL_FEDERATION_SIZE = 3;
 
+// TODO: refactor this test to stop using lib/assertions/fed library since it uses the peglib library
 describe('Federate nodes key control - initial federation', function() {
   before(() => {
     fedAssert = fedAssertions.with(Runners.hosts.federates);

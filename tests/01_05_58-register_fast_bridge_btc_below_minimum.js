@@ -14,7 +14,7 @@ const { mineForPeginRegistration } = require('../lib/2wp-utils');
 // TODO: Refactor these tests
 // Some tests fail after running all tests with all forks active from scratch.
 // More analysis need to be done. Also, these tests use legacy functions. We need to refactor them.
-describe.skip('Executing registerFastBtcTransaction after hop - send funds below minimum', () => {
+describe.skip('Executing registerFastBridgeBtcTransaction after hop - send funds below minimum', () => {
 
   let rskTxHelpers;
   let rskTxHelper;
@@ -28,7 +28,7 @@ describe.skip('Executing registerFastBtcTransaction after hop - send funds below
     bridge = await getBridge(rskTxHelper.getClient());
   });
 
-  it(`should return UNPROCESSABLE_TX_AMOUNT_SENT_BELOW_MINIMUM_ERROR(${UNPROCESSABLE_TX_AMOUNT_SENT_BELOW_MINIMUM_ERROR}) when calling registerFastBtcTransaction method sending amount below minimum`, async () => {
+  it(`should return UNPROCESSABLE_TX_AMOUNT_SENT_BELOW_MINIMUM_ERROR(${UNPROCESSABLE_TX_AMOUNT_SENT_BELOW_MINIMUM_ERROR}) when calling registerFastBridgeBtcTransaction method sending amount below minimum`, async () => {
     try {
 
       const liquidityBridgeContract = await lbc.getLiquidityBridgeContract(Runners.hosts.federate.host);
