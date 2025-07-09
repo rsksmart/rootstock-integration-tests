@@ -24,7 +24,7 @@
     "@rsksmart/rsk-precompiled-abis-lovell": "git+https://github.com/rsksmart/precompiled-abis#7.0.0-LOVELL",
     "bn.js": "^4.11.8",
     "btc-transaction-helper": "git+https://git@github.com/rsksmart/btc-transaction-helper#v3.5.0",
-    "chai": "^4.1.2",
+    "chai": "^5.2.1",
     "chai-as-promised": "^7.1.1",
     "colors": "^1.1.2",
     "dev-null": "^0.1.1",
