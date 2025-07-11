@@ -9,7 +9,7 @@ while getopts ":p:" opt; do
     esac
 done
 
-DOCKER_CONTAINER_NAME=""
+DOCKER_CONTAINER_NAME="tcpsigner-bundle"
 NEW_ARGS=()
 
 for arg in "$@"; do

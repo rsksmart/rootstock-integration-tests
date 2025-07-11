@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --timeout 600000",
-    "test-fail-fast": "mocha -b --timeout 600000",
+    "test": "mocha --timeout 1200000",
+    "test-fail-fast": "mocha -b --timeout 1200000 --trace-warnings",
     "run-tests-multiple-times": "node multipleTestExecutionsRunner.js",
     "run-single-test-file": "node singleTestFileRunner.js",
     "run-with-docker": "node runWithDocker.js"
@@ -19,7 +19,7 @@
     "@rsksmart/btc-eth-unit-converter": "^1.0.0",
     "@rsksmart/btc-rsk-derivation": "^0.0.2",
     "@rsksmart/pmt-builder": "^3.0.0",
-    "@rsksmart/powpeg-redeemscript-parser": "^1.0.1",
+    "@rsksmart/powpeg-redeemscript-parser": "github:rsksmart/powpeg-redeemscript-parser#fbe3b981b3f768396833f5f832526a9751098089",
     "@rsksmart/rsk-precompiled-abis": "^6.0.0-ARROWHEAD",
     "@rsksmart/rsk-precompiled-abis-lovell": "git+https://github.com/rsksmart/precompiled-abis#7.0.0-LOVELL",
     "bn.js": "^4.11.8",

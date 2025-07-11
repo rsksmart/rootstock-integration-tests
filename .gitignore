@@ -17,3 +17,4 @@ tcpsigner.log
 !base-logback-config.xml
 logs/
 federate-node.jar
+zlogs/

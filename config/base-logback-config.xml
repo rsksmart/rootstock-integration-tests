@@ -93,6 +93,9 @@
     <logger name="co.rsk.peg.bitcoin.FlyoverRedeemScriptBuilder" level="TRACE"/>
     <logger name="FlyoverRedeemScriptBuilder" level="TRACE"/>
     <logger name="FlyoverRedeemScriptBuilderImpl" level="TRACE"/>
+    <logger name="PowHSMSignerMessage" level="TRACE"/>
+    <logger name="ReleaseCreationInformationGetter" level="TRACE"/>
+    <logger name="BtcReleaseClientStorageSynchronizer" level="TRACE"/>
 
     <root level="INFO">
         <appender-ref ref="stdout"/>
