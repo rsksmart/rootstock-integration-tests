@@ -11,6 +11,8 @@ const bookkeepingConfigurations = {
     maxChunkSizeToHsm: "100"
 };
 
+const DIFFICULTY_TARGET_IN_HEX = '0x03';
+
 module.exports = {
     init: {
         mineInitialBitcoin: true,
@@ -185,7 +187,7 @@ module.exports = {
                     federationId: 'second-federation',
                     type: 'hsm',
                     hsmPort: 9981,
-                    hsmDifficultyTarget: '0x03',
+                    hsmDifficultyTarget: DIFFICULTY_TARGET_IN_HEX,
                     logbackFile: `${federatesLogbackPath}/second-federation/fed2.xml`,
                     classpath: powpegNodeJarPath,
                     configFile: `${nodesConfigPath}/second-federation/fed2.conf`,
@@ -220,7 +222,7 @@ module.exports = {
                     federationId: 'second-federation',
                     type: 'hsm',
                     hsmPort: 9983,
-                    hsmDifficultyTarget: '0x03',
+                    hsmDifficultyTarget: DIFFICULTY_TARGET_IN_HEX,
                     logbackFile: `${federatesLogbackPath}/second-federation/fed3.xml`,
                     classpath: powpegNodeJarPath,
                     configFile: `${nodesConfigPath}/second-federation/fed3.conf`,
@@ -307,7 +309,7 @@ module.exports = {
                     federationId: 'third-federation',
                     type: 'hsm',
                     hsmPort: 9987,
-                    hsmDifficultyTarget: '0x03',
+                    hsmDifficultyTarget: DIFFICULTY_TARGET_IN_HEX,
                     logbackFile: `${federatesLogbackPath}/third-federation/fed2.xml`,
                     classpath: powpegNodeJarPath,
                     configFile: `${nodesConfigPath}/third-federation/fed2.conf`,
@@ -380,8 +382,8 @@ module.exports = {
                     id: 'federator-4-third-federation',
                     federationId: 'third-federation',
                     type: 'hsm',
-                    hsmPort: 9982,
-                    hsmDifficultyTarget: '0x03',
+                    hsmPort: 9985,
+                    hsmDifficultyTarget: DIFFICULTY_TARGET_IN_HEX,
                     logbackFile: `${federatesLogbackPath}/third-federation/fed4.xml`,
                     classpath: powpegNodeJarPath,
                     configFile: `${nodesConfigPath}/third-federation/fed4.conf`,
@@ -464,7 +466,7 @@ module.exports = {
                     federationId: 'fourth-federation',
                     type: 'hsm',
                     hsmPort: 9991,
-                    hsmDifficultyTarget: '0x03',
+                    hsmDifficultyTarget: DIFFICULTY_TARGET_IN_HEX,
                     logbackFile: `${federatesLogbackPath}/fourth-federation/fed2.xml`,
                     classpath: powpegNodeJarPath,
                     configFile: `${nodesConfigPath}/fourth-federation/fed2.conf`,
@@ -537,8 +539,8 @@ module.exports = {
                     id: 'federator-4-fourth-federation',
                     federationId: 'fourth-federation',
                     type: 'hsm',
-                    hsmPort: 9988,
-                    hsmDifficultyTarget: '0x03',
+                    hsmPort: 9989,
+                    hsmDifficultyTarget: DIFFICULTY_TARGET_IN_HEX,
                     logbackFile: `${federatesLogbackPath}/fourth-federation/fed4.xml`,
                     classpath: powpegNodeJarPath,
                     configFile: `${nodesConfigPath}/fourth-federation/fed4.conf`,
