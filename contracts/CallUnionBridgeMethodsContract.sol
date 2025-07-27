@@ -10,10 +10,10 @@ contract CallUnionBridgeMethodsContract {
     BridgeInterface public bridgeContract = BridgeInterface(0x0000000000000000000000000000000001000006);
 
     function requestUnionRBTC(uint256 amountInWeis) external returns (int256) {
-        return unionBridgeContract.requestUnionRBTC(amountInWeis);
+        return bridgeContract.requestUnionRBTC(amountInWeis);
     }
 
     function releaseUnionRBTC() external payable returns (int256) {
-        return unionBridgeContract.releaseUnionRBTC{value: msg.value}();
+        return bridgeContract.releaseUnionRBTC{value: msg.value}();
     }
 }
