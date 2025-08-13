@@ -21,7 +21,7 @@
     "@rsksmart/pmt-builder": "^3.0.0",
     "@rsksmart/powpeg-redeemscript-parser": "github:rsksmart/powpeg-redeemscript-parser#fbe3b981b3f768396833f5f832526a9751098089",
     "@rsksmart/rsk-precompiled-abis": "^7.0.0-LOVELL",
-    "@rsksmart/rsk-precompiled-abis-lovell": "git+https://github.com/rsksmart/precompiled-abis#master",
+    "@rsksmart/rsk-precompiled-abis-reed": "git+https://github.com/rsksmart/precompiled-abis#master",
     "bn.js": "^4.11.8",
     "btc-transaction-helper": "git+https://git@github.com/rsksmart/btc-transaction-helper#v3.5.0",
     "chai": "^4.1.2",

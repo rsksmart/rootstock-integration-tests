@@ -12,7 +12,7 @@ const {CHANGE_LOCKING_CAP_AUTHORIZERS_PKS, CHANGE_UNION_BRIDGE_CONTRACT_ADDRESS_
 const {getBridge} = require("../lib/bridge-provider");
 const {btcToWeis, ethToWeis, weisToEth} = require("@rsksmart/btc-eth-unit-converter");
 const {deployUnionBridgeContract} = require("../lib/contractDeployer");
-const {getNewFundedRskAddress } = require("../lib/rsk-utils");
+const {getRskTransactionHelpers} = require("../lib/rsk-tx-helper-provider");
 
 const UNAUTHORIZED_1_PRIVATE_KEY = 'bb7a53f495b863a007a3b1e28d2da2a5ec0343976a9be64e6fcfb97791b0112b';
 
@@ -50,9 +50,9 @@ const execute = (description) => {
       bridge = await getBridge(rskTxHelper.getClient());
 
       // Create accounts for the authorizers
-      await createAndFundAccounts(rskTxHelper);
+      await createAndFundAccounts();
 
-      unionBridgeContractCreatorAddress = await getNewFundedRskAddress(rskTxHelper);
+      unionBridgeContractCreatorAddress = await rskUtils.getNewFundedRskAddress(rskTxHelper);
       unionBridgeContract = await deployUnionBridgeContract(rskTxHelper, unionBridgeContractCreatorAddress);
       newUnionBridgeContractAddress = unionBridgeContract._address;
     });
@@ -138,5 +138,5 @@ const createAndFundAccounts = async () => {
 }
 
 (async () => {
-  await execute("Call Union Bridge Methods before Reed - tests");
+  execute("Call Union Bridge Methods before Reed - tests");
 })();
