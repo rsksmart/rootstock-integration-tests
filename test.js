@@ -39,8 +39,8 @@ const BTC_HOST = '127.0.0.1';
 const bookkeepingConfigurations = {
   difficultyTarget: "3",
   informerInterval: "8000",
-  maxAmountBlockHeaders: "50",
-  maxChunkSizeToHsm: "50",
+  maxAmountBlockHeaders: "100",
+  maxChunkSizeToHsm: "100",
 };
 
 /**
@@ -95,6 +95,7 @@ global.Runners = {
       arrowhead600: createForkObject('arrowhead600', 1),
       arrowhead631: createForkObject('arrowhead631', 1),
       lovell700: createForkObject('lovell700', 1),
+      reed800: createForkObject('reed800', 1900),
     },
     additionalFederationAddresses: []
   }
