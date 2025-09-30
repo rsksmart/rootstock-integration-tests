@@ -50,7 +50,7 @@ updates:
       default-days: 10
     labels:
       - "dependencies"
-      - "github_actions"
+      - "docker"
     # one PR per week that groups BOTH minor + patch updates
     groups:
       actions-updates:
@@ -69,7 +69,7 @@ updates:
       default-days: 1
     labels:
       - "dependencies"
-      - "github_actions"
+      - "docker"
       - "security"
     # one PR that groups security updates
     groups:
@@ -89,7 +89,7 @@ updates:
       default-days: 10
     labels:
       - "dependencies"
-      - "github_actions"
+      - "npm"
     # one PR per week that groups BOTH minor + patch updates
     groups:
       actions-updates:
@@ -108,7 +108,7 @@ updates:
       default-days: 1
     labels:
       - "dependencies"
-      - "github_actions"
+      - "npm"
       - "security"
     # one PR that groups security updates
     groups:
