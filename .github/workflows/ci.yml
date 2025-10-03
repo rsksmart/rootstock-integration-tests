@@ -26,7 +26,7 @@ env:
 jobs:
   build-push-rit-action-container-action:
     name: Test RIT Action docker container-action
-    runs-on: ubuntu-latest
+    runs-on: tenki-standard-autoscale
     timeout-minutes: 150
     permissions:
       packages: write
@@ -102,7 +102,7 @@ jobs:
     if: ${{ github.ref == 'refs/heads/main' }}
     needs: build-push-rit-action-container-action
     name: GitHub Actions Test
-    runs-on: ubuntu-latest
+    runs-on: tenki-standard-autoscale
     timeout-minutes: 150
 
     steps:
