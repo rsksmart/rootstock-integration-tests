@@ -30,10 +30,8 @@ let rskTxHelper;
 let bridge;
 
 let changeUnionAddressAuthorizerAddress;
-let changeLockingCapAuthorizer1Address;
-let changeLockingCapAuthorizer2Address;
-let changeTransferPermissionsAuthorizer1Address;
-let changeTransferPermissionsAuthorizer2Address;
+let changeLockingCapAuthorizerAddress;
+let changeTransferPermissionsAuthorizerAddress;
 
 let unauthorizedAddress;
 
@@ -69,7 +67,7 @@ const execute = (description) => {
 
     it('should fail when call increaseUnionBridgeLockingCap', async () => {
       return assertContractCallFails(bridge.methods.increaseUnionBridgeLockingCap(NEW_LOCKING_CAP_1), {
-        from: changeLockingCapAuthorizer1Address
+        from: changeLockingCapAuthorizerAddress
       });
     });
 
@@ -91,7 +89,7 @@ const execute = (description) => {
 
     it('should fail when call setUnionBridgeTransferPermissions', async () => {
       return assertContractCallFails(bridge.methods.setUnionBridgeTransferPermissions(REQUEST_PERMISSION_ENABLED, RELEASE_PERMISSION_ENABLED), {
-        from: changeTransferPermissionsAuthorizer1Address
+        from: changeTransferPermissionsAuthorizerAddress
       });
     });
   });
@@ -116,14 +114,12 @@ const createAndFundAccounts = async () => {
 
   const unionAuthorizedAddresses = await importAccounts(rskTxHelper, [
     CHANGE_UNION_BRIDGE_CONTRACT_ADDRESS_AUTHORIZER_PK,
-    ...CHANGE_LOCKING_CAP_AUTHORIZERS_PKS.slice(0, 2),
-    ...CHANGE_TRANSFER_PERMISSIONS_AUTHORIZERS_PKS.slice(0, 2)
+    ...CHANGE_LOCKING_CAP_AUTHORIZERS_PKS.slice(0, 1),
+    ...CHANGE_TRANSFER_PERMISSIONS_AUTHORIZERS_PKS.slice(0, 1)
   ]);
   changeUnionAddressAuthorizerAddress = unionAuthorizedAddresses[0];
-  changeLockingCapAuthorizer1Address = unionAuthorizedAddresses[1];
-  changeLockingCapAuthorizer2Address = unionAuthorizedAddresses[2];
-  changeTransferPermissionsAuthorizer1Address = unionAuthorizedAddresses[3];
-  changeTransferPermissionsAuthorizer2Address = unionAuthorizedAddresses[4];
+  changeLockingCapAuthorizerAddress = unionAuthorizedAddresses[1];
+  changeTransferPermissionsAuthorizerAddress = unionAuthorizedAddresses[3];
 
   // Sending some funds to the not authorized addresses to pay for transaction fees while voting.
   // This is done to realistically test the union bridge methods, so it doesn't fail by something else like insufficient funds.
@@ -131,10 +127,8 @@ const createAndFundAccounts = async () => {
 
   // Send some funds to the union authorizers to pay for transaction fees while voting.
   await rskUtils.sendFromCow(rskTxHelper, changeUnionAddressAuthorizerAddress, btcToWeis(0.1));
-  await rskUtils.sendFromCow(rskTxHelper, changeLockingCapAuthorizer1Address, btcToWeis(0.1));
-  await rskUtils.sendFromCow(rskTxHelper, changeLockingCapAuthorizer2Address, btcToWeis(0.1));
-  await rskUtils.sendFromCow(rskTxHelper, changeTransferPermissionsAuthorizer1Address, btcToWeis(0.1));
-  await rskUtils.sendFromCow(rskTxHelper, changeTransferPermissionsAuthorizer2Address, btcToWeis(0.1));
+  await rskUtils.sendFromCow(rskTxHelper, changeLockingCapAuthorizerAddress, btcToWeis(0.1));
+  await rskUtils.sendFromCow(rskTxHelper, changeTransferPermissionsAuthorizerAddress, btcToWeis(0.1));
 }
 
 (async () => {
