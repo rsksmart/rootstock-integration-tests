@@ -2,7 +2,7 @@
 
 PORT=9999
 while getopts ":p:" opt; do
-    case "$opt" in
+    case "$opt" in # NOSONAR
     p)
         PORT=$OPTARG 
         ;;

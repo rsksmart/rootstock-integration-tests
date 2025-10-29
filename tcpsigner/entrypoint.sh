@@ -16,7 +16,7 @@ trap stop SIGTERM SIGINT SIGQUIT SIGHUP ERR
 # ==========================================================
 # ==========================================================
 while getopts ":p:h" opt; do
-    case "$opt" in
+    case "$opt" in # NOSONAR
     p)
         PORT=$OPTARG 
         ;;
