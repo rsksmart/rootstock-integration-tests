@@ -21,14 +21,14 @@
     "@rsksmart/pmt-builder": "^3.0.0",
     "@rsksmart/powpeg-redeemscript-parser": "github:rsksmart/powpeg-redeemscript-parser#fbe3b981b3f768396833f5f832526a9751098089",
     "@rsksmart/rsk-precompiled-abis": "^6.0.0-ARROWHEAD",
-    "@rsksmart/rsk-precompiled-abis-lovell": "git+https://github.com/rsksmart/precompiled-abis#7.0.0-LOVELL",
+    "@rsksmart/rsk-precompiled-abis-lovell": "git+https://github.com/rsksmart/precompiled-abis#8.0.0-REED",
     "bn.js": "^4.11.8",
     "btc-transaction-helper": "git+https://git@github.com/rsksmart/btc-transaction-helper#v3.5.0",
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
     "colors": "^1.1.2",
     "dev-null": "^0.1.1",
-    "dotenv": "^16.0.3",
+    "dotenv": "^17.2.2",
     "find": "^0.3.0",
     "fs-extra": "^4.0.2",
     "glob": "^7.1.2",
@@ -41,10 +41,10 @@
     "rsk-transaction-helper": "git+https://github.com/rsksmart/rootstock-transaction-helper#v3.1.0",
     "solc": "^0.8.28",
     "stream-line-wrapper": "^0.1.1",
-    "tmp": "0.2.3",
+    "tmp": "0.2.5",
     "wait-for-port": "0.0.2"
   },
   "devDependencies": {
-    "shelljs": "^0.8.5"
+    "shelljs": "^0.10.0"
   }
 }

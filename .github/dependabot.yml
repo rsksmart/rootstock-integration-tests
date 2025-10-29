@@ -2,18 +2,117 @@ version: 2
 updates:
   # Maintain dependencies for GitHub Actions
   - package-ecosystem: github-actions
-    directory: /
+    directory: "/"
+    target-branch: main
     schedule:
-      interval: daily
+      interval: "weekly"
+    # Wait at least 10 days after a new version is released before opening a PR
+    cooldown:
+      default-days: 10
+    labels:
+      - "dependencies"
+      - "github_actions"
+    # one PR per week that groups BOTH minor + patch updates
+    groups:
+      actions-updates:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: "daily"
+    # Wait at least 1 day after a security update is released before opening a PR
+    cooldown:
+      default-days: 1
+    labels:
+      - "dependencies"
+      - "github_actions"
+      - "security"
+    # one PR that groups security updates
+    groups:
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
 
   # Maintain dependencies for Docker
   - package-ecosystem: docker
-    directory: /
+    directory: "/"
+    target-branch: main
     schedule:
-      interval: daily
+      interval: "weekly"
+    # Wait at least 10 days after a new version is released before opening a PR
+    cooldown:
+      default-days: 10
+    labels:
+      - "dependencies"
+      - "docker"
+    # one PR per week that groups BOTH minor + patch updates
+    groups:
+      actions-updates:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: "daily"
+    # Wait at least 1 day after a security update is released before opening a PR
+    cooldown:
+      default-days: 1
+    labels:
+      - "dependencies"
+      - "docker"
+      - "security"
+    # one PR that groups security updates
+    groups:
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
 
   # Maintain dependencies for npm and yarn
   - package-ecosystem: npm
-    directory: /
+    directory: "/"
+    target-branch: main
     schedule:
-      interval: daily
+      interval: "weekly"
+    # Wait at least 10 days after a new version is released before opening a PR
+    cooldown:
+      default-days: 10
+    labels:
+      - "dependencies"
+      - "npm"
+    # one PR per week that groups BOTH minor + patch updates
+    groups:
+      actions-updates:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: "daily"
+    # Wait at least 1 day after a security update is released before opening a PR
+    cooldown:
+      default-days: 1
+    labels:
+      - "dependencies"
+      - "npm"
+      - "security"
+    # one PR that groups security updates
+    groups:
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
