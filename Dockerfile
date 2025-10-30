@@ -17,9 +17,9 @@ RUN apt-get update \
 RUN apt-get update && apt-get install -y libc6
 
 # -- nodeJs ---------------------------------------------------------
-ENV NODE_VERSION v18.20.2
+ENV NODE_VERSION=v18.20.2
 RUN mkdir -p /usr/local/nvm
-ENV NVM_DIR /usr/local/nvm
+ENV NVM_DIR=/usr/local/nvm
 
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash \
     && . $NVM_DIR/nvm.sh \
@@ -27,11 +27,11 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | b
     && nvm alias default $NODE_VERSION \
     && nvm use default
 
-ENV NODE_PATH $NVM_DIR/$NODE_VERSION/lib/node_modules
-ENV PATH $NVM_DIR/versions/node/$NODE_VERSION/bin:$PATH
+ENV NODE_PATH=$NVM_DIR/$NODE_VERSION/lib/node_modules
+ENV PATH=$NVM_DIR/versions/node/$NODE_VERSION/bin:$PATH
 
 # -- java ---------------------------------------------------------
-ENV JAVA_VERSION 17
+ENV JAVA_VERSION=17
 
 RUN apt-get update \
     && apt-get -y install "openjdk-$JAVA_VERSION-jdk"
@@ -39,7 +39,7 @@ RUN apt-get update \
 ENV JAVA_HOME="/usr/lib/jvm/java-$JAVA_VERSION-openjdk-amd64"
 
 # -- bitcoind ---------------------------------------------------------
-ENV BITCOIN_VERSION 0.18.1
+ENV BITCOIN_VERSION=0.18.1
 
 RUN cd /tmp \
     && wget https://bitcoincore.org/bin/bitcoin-core-${BITCOIN_VERSION}/bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz \
