@@ -1,4 +1,4 @@
-const path = require('path');
+const path = require('node:path');
 const nodesConfigPath = 'config/node-configs';
 const keysPathResolve = 'node-keys';
 const powpegNodeJarPath = process.env.POWPEG_NODE_JAR_PATH;

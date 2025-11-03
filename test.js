@@ -3,7 +3,7 @@ const glob = require('glob');
 const colors = require('colors/safe');
 const LineWrapper = require('stream-line-wrapper');
 const expect = require('chai').expect;
-const path = require('path');
+const path = require('node:path');
 
 const BitcoinRunner = require('./lib/bitcoin-runner').Runner;
 
@@ -104,12 +104,12 @@ global.Runners = {
 Runners.config = config;
 
 function validateBitcoinRunnerConfig(bitcoinConf, configs){
-  configs.forEach(function(config){
+  for (const config of configs) {
     if(!bitcoinConf[config]) {
       process.stdout.write(`NO runnersConfig.bitcoin.${config} defined on ${configFileName}.js\n`);
       process.exit(1);
-    };
-  });
+    }
+  }
 };
 
 process.on('SIGTERM', function() {
@@ -190,7 +190,7 @@ before(async () => {
 
     // First, append existing federates, if any
     if (runnersConfig.federates != null) {
-      runnersConfig.federates.forEach((federateRunnerConfig) => {
+      for (const federateRunnerConfig of runnersConfig.federates) {
         const federateRunner = {
           federationId: federateRunnerConfig.federationId,
           host: federateRunnerConfig.host,
@@ -200,7 +200,7 @@ before(async () => {
         Runners.hosts.federate = Runners.hosts.federate || federateRunner;
         Runners.hosts.federates = Runners.hosts.federates || [];
         Runners.hosts.federates.push(federateRunner);
-      })
+      }
     }
 
     // Start desired federates
@@ -283,13 +283,14 @@ const startFederates = async (fedIndexStartsAt, configs, latestBlockHash) => {
 const shutdownHooks = () => {
   // Stop bitcoin daemon and federate node(s)
   if (Runners.fedRunners != null) {
-    Runners.fedRunners.forEach((fedRunner, index) => {
+    for (let index = 0; index < Runners.fedRunners.length; index++) {
+      const fedRunner = Runners.fedRunners[index];
       fedRunner.stop();
       if (fedRunner.hsm) {
         fedRunner.hsm.stop();
         fedRunner.hsm = null;
       }
-    });
+    }
   }
 
   if (Runners.btcRunner != null) {
@@ -319,12 +320,12 @@ const needsToBeTested = function(testFile) {
 const runTestThisTimes = process.env.RUN_EACH_TEST_FILE_THESE_TIMES || 1;
 
 // Register tests
-glob.sync('./tests/**/*.js')
+const sortedTests = glob.sync('./tests/**/*.js')
   .filter(test => needsToBeTested(test))
-  .sort()
-  .forEach(test => {
-    for(let i = 0; i < runTestThisTimes; i++) {
-      delete require.cache[require.resolve(test)];
-      require(test);
-    }
-});
+  .sort();
+for (const test of sortedTests) {
+  for(let i = 0; i < runTestThisTimes; i++) {
+    delete require.cache[require.resolve(test)];
+    require(test);
+  }
+}
