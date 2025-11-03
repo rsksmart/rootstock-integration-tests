@@ -283,8 +283,7 @@ const startFederates = async (fedIndexStartsAt, configs, latestBlockHash) => {
 const shutdownHooks = () => {
   // Stop bitcoin daemon and federate node(s)
   if (Runners.fedRunners != null) {
-    for (let index = 0; index < Runners.fedRunners.length; index++) {
-      const fedRunner = Runners.fedRunners[index];
+    for (const fedRunner of Runners.fedRunners) {
       fedRunner.stop();
       if (fedRunner.hsm) {
         fedRunner.hsm.stop();
