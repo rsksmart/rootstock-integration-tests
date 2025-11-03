@@ -21,7 +21,7 @@ echo "REPO_OWNER=$REPO_OWNER"
 
 echo -e "\n\n--------- Starting the configuration of rskj ---------\n\n"
 cd /usr/src/
-if [ "$IS_RSKJ_BRANCH" -eq 200 ]; then
+if [[ "$IS_RSKJ_BRANCH" -eq 200 ]]; then
   echo "Found matching branch name in $REPO_OWNER/rskj.git repo"
   git clone "https://github.com/$REPO_OWNER/rskj.git" rskj
 else
@@ -34,7 +34,7 @@ chmod +x ./configure.sh && chmod +x gradlew
 
 echo -e  "\n\n--------- Starting the configuration of powpeg ---------\n\n"
 cd /usr/src/
-if [ "$IS_POWPEG_BRANCH" -eq 200 ]; then
+if [[ "$IS_POWPEG_BRANCH" -eq 200 ]]; then
   echo "Found matching branch name in $REPO_OWNER/powpeg-node.git repo"
   git clone "https://github.com/$REPO_OWNER/powpeg-node.git" powpeg
 else
@@ -75,7 +75,7 @@ npm run test-fail-fast
 STATUS=$?
 
 echo -e "\n\n--------- RIT Tests Result ---------\n\n"
-if [ $STATUS -ne 0 ]; then
+if [[ $STATUS -ne 0 ]]; then
   MESSAGE="Rootstock Integration Tests Status: FAILED"
 else
   MESSAGE="Rootstock Integration Tests Status: PASSED"
@@ -85,7 +85,7 @@ echo -e "$MESSAGE"
 echo "status=${STATUS}" >> "${GITHUB_OUTPUT}"
 echo "message=${MESSAGE}" >> "${GITHUB_OUTPUT}"
 
-if [ $STATUS -ne 0 ]; then
+if [[ $STATUS -ne 0 ]]; then
   exit 1
 fi
 exit 0

@@ -6,6 +6,10 @@ while getopts ":p:" opt; do
     p)
         PORT=$OPTARG 
         ;;
+    *)
+        echo "Invalid option: -$OPTARG" >&2
+        exit 1
+        ;;
     esac
 done
 
