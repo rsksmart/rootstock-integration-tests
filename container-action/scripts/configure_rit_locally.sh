@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ $# -ne 1 ] || [ -z "${1:-}" ]; then
+if [[ $# -ne 1 ]] || [[ -z "${1:-}" ]]; then
     echo "Usage: ${0##*/} POWPEG_VERSION" >&2
     exit 1
 fi

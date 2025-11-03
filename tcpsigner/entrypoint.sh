@@ -4,11 +4,12 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 help() {
     "$DIR/bin/tcpsigner" --help
-    exit 1
+    return 1
 }
 
 stop() {
    exit
+   return 0
 }
 
 trap stop SIGTERM SIGINT SIGQUIT SIGHUP ERR
@@ -23,6 +24,9 @@ while getopts ":p:h" opt; do
     h)
         help
         ;;
+    *)
+        # NOSONAR: Unknown options are silently ignored; legitimate pass-through arguments ($@) are passed to underlying tools
+        ;;
     esac
 done
 # ==========================================================
@@ -31,7 +35,7 @@ done
 TCP_SIGNER_PORT=$((PORT - 1))
 
 # 🔵 Check if manager-tcp binary exists. Necessary when running without Docker.
-if [ ! -f "$DIR/bin/manager-tcp" ]; then
+if [[ ! -f "$DIR/bin/manager-tcp" ]]; then
   tar xzf "$DIR/bin/manager-tcp.tgz" -C "$DIR/bin/"
 fi
 

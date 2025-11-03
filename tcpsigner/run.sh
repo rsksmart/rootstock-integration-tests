@@ -6,6 +6,9 @@ while getopts ":p:" opt; do
     p)
         PORT=$OPTARG 
         ;;
+    *)
+        # NOSONAR: Unknown options are silently ignored; legitimate pass-through arguments are handled after getopts
+        ;;
     esac
 done
 
