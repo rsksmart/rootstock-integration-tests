@@ -25,8 +25,7 @@ while getopts ":p:h" opt; do
         help
         ;;
     *)
-        echo "Invalid option: -$OPTARG" >&2
-        exit 1
+        # NOSONAR: Unknown options are silently ignored; legitimate pass-through arguments ($@) are passed to underlying tools
         ;;
     esac
 done

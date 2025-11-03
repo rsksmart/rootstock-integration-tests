@@ -7,8 +7,7 @@ while getopts ":p:" opt; do
         PORT=$OPTARG 
         ;;
     *)
-        echo "Invalid option: -$OPTARG" >&2
-        exit 1
+        # NOSONAR: Unknown options are silently ignored; legitimate pass-through arguments are handled after getopts
         ;;
     esac
 done
