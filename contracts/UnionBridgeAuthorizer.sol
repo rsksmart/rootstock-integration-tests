@@ -654,7 +654,6 @@ contract UnionBridgeAuthorizer {
     // ==== Errors ====
     error AlreadyInitialized();
     error NotInitialized();
-    error BridgeCallFailed(int256 responseCode);
     error NotOwner();
 
     // ==== Modifiers ====
@@ -672,10 +671,12 @@ contract UnionBridgeAuthorizer {
     event Initialized(address[] members, uint256 votingPeriodInBlocks);
 
     event IncreaseUnionLockingCapVoted(uint256 newLockingCap, address indexed voter);
-    event IncreaseUnionLockingCapExecuted(uint256 newLockingCap, int256 responseCode);
+    event IncreaseUnionLockingCapExecuted(uint256 newLockingCap);
 
     event SetUnionBridgeTransferPermissionsVoted(bool requestEnabled, bool releaseEnabled, address indexed voter);
-    event SetUnionBridgeTransferPermissionsExecuted(bool requestEnabled, bool releaseEnabled, int256 responseCode);
+    event SetUnionBridgeTransferPermissionsExecuted(bool requestEnabled, bool releaseEnabled);
+
+    event BridgeCallFailed(int256 unionResponseCode);
 
     address public owner;
     MultiSigLib.State private multisigState;
@@ -731,8 +732,12 @@ contract UnionBridgeAuthorizer {
 
         if (shouldExecute) {
             int256 responseCode = bridge.increaseUnionBridgeLockingCap(newLockingCap);
-            _revertWhenBridgeCallFails(responseCode);
-            emit IncreaseUnionLockingCapExecuted(newLockingCap, responseCode);
+            if (responseCode != UnionResponseCode.SUCCESS) {
+                emit BridgeCallFailed(responseCode);
+                return;
+            }
+
+            emit IncreaseUnionLockingCapExecuted(newLockingCap);
         }
     }
 
@@ -744,20 +749,18 @@ contract UnionBridgeAuthorizer {
      */
     function voteToSetUnionTransferPermissions(bool requestEnabled, bool releaseEnabled) external onlyInitialized {
         bytes32 voteKey =
-            keccak256(abi.encodePacked(OperationType.SetUnionTransferPermissions, requestEnabled, releaseEnabled));
+                        keccak256(abi.encodePacked(OperationType.SetUnionTransferPermissions, requestEnabled, releaseEnabled));
         bool shouldExecute = multisigState.voteOnOperation(voteKey);
         emit SetUnionBridgeTransferPermissionsVoted(requestEnabled, releaseEnabled, msg.sender);
 
         if (shouldExecute) {
             int256 responseCode = bridge.setUnionBridgeTransferPermissions(requestEnabled, releaseEnabled);
-            _revertWhenBridgeCallFails(responseCode);
-            emit SetUnionBridgeTransferPermissionsExecuted(requestEnabled, releaseEnabled, responseCode);
-        }
-    }
+            if (responseCode != UnionResponseCode.SUCCESS) {
+                emit BridgeCallFailed(responseCode);
+                return;
+            }
 
-    function _revertWhenBridgeCallFails(int256 responseCode) internal pure {
-        if (responseCode != UnionResponseCode.SUCCESS) {
-            revert BridgeCallFailed(responseCode);
+            emit SetUnionBridgeTransferPermissionsExecuted(requestEnabled, releaseEnabled);
         }
     }
 
