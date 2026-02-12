@@ -11,12 +11,10 @@ const { NUMBER_OF_BLOCKS_BTW_PEGOUTS } = require('../lib/constants/pegout-consta
 const rskUtils = require('../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 
-
 // TODO: Refactor these tests
 // Some tests fail after running all tests with all forks active from scratch.
 // More analysis need to be done. Also, these tests use legacy functions. We need to refactor them.
 describe.skip('Pegout Batching - Execute Pegout Transaction And Call New Bridge Methods', function () {
-
     let pegoutCount = 0;
     let currentBlockNumber;
     let assertCallToBridgeMethodsRunner;
@@ -27,7 +25,7 @@ describe.skip('Pegout Batching - Execute Pegout Transaction And Call New Bridge 
     let rskTxHelpers;
 
     before(() => {
-        rskClients = Runners.hosts.federates.map(federate => rsk.getClient(federate.host));
+        rskClients = Runners.hosts.federates.map((federate) => rsk.getClient(federate.host));
         rskClient = rsk.getClient(Runners.hosts.federate.host);
         btcClient = bitcoin.getClient(
             Runners.hosts.bitcoin.rpcHost,
@@ -35,20 +33,27 @@ describe.skip('Pegout Batching - Execute Pegout Transaction And Call New Bridge 
             Runners.hosts.bitcoin.rpcPassword,
             NETWORK
         );
-        assertCallToBridgeMethodsRunner = pegAssertions.assertCallToPegoutBatchingBridgeMethods(rskClient);
+        assertCallToBridgeMethodsRunner =
+            pegAssertions.assertCallToPegoutBatchingBridgeMethods(rskClient);
         pegClient = pegUtils.using(btcClient, rskClient);
         rskTxHelpers = getRskTransactionHelpers();
     });
 
     it('Execute Pegout Transaction and Call new bridge methods after successful pegout transaction', async () => {
         try {
-            await rskUtilsLegacy.triggerPegoutEvent(rskClients, async () => currentBlockNumber = await rskClient.eth.getBlockNumber());
+            await rskUtilsLegacy.triggerPegoutEvent(
+                rskClients,
+                async () => (currentBlockNumber = await rskClient.eth.getBlockNumber())
+            );
 
-            await assertCallToBridgeMethodsRunner(0, currentBlockNumber + NUMBER_OF_BLOCKS_BTW_PEGOUTS);
+            await assertCallToBridgeMethodsRunner(
+                0,
+                currentBlockNumber + NUMBER_OF_BLOCKS_BTW_PEGOUTS
+            );
         } catch (error) {
             throw new CustomError('new bridge methods call failure', error);
         }
-    })
+    });
 
     it('should create pegout requests, execute pegout transaction when height is not reached and when height is reached', async () => {
         try {
@@ -70,14 +75,22 @@ describe.skip('Pegout Batching - Execute Pegout Transaction And Call New Bridge 
             expect(Number(count)).to.equal(pegoutCount);
 
             currentBlockNumber = await rskClient.eth.getBlockNumber();
-            const nextPegoutCreationBlockNumber = await rskClient.rsk.bridge.methods.getNextPegoutCreationBlockNumber().call();
+            const nextPegoutCreationBlockNumber = await rskClient.rsk.bridge.methods
+                .getNextPegoutCreationBlockNumber()
+                .call();
             expect(Number(nextPegoutCreationBlockNumber)).to.be.greaterThan(currentBlockNumber);
 
-            await rskUtilsLegacy.triggerPegoutEvent(rskClients, async () => currentBlockNumber = await rskClient.eth.getBlockNumber());
+            await rskUtilsLegacy.triggerPegoutEvent(
+                rskClients,
+                async () => (currentBlockNumber = await rskClient.eth.getBlockNumber())
+            );
 
-            await assertCallToBridgeMethodsRunner(0, currentBlockNumber + NUMBER_OF_BLOCKS_BTW_PEGOUTS);
+            await assertCallToBridgeMethodsRunner(
+                0,
+                currentBlockNumber + NUMBER_OF_BLOCKS_BTW_PEGOUTS
+            );
         } catch (error) {
             throw new CustomError('pegout request creation failure', error);
         }
-    })
+    });
 });

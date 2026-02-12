@@ -20,4 +20,3 @@ if (shell.exec('npm run test-fail-fast').code !== 0) {
 
 // Just to make sure we leave everything as we found it
 process.env.RUNNING_SINGLE_TEST_FILE = false;
-
