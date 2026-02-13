@@ -57,6 +57,7 @@
     "globals": "17.3.0",
     "prettier": "3.8.1",
     "shelljs": "^0.10.0",
-    "eslint-config-powpeg":"git+https://github.com/rsksmart/eslint-config-powpeg"
+    "eslint-config-powpeg":"git+https://github.com/rsksmart/eslint-config-powpeg",
+    "prettier-config-powpeg":"git+https://github.com/rsksmart/prettier-config-powpeg"
   }
 }
