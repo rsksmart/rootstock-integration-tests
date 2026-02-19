@@ -1,13 +1,10 @@
 const expect = require('chai').expect
-const peglib = require('peglib');
-const bitcoin = peglib.bitcoin;
-const rsk = peglib.rsk;
-const pegUtils = peglib.pegUtils;
-const rskUtilsLegacy = require('../lib/rsk-utils-legacy');
+const { btcToSatoshis } = require('@rsksmart/btc-eth-unit-converter');
+const rskUtils = require('../lib/rsk-utils');
+const { getBridge } = require('../lib/bridge-provider');
+const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const CustomError = require('../lib/CustomError');
 const { FEE_PER_KB_CHANGER_PRIVATE_KEY } = require('../lib/constants/fee-per-kb-constants');
-
-const NETWORK = bitcoin.networks.testnet;
 
 const FEE_PER_KB_CHANGER_ADDRESS = '53f8f6dabd612b6137215ddd7758bb5cdd638922';
 const MAX_FEE_PER_KB = 5000000;
@@ -17,27 +14,19 @@ const RANDOM_ADDR = '42a3d6e125aad539ac15ed04e1478eb0a4dc1489';
 
 describe('Fee per kb change voting', function() {
 
-  const startingFeePerKb = bitcoin.btcToSatoshis(0.001);
-  let rskClient;
-  let btcClient;
-  let pegClient;
-  let utils;
+  const startingFeePerKb = Number(btcToSatoshis(0.001));
+  let rskTxHelper;
+  let bridge;
 
-  before(() => {
-    rskClient = rsk.getClient(Runners.hosts.federate.host);
-    btcClient = bitcoin.getClient(
-      Runners.hosts.bitcoin.rpcHost,
-      Runners.hosts.bitcoin.rpcUser,
-      Runners.hosts.bitcoin.rpcPassword,
-      NETWORK
-    );
-    pegClient = pegUtils.using(btcClient, rskClient);
-    utils = rskUtilsLegacy.with(btcClient, rskClient, pegClient);
+  before(async () => {
+    const rskTxHelpers = getRskTransactionHelpers();
+    rskTxHelper = rskTxHelpers[0];
+    bridge = await getBridge(rskTxHelper.getClient());
   });
 
   it('should have a default fee per kb of millicoin', async () => {
     try{
-      const feePerKb = await rskClient.rsk.bridge.methods.getFeePerKb().call();
+      const feePerKb = await bridge.methods.getFeePerKb().call();
       expect(Number(feePerKb)).to.equal(startingFeePerKb);
     }
     catch (err) {
@@ -47,16 +36,16 @@ describe('Fee per kb change voting', function() {
 
   it('should reject unauthorized votes', async () => {
     try{
-      const newFeePerKb = bitcoin.btcToSatoshis(0.005);
-      const addr = await rskClient.eth.personal.importRawKey(RANDOM_PK, '');
+      const newFeePerKb = Number(btcToSatoshis(0.005));
+      const addr = await rskTxHelper.importAccount(RANDOM_PK);
       expect(addr.slice(2)).to.equal(RANDOM_ADDR);
       
-      await rskClient.eth.personal.unlockAccount(addr, '');
+      await rskTxHelper.unlockAccount(addr);
 
-      const result = await rskClient.rsk.bridge.methods.voteFeePerKbChange(newFeePerKb).call({ from: RANDOM_ADDR });
+      const result = await bridge.methods.voteFeePerKbChange(newFeePerKb).call({ from: RANDOM_ADDR });
       expect(Number(result)).to.equal(-10); // unsuccessful vote
 
-      const feePerKb = await rskClient.rsk.bridge.methods.getFeePerKb().call();
+      const feePerKb = await bridge.methods.getFeePerKb().call();
       expect(Number(feePerKb)).to.equal(startingFeePerKb);
     }
     catch (err) {
@@ -67,18 +56,19 @@ describe('Fee per kb change voting', function() {
   it('should reject votes above the max fee per kb value', async () => {
     try{
       const newFeePerKb = MAX_FEE_PER_KB + 1;
-      const addr = await rskClient.eth.personal.importRawKey(FEE_PER_KB_CHANGER_PRIVATE_KEY, '');
+      const addr = await rskTxHelper.importAccount(FEE_PER_KB_CHANGER_PRIVATE_KEY);
       expect(addr.slice(2)).to.equal(FEE_PER_KB_CHANGER_ADDRESS);
 
-      await rskClient.eth.personal.unlockAccount(addr, '');
+      await rskTxHelper.unlockAccount(addr);
 
-      await utils.sendTxWithCheck(
-        rskClient.rsk.bridge.methods.voteFeePerKbChange(newFeePerKb),
-        (result) => { expect(Number(result)).to.equal(-2); }, // excessive fee per kb
-        FEE_PER_KB_CHANGER_ADDRESS
-      )();
+      await rskUtils.sendTxWithCheck(
+        rskTxHelper,
+        bridge.methods.voteFeePerKbChange(newFeePerKb),
+        FEE_PER_KB_CHANGER_ADDRESS,
+        (result) => { expect(Number(result)).to.equal(-2); } // excessive fee per kb
+      );
 
-      const feePerKb = await rskClient.rsk.bridge.methods.getFeePerKb().call();
+      const feePerKb = await bridge.methods.getFeePerKb().call();
       expect(Number(feePerKb)).to.equal(startingFeePerKb);
     }
     catch (err) {
@@ -88,27 +78,29 @@ describe('Fee per kb change voting', function() {
 
   it('should be able to vote and change the fee per kb', async () => {
     try{
-      const newFeePerKb = bitcoin.btcToSatoshis(0.005);
-      const addr = await rskClient.eth.personal.importRawKey(FEE_PER_KB_CHANGER_PRIVATE_KEY, '');
+      const newFeePerKb = Number(btcToSatoshis(0.005));
+      const addr = await rskTxHelper.importAccount(FEE_PER_KB_CHANGER_PRIVATE_KEY);
       expect(addr.slice(2)).to.equal(FEE_PER_KB_CHANGER_ADDRESS);
 
-      await rskClient.eth.personal.unlockAccount(addr, '');
+      await rskTxHelper.unlockAccount(addr);
 
-      await utils.sendTxWithCheck(
-        rskClient.rsk.bridge.methods.voteFeePerKbChange(newFeePerKb),
-        (result) => { expect(Number(result)).to.equal(1); }, // successful vote
-        FEE_PER_KB_CHANGER_ADDRESS
-      )();
+      await rskUtils.sendTxWithCheck(
+        rskTxHelper,
+        bridge.methods.voteFeePerKbChange(newFeePerKb),
+        FEE_PER_KB_CHANGER_ADDRESS,
+        (result) => { expect(Number(result)).to.equal(1); } // successful vote
+      );
 
-      const feePerKb = await rskClient.rsk.bridge.methods.getFeePerKb().call();
+      const feePerKb = await bridge.methods.getFeePerKb().call();
       expect(Number(feePerKb)).to.equal(newFeePerKb);
 
       // Changing back the fee per kb
-      await utils.sendTxWithCheck(
-        rskClient.rsk.bridge.methods.voteFeePerKbChange(startingFeePerKb),
-        (result) => { expect(Number(result)).to.equal(1); },
-        FEE_PER_KB_CHANGER_ADDRESS
-      )();
+      await rskUtils.sendTxWithCheck(
+        rskTxHelper,
+        bridge.methods.voteFeePerKbChange(startingFeePerKb),
+        FEE_PER_KB_CHANGER_ADDRESS,
+        (result) => { expect(Number(result)).to.equal(1); }
+      );
 
     }
     catch (err) {
