@@ -114,6 +114,25 @@ function validateBitcoinRunnerConfig(bitcoinConf, configs){
   }
 };
 
+async function printPowpegJarSha256() {
+  const jarPath = process.env.POWPEG_NODE_JAR_PATH;
+  if (!jarPath) return;
+  try {
+    console.log(`Computing sha256 for powpeg node jar (POWPEG_NODE_JAR_PATH): ${jarPath}...`);
+    const hash = crypto.createHash('sha256');
+    const stream = fs.createReadStream(jarPath);
+    await new Promise((resolve, reject) => {
+      stream.on('data', (chunk) => hash.update(chunk));
+      stream.on('end', resolve);
+      stream.on('error', reject);
+    });
+    console.log(`Powpeg node jar sha256: ${hash.digest('hex')}`);
+    console.log("");
+  } catch (e) {
+    console.log(`Could not compute sha256 for powpeg node jar (${jarPath}): ${e.message}`);
+  }
+}
+
 process.on('SIGTERM', function() {
   process.stdout.write( "\nGracefully shutting down from SIGTERM." );
   shutdownHooks();
@@ -140,22 +159,7 @@ before(async () => {
   const runnersConfig = config.runners || {};
   const initConfig = config.init || {};
 
-  const jarPath = process.env.POWPEG_NODE_JAR_PATH;
-  if (jarPath) {
-    try {
-      console.log(`Computing sha256 for powpeg node jar (${jarPath})...`);
-      const hash = crypto.createHash('sha256');
-      const stream = fs.createReadStream(jarPath);
-      await new Promise((resolve, reject) => {
-        stream.on('data', (chunk) => hash.update(chunk));
-        stream.on('end', resolve);
-        stream.on('error', reject);
-      });
-      console.log(`Powpeg node jar sha256: ${hash.digest('hex')}\n`);
-    } catch (e) {
-      console.log(`Could not compute sha256 for powpeg node jar (${jarPath}): ${e.message}`);
-    }
-  }
+  await printPowpegJarSha256();
 
   // Start bitcoin daemon if needed
   if (runnersConfig.bitcoin == null) {
