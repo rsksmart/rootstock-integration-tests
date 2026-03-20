@@ -80,7 +80,7 @@ describe('Fee per kb change voting', function () {
                     expect(Number(result)).to.equal(-2);
                 }, // excessive fee per kb
                 FEE_PER_KB_CHANGER_ADDRESS
-            )();
+            );
 
             const feePerKb = await rskClient.rsk.bridge.methods.getFeePerKb().call();
             expect(Number(feePerKb)).to.equal(startingFeePerKb);
@@ -109,7 +109,7 @@ describe('Fee per kb change voting', function () {
                     expect(Number(result)).to.equal(1);
                 }, // successful vote
                 FEE_PER_KB_CHANGER_ADDRESS
-            )();
+            );
 
             const feePerKb = await rskClient.rsk.bridge.methods.getFeePerKb().call();
             expect(Number(feePerKb)).to.equal(newFeePerKb);
@@ -121,7 +121,7 @@ describe('Fee per kb change voting', function () {
                     expect(Number(result)).to.equal(1);
                 },
                 FEE_PER_KB_CHANGER_ADDRESS
-            )();
+            );
         } catch (err) {
             throw new CustomError('Should be able to vote ands change the fee per kb failure', err);
         }
