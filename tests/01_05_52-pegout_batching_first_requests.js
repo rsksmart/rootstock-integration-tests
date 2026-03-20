@@ -4,12 +4,10 @@ const CustomError = require('../lib/CustomError');
 const _2wpUtilsLegacy = require('../lib/2wp-utils-legacy');
 const pegAssertions = require('../lib/assertions/2wp');
 
-
 // TODO: Refactor these tests
 // Some tests fail after running all tests with all forks active from scratch.
 // More analysis need to be done. Also, these tests use legacy functions. We need to refactor them.
 describe.skip('Pegout Batching - New Pegout Requests Then Call new bridge methods', function () {
-
     let pegoutCount = 0;
     let rskClient;
     let btcClient;
@@ -25,7 +23,8 @@ describe.skip('Pegout Batching - New Pegout Requests Then Call new bridge method
             NETWORK
         );
         pegClient = pegUtils.using(btcClient, rskClient);
-        assertCallToBridgeMethodsRunner = pegAssertions.assertCallToPegoutBatchingBridgeMethods(rskClient);
+        assertCallToBridgeMethodsRunner =
+            pegAssertions.assertCallToPegoutBatchingBridgeMethods(rskClient);
     });
 
     it('should create single pegout and call new bridge methods', async () => {
@@ -37,7 +36,7 @@ describe.skip('Pegout Batching - New Pegout Requests Then Call new bridge method
         } catch (error) {
             throw new CustomError('pegout request creation failure', error);
         }
-    })
+    });
 
     it('should create 1 pegout in a block, 1 pegout in the following block and call bridge methods', async () => {
         try {
@@ -51,7 +50,7 @@ describe.skip('Pegout Batching - New Pegout Requests Then Call new bridge method
         } catch (error) {
             throw new CustomError('pegout request creation failure', error);
         }
-    })
+    });
 
     it('should create 1 pegout in a block, 1 pegout in the following block, 2 in the following block and call bridge methods', async () => {
         try {
@@ -68,5 +67,5 @@ describe.skip('Pegout Batching - New Pegout Requests Then Call new bridge method
         } catch (error) {
             throw new CustomError('pegout request creation failure', error);
         }
-    })
+    });
 });
