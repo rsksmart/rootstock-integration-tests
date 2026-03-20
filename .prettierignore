@@ -1,0 +1,23 @@
+# Dependency Directories
+node_modules/
+
+# Build Outputs
+dist/
+build/
+coverage/
+
+# Auto-generated artifacts
+package-lock.json
+pnpm-lock.yaml
+
+# OS / Editor junk
+.DS_Store
+.idea/
+.vscode/
+
+# File types to ignore
+*.json
+*.xml
+*.md
+*.yml
+*.yaml
