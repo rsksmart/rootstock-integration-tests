@@ -19,7 +19,7 @@ const ensureCleanEnv = () => {
 let fails = 0;
 let attempts = 1;
 
-for(let i = 0; i < RUN_ALL_TESTS_THESE_TIMES; i++) {
+for (let i = 0; i < RUN_ALL_TESTS_THESE_TIMES; i++) {
     console.info(`Running tests ${attempts} out of ${RUN_ALL_TESTS_THESE_TIMES} times.`);
     ensureCleanEnv();
     if (shell.exec('npm run test-fail-fast').code !== 0) {

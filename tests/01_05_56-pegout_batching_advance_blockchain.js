@@ -10,14 +10,14 @@ const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 // Some tests fail after running all tests with all forks active from scratch.
 // More analysis need to be done. Also, these tests use legacy functions. We need to refactor them.
 describe.skip('Pegout Batching - Advance the blockchain until the next pegout creation height (no pegout requests).', function () {
-
     let rskTxHelpers;
     let rskClient;
     let assertCallToBridgeMethodsRunner;
 
     before(() => {
         rskClient = rsk.getClient(Runners.hosts.federate.host);
-        assertCallToBridgeMethodsRunner = pegAssertions.assertCallToPegoutBatchingBridgeMethods(rskClient);
+        assertCallToBridgeMethodsRunner =
+            pegAssertions.assertCallToPegoutBatchingBridgeMethods(rskClient);
         rskTxHelpers = getRskTransactionHelpers();
     });
 
@@ -34,10 +34,12 @@ describe.skip('Pegout Batching - Advance the blockchain until the next pegout cr
 
             currentBlockNumber = await rskClient.eth.getBlockNumber();
 
-            await assertCallToBridgeMethodsRunner(0, currentBlockNumber + NUMBER_OF_BLOCKS_BTW_PEGOUTS);
-
+            await assertCallToBridgeMethodsRunner(
+                0,
+                currentBlockNumber + NUMBER_OF_BLOCKS_BTW_PEGOUTS
+            );
         } catch (error) {
             throw new CustomError('Next pegout height update failure', error);
         }
-    })
+    });
 });

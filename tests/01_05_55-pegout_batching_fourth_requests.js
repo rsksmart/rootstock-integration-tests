@@ -13,7 +13,6 @@ const { NUMBER_OF_BLOCKS_BTW_PEGOUTS } = require('../lib/constants/pegout-consta
 // Some tests fail after running all tests with all forks active from scratch.
 // More analysis need to be done. Also, these tests use legacy functions. We need to refactor them.
 describe.skip('Pegout Batching - New Pegout Requests Then Call new bridge methods', function () {
-
     let currentBlockNumber;
     let pegoutCount = 0;
     let rskClients;
@@ -23,7 +22,7 @@ describe.skip('Pegout Batching - New Pegout Requests Then Call new bridge method
     let assertCallToBridgeMethodsRunner;
 
     before(() => {
-        rskClients = Runners.hosts.federates.map(federate => rsk.getClient(federate.host));
+        rskClients = Runners.hosts.federates.map((federate) => rsk.getClient(federate.host));
         rskClient = rsk.getClient(Runners.hosts.federate.host);
         btcClient = bitcoin.getClient(
             Runners.hosts.bitcoin.rpcHost,
@@ -32,7 +31,8 @@ describe.skip('Pegout Batching - New Pegout Requests Then Call new bridge method
             NETWORK
         );
         pegClient = pegUtils.using(btcClient, rskClient);
-        assertCallToBridgeMethodsRunner = pegAssertions.assertCallToPegoutBatchingBridgeMethods(rskClient);
+        assertCallToBridgeMethodsRunner =
+            pegAssertions.assertCallToPegoutBatchingBridgeMethods(rskClient);
     });
 
     it('should create multiple pegouts in different blocks, execute pegouts and call bridge methods', async () => {
@@ -49,11 +49,17 @@ describe.skip('Pegout Batching - New Pegout Requests Then Call new bridge method
             const count = await rskClient.rsk.bridge.methods.getQueuedPegoutsCount().call();
             expect(Number(count)).to.equal(pegoutCount);
 
-            await rskUtilsLegacy.triggerPegoutEvent(rskClients, async () => currentBlockNumber = await rskClient.eth.getBlockNumber());
+            await rskUtilsLegacy.triggerPegoutEvent(
+                rskClients,
+                async () => (currentBlockNumber = await rskClient.eth.getBlockNumber())
+            );
 
-            await assertCallToBridgeMethodsRunner(0, currentBlockNumber + NUMBER_OF_BLOCKS_BTW_PEGOUTS);
+            await assertCallToBridgeMethodsRunner(
+                0,
+                currentBlockNumber + NUMBER_OF_BLOCKS_BTW_PEGOUTS
+            );
         } catch (error) {
             throw new CustomError('pegout request creation failure', error);
         }
-    })
+    });
 });

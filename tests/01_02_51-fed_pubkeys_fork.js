@@ -1,4 +1,7 @@
-const { assertContractCallFails, assertContractCallReturnsWithCallback } = require('../lib/assertions/contractMethods');
+const {
+    assertContractCallFails,
+    assertContractCallReturnsWithCallback,
+} = require('../lib/assertions/contractMethods');
 const expect = require('chai').expect;
 const { assertIsPublicKey } = require('../lib/assertions/misc');
 const { KEY_TYPE_BTC } = require('../lib/constants/federation-constants');
@@ -13,7 +16,6 @@ let fedChangeAddress;
 let bridge;
 
 describe('Bridge federator methods tests', () => {
-
     before(async () => {
         rskTxHelper = getRskTransactionHelper();
         fedChangeAddress = await rskTxHelper.importAccount(FEDERATION_CHANGE_PK);
@@ -32,26 +34,28 @@ describe('Bridge federator methods tests', () => {
     });
 
     it('method addFederatorPublicKey should NOT work', () => {
-        return assertContractCallFails(
-            bridge.methods.addFederatorPublicKey(RANDOM_PUBLIC_KEY), {
-              from: fedChangeAddress
-            }
-        );
+        return assertContractCallFails(bridge.methods.addFederatorPublicKey(RANDOM_PUBLIC_KEY), {
+            from: fedChangeAddress,
+        });
     });
-    
-    it('method addFederatorPublicKeyMultikey should work', () => {
 
+    it('method addFederatorPublicKeyMultikey should work', () => {
         const addFederatorPublicKeyMultikeyMethod = bridge.methods.addFederatorPublicKeyMultikey(
-            RANDOM_PUBLIC_KEY, RANDOM_PUBLIC_KEY, RANDOM_PUBLIC_KEY
+            RANDOM_PUBLIC_KEY,
+            RANDOM_PUBLIC_KEY,
+            RANDOM_PUBLIC_KEY
         );
 
-        const checkCallback = result => expect(Number(result)).to.equal(-1);
+        const checkCallback = (result) => expect(Number(result)).to.equal(-1);
 
         const callParams = {
-            from: fedChangeAddress
+            from: fedChangeAddress,
         };
 
-        return assertContractCallReturnsWithCallback(addFederatorPublicKeyMultikeyMethod, checkCallback, callParams);
-
+        return assertContractCallReturnsWithCallback(
+            addFederatorPublicKeyMultikeyMethod,
+            checkCallback,
+            callParams
+        );
     });
 });
