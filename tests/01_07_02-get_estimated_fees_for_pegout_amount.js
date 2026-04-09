@@ -46,7 +46,7 @@ describe('getEstimatedFeesForPegOutAmount', () => {
         await triggerRelease(rskTxHelpers, btcTxHelper);
     });
 
-    it('should allow constructing a second pegout request using the estimated fees for pegout amount and process both', async () => {
+    it('should allow constructing a second pegout request using the estimated fees from getEstimatedFeesForPegOutAmount and process both', async () => {
         try {
             const senderInfo = await createSenderRecipientInfo(
                 rskTxHelper,
