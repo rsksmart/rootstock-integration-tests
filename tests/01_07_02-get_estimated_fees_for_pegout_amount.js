@@ -30,6 +30,9 @@ let btcTxHelper;
 
 const getQueuedPegoutsCount = async () => Number(await bridge.methods.getQueuedPegoutsCount().call());
 
+const getEstimatedFeesForPegOutAmount = async (amountInWeis) =>
+    Number(await bridge.methods.getEstimatedFeesForPegOutAmount(amountInWeis).call());
+
 describe('getEstimatedFeesForPegOutAmount', () => {
     before(async () => {
         rskTxHelper = getRskTransactionHelper();
@@ -83,10 +86,8 @@ describe('getEstimatedFeesForPegOutAmount', () => {
                 senderInfo.rskRecipientRskAddressInfo.address
             );
 
-            const estimatedFeesForPegout = Number(
-                await bridge.methods
-                    .getEstimatedFeesForPegOutAmount(satoshisToWeis(MINIMUM_PEGOUT_AMOUNT_IN_SATOSHIS))
-                    .call()
+            const estimatedFeesForPegout = await getEstimatedFeesForPegOutAmount(
+                satoshisToWeis(MINIMUM_PEGOUT_AMOUNT_IN_SATOSHIS)
             );
             expect(estimatedFeesForPegout).to.be.greaterThan(0);
 
