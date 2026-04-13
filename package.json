@@ -33,7 +33,7 @@
     "chai-as-promised": "7.1.1",
     "colors": "1.4.0",
     "dev-null": "0.1.1",
-    "dotenv": "17.3.1",
+    "dotenv": "17.4.0",
     "find": "0.3.0",
     "fs-extra": "4.0.2",
     "glob": "7.1.2",
