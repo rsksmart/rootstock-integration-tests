@@ -9,6 +9,7 @@
     "run-tests-multiple-times": "node multipleTestExecutionsRunner.js",
     "run-single-test-file": "node singleTestFileRunner.js",
     "run-with-docker": "node runWithDocker.js",
+    "test-runner-ui": "node test-runner-server.js",
     "lint": "eslint --cache .",
     "lint:fix": "eslint --cache --fix .",
     "format": "prettier --check .",
