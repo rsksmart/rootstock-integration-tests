@@ -33,7 +33,7 @@
     "chai-as-promised": "7.1.1",
     "colors": "1.4.0",
     "dev-null": "0.1.1",
-    "dotenv": "17.3.1",
+    "dotenv": "17.4.1",
     "find": "0.3.0",
     "fs-extra": "4.0.2",
     "glob": "7.1.2",
@@ -54,7 +54,7 @@
     "eslint": "9.39.2",
     "eslint-config-prettier": "10.1.8",
     "globals": "17.4.0",
-    "prettier": "3.8.1",
+    "prettier": "3.8.2",
     "shelljs": "0.10.0"
   }
 }
