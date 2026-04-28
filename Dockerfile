@@ -24,15 +24,16 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 # -- nodeJs ---------------------------------------------------------
 ENV NODE_VERSION=v18.20.2
-RUN mkdir -p /usr/local/nvm && \
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash \
-    && . "$NVM_DIR/nvm.sh" \
-    && nvm install "$NODE_VERSION" \
-    && nvm alias default "$NODE_VERSION" \
-    && nvm use default
-
 ENV NVM_DIR=/usr/local/nvm
-ENV NODE_PATH="${NVM_DIR}/${NODE_VERSION}/lib/node_modules"
+RUN bash -c 'set -e; \
+    mkdir -p "$NVM_DIR"; \
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash; \
+    source "$NVM_DIR/nvm.sh"; \
+    nvm install "$NODE_VERSION"; \
+    nvm alias default "$NODE_VERSION"; \
+    nvm use default'
+
+ENV NODE_PATH="${NVM_DIR}/versions/node/${NODE_VERSION}/lib/node_modules"
 ENV PATH="${NVM_DIR}/versions/node/${NODE_VERSION}/bin:${PATH}"
 
 # -- java ---------------------------------------------------------
@@ -67,7 +68,6 @@ COPY .env.docker /rits/.env
 
 RUN chmod +x /rits/configure.sh && \
     /rits/configure.sh && \
-    chmod +x /rits/runWithDockerEntrypoint.sh && \
     tar xzf /rits/tcpsigner/bin/manager-tcp.tgz -C /rits/tcpsigner/bin && \
     chmod +x /rits/tcpsigner/entrypoint.sh && \
     chmod +x /rits/tcpsigner/bin/tcpsigner && \
