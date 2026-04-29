@@ -5,6 +5,14 @@ interface BridgeInterface {
     function requestUnionBridgeRbtc(uint256 amountRequested) external returns (int256);
 
     function releaseUnionBridgeRbtc() external payable returns (int256);
+
+    function setSuperEvent(bytes calldata superEvent) external;
+
+    function clearSuperEvent() external;
+
+    function setBaseEvent(bytes calldata baseEvent) external;
+
+    function clearBaseEvent() external;
 }
 
 contract UnionBridgeContract {
@@ -16,6 +24,22 @@ contract UnionBridgeContract {
 
     function releaseUnionBridgeRbtc(uint256 amountToRelease) public payable returns (int256) {
         return bridge.releaseUnionBridgeRbtc{value: amountToRelease}();
+    }
+
+    function setSuperEvent(bytes calldata data) external {
+        bridge.setSuperEvent(data);
+    }
+
+    function clearSuperEvent() external {
+        bridge.clearSuperEvent();
+    }
+
+    function setBaseEvent(bytes calldata data) external {
+        bridge.setBaseEvent(data);
+    }
+
+    function clearBaseEvent() external {
+        bridge.clearBaseEvent();
     }
 
     receive() external payable { }
