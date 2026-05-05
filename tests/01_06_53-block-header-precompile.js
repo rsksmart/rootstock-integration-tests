@@ -81,7 +81,7 @@ describe('BlockHeader native precompile (0x…1000010)', () => {
 
     before(async () => {
         rskTxHelper = getRskTransactionHelper();
-        blockHeader = new rskTxHelper.getClient().eth.Contract(blockHeaderAbi, BLOCK_HEADER_ADDRESS);
+        blockHeader = new (rskTxHelper.getClient()).eth.Contract(blockHeaderAbi, BLOCK_HEADER_ADDRESS);
     });
 
     it('should use the BlockHeader native address from @rsksmart/rsk-precompiled-abis', () => {
@@ -129,7 +129,7 @@ describe('BlockHeader native precompile (0x…1000010)', () => {
 
                     const minGasPriceBytes = await blockHeader.methods.getMinGasPrice(blockDepth).call();
                     const rpcMinGas =
-                        block.minimumGasPrice != null ? bnFromRpcQuantity(block.minimumGasPrice) : null;
+                        block.minimumGasPrice == null ? null : bnFromRpcQuantity(block.minimumGasPrice);
                     const mgpBn = bnFromUnsignedBytesHex(minGasPriceBytes);
                     if (rpcMinGas) {
                         expect(mgpBn.eq(rpcMinGas)).to.be.true;
@@ -168,7 +168,7 @@ describe('BlockHeader native precompile (0x…1000010)', () => {
 
                     const difficultyWithUnclesBn = bnFromUnsignedBytesHex(difficultyWithUnclesBytes);
                     expect(
-                        difficultyWithUnclesBn != null && difficultyWithUnclesBn.gt(new BN(0)),
+                        difficultyWithUnclesBn?.gt(new BN(0)),
                         'getDifficultyWithUncles returns header cumulativeDifficulty (rskj); it is not necessarily equal to totalDifficulty'
                     ).to.be.true;
                 } catch (err) {
