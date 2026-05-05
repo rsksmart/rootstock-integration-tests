@@ -3,7 +3,6 @@ const expect = chai.expect;
 chai.use(require('chai-as-promised'));
 const BN = require('bn.js');
 
-const CustomError = require('../lib/CustomError');
 const { getRskTransactionHelper } = require('../lib/rsk-tx-helper-provider');
 const {
     abi: blockHeaderAbi,
@@ -96,119 +95,91 @@ describe('BlockHeader native precompile (0x…1000010)', () => {
     describe('alignment with eth_getBlockByNumber', () => {
         [0, 1, 2].forEach((blockDepth) => {
             it(`should decode header fields consistently at blockDepth ${blockDepth}`, async () => {
-                try {
-                    const latestBlockNumber = await rskTxHelper.getClient().eth.getBlockNumber();
-                    const targetBlockNumber = rpcBlockNumberForDepth(latestBlockNumber, blockDepth);
-                    expect(targetBlockNumber).to.be.at.least(
-                        0,
-                        'chain must be long enough for this depth at the tip'
-                    );
+                const latestBlockNumber = await rskTxHelper.getClient().eth.getBlockNumber();
+                const targetBlockNumber = rpcBlockNumberForDepth(latestBlockNumber, blockDepth);
+                expect(targetBlockNumber).to.be.at.least(
+                    0,
+                    'chain must be long enough for this depth at the tip'
+                );
 
-                    const block = await rskTxHelper.getClient().eth.getBlock(targetBlockNumber);
+                const block = await rskTxHelper.getClient().eth.getBlock(targetBlockNumber);
 
-                    const coinbaseBytes = await blockHeader.methods.getCoinbaseAddress(blockDepth).call();
-                    expect(bytesHexToAddressHex(coinbaseBytes)).to.equal(block.miner.toLowerCase());
+                const coinbaseBytes = await blockHeader.methods.getCoinbaseAddress(blockDepth).call();
+                expect(bytesHexToAddressHex(coinbaseBytes)).to.equal(block.miner.toLowerCase());
 
-                    const hashBytes = await blockHeader.methods.getBlockHash(blockDepth).call();
-                    expect(bytesHexToBlockHashHex(hashBytes)).to.equal(block.hash.toLowerCase());
+                const hashBytes = await blockHeader.methods.getBlockHash(blockDepth).call();
+                expect(bytesHexToBlockHashHex(hashBytes)).to.equal(block.hash.toLowerCase());
 
-                    const gasLimitBytes = await blockHeader.methods.getGasLimit(blockDepth).call();
-                    expect(
-                        bnFromUnsignedBytesHex(gasLimitBytes).eq(bnFromRpcQuantity(block.gasLimit))
-                    ).to.be.true;
+                const gasLimitBytes = await blockHeader.methods.getGasLimit(blockDepth).call();
+                expect(
+                    bnFromUnsignedBytesHex(gasLimitBytes).eq(bnFromRpcQuantity(block.gasLimit))
+                ).to.be.true;
 
-                    const gasUsedBytes = await blockHeader.methods.getGasUsed(blockDepth).call();
-                    expect(
-                        bnFromUnsignedBytesHex(gasUsedBytes).eq(bnFromRpcQuantity(block.gasUsed))
-                    ).to.be.true;
+                const gasUsedBytes = await blockHeader.methods.getGasUsed(blockDepth).call();
+                expect(
+                    bnFromUnsignedBytesHex(gasUsedBytes).eq(bnFromRpcQuantity(block.gasUsed))
+                ).to.be.true;
 
-                    const difficultyBytes = await blockHeader.methods.getDifficulty(blockDepth).call();
-                    expect(
-                        bnFromUnsignedBytesHex(difficultyBytes).eq(bnFromRpcQuantity(block.difficulty))
-                    ).to.be.true;
+                const difficultyBytes = await blockHeader.methods.getDifficulty(blockDepth).call();
+                expect(
+                    bnFromUnsignedBytesHex(difficultyBytes).eq(bnFromRpcQuantity(block.difficulty))
+                ).to.be.true;
 
-                    const minGasPriceBytes = await blockHeader.methods.getMinGasPrice(blockDepth).call();
-                    const rpcMinGas =
-                        block.minimumGasPrice == null ? null : bnFromRpcQuantity(block.minimumGasPrice);
-                    const mgpBn = bnFromUnsignedBytesHex(minGasPriceBytes);
-                    if (rpcMinGas) {
-                        expect(mgpBn.eq(rpcMinGas)).to.be.true;
-                    } else {
-                        expect(mgpBn != null || isEmptyBytes(minGasPriceBytes)).to.be.true;
-                    }
-
-                    const btcHeaderBytes = await blockHeader.methods.getBitcoinHeader(blockDepth).call();
-                    expect(removePrefix0x(btcHeaderBytes).length).to.be.at.least(
-                        80,
-                        'merged-mining Bitcoin header is expected to be at least 80 bytes on RSK'
-                    );
-
-                    const mergedTagsBytes = await blockHeader.methods.getMergedMiningTags(blockDepth).call();
-                    expect(mergedTagsBytes).to.be.a('string');
-
-                    let cumulativeWorkBytes;
-                    let difficultyWithUnclesBytes;
-                    try {
-                        cumulativeWorkBytes = await blockHeader.methods.getCumulativeWork(blockDepth).call();
-                        difficultyWithUnclesBytes = await blockHeader.methods
-                            .getDifficultyWithUncles(blockDepth)
-                            .call();
-                    } catch (err) {
-                        throw new CustomError(
-                            'RSKIP536 BlockHeader methods require an active consensus activation (getCumulativeWork / getDifficultyWithUncles)',
-                            err
-                        );
-                    }
-
-                    const rpcTotalDiffBn = bnFromRpcQuantity(block.totalDifficulty);
-                    expect(
-                        bnFromUnsignedBytesHex(cumulativeWorkBytes).eq(rpcTotalDiffBn),
-                        'getCumulativeWork uses block store TD for the block hash (same as eth_getBlock totalDifficulty)'
-                    ).to.be.true;
-
-                    const difficultyWithUnclesBn = bnFromUnsignedBytesHex(difficultyWithUnclesBytes);
-                    expect(
-                        difficultyWithUnclesBn?.gt(new BN(0)),
-                        'getDifficultyWithUncles returns header cumulativeDifficulty (rskj); it is not necessarily equal to totalDifficulty'
-                    ).to.be.true;
-                } catch (err) {
-                    throw new CustomError(
-                        `BlockHeader precompile consistency failure at depth ${blockDepth}`,
-                        err
-                    );
+                const minGasPriceBytes = await blockHeader.methods.getMinGasPrice(blockDepth).call();
+                const rpcMinGas =
+                    block.minimumGasPrice == null ? null : bnFromRpcQuantity(block.minimumGasPrice);
+                const mgpBn = bnFromUnsignedBytesHex(minGasPriceBytes);
+                if (rpcMinGas) {
+                    expect(mgpBn.eq(rpcMinGas)).to.be.true;
+                } else {
+                    expect(mgpBn != null || isEmptyBytes(minGasPriceBytes)).to.be.true;
                 }
+
+                const btcHeaderBytes = await blockHeader.methods.getBitcoinHeader(blockDepth).call();
+                expect(removePrefix0x(btcHeaderBytes).length).to.be.at.least(
+                    80,
+                    'merged-mining Bitcoin header is expected to be at least 80 bytes on RSK'
+                );
+
+                const mergedTagsBytes = await blockHeader.methods.getMergedMiningTags(blockDepth).call();
+                expect(mergedTagsBytes).to.be.a('string');
+
+                const cumulativeWorkBytes = await blockHeader.methods.getCumulativeWork(blockDepth).call();
+                const difficultyWithUnclesBytes = await blockHeader.methods
+                    .getDifficultyWithUncles(blockDepth)
+                    .call();
+
+                const rpcTotalDiffBn = bnFromRpcQuantity(block.totalDifficulty);
+                expect(
+                    bnFromUnsignedBytesHex(cumulativeWorkBytes).eq(rpcTotalDiffBn),
+                    'getCumulativeWork uses block store TD for the block hash (same as eth_getBlock totalDifficulty)'
+                ).to.be.true;
+
+                const difficultyWithUnclesBn = bnFromUnsignedBytesHex(difficultyWithUnclesBytes);
+                expect(
+                    difficultyWithUnclesBn?.gt(new BN(0)),
+                    'getDifficultyWithUncles returns header cumulativeDifficulty (rskj); it is not necessarily equal to totalDifficulty'
+                ).to.be.true;
             });
         });
     });
 
     describe('getUncleCoinbaseAddress', () => {
         it('should accept two int256 arguments and return empty bytes when no uncle exists at index 0', async () => {
-            try {
-                const uncleCoinbase = await blockHeader.methods.getUncleCoinbaseAddress(0, 0).call();
-                expect(isEmptyBytes(uncleCoinbase)).to.be.true;
-            } catch (err) {
-                throw new CustomError('getUncleCoinbaseAddress(0, 0) failure', err);
-            }
+            const uncleCoinbase = await blockHeader.methods.getUncleCoinbaseAddress(0, 0).call();
+            expect(isEmptyBytes(uncleCoinbase)).to.be.true;
         });
 
         it('should return empty bytes when uncle index is out of range', async () => {
-            try {
-                const uncleCoinbase = await blockHeader.methods.getUncleCoinbaseAddress(0, 99).call();
-                expect(isEmptyBytes(uncleCoinbase)).to.be.true;
-            } catch (err) {
-                throw new CustomError('getUncleCoinbaseAddress(0, 99) failure', err);
-            }
+            const uncleCoinbase = await blockHeader.methods.getUncleCoinbaseAddress(0, 99).call();
+            expect(isEmptyBytes(uncleCoinbase)).to.be.true;
         });
     });
 
     describe('edge cases for blockDepth', () => {
         it(`should return empty bytes when blockDepth is >= ${MAX_BLOCK_HEADER_DEPTH} (max depth)`, async () => {
-            try {
-                const blockHash = await blockHeader.methods.getBlockHash(MAX_BLOCK_HEADER_DEPTH).call();
-                expect(isEmptyBytes(blockHash)).to.be.true;
-            } catch (err) {
-                throw new CustomError('getBlockHash(MAX_DEPTH) failure', err);
-            }
+            const blockHash = await blockHeader.methods.getBlockHash(MAX_BLOCK_HEADER_DEPTH).call();
+            expect(isEmptyBytes(blockHash)).to.be.true;
         });
 
         it('should reject eth_call when blockDepth is negative (int256)', async () => {
