@@ -1,3 +1,6 @@
+// External LPS smoke-test config: connects to a pre-running federate node and bitcoind
+// instead of starting them via RIT runners. Use with CONFIG_FILE_PATH when validating
+// Flyover split-contract deployments against an external LPS stack.
 module.exports = {
     init: {
         mineInitialBitcoin: false,
