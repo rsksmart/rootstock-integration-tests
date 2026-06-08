@@ -1,136 +1,35 @@
 const expect = require('chai').expect;
-const http = require('node:http');
-const https = require('node:https');
-const { URL } = require('node:url');
 const { getRskTransactionHelper } = require('../lib/rsk-tx-helper-provider');
-
-const REQUIRED_ENV_VARS = [
-    'FLYOVER_LPS_URL',
-    'PEGIN_CONTRACT_ADDRESS',
-    'PEGOUT_CONTRACT_ADDRESS',
-    'DISCOVERY_ADDRESS',
-    'COLLATERAL_MANAGEMENT_ADDRESS',
-];
-
-const DEFAULT_VALUE_TO_TRANSFER_WEIS = '1000000000000000000';
-const DEFAULT_QUOTE_ADDRESS = '0xcd2a3d9f938e13cd947ec05abc7fe734df8dd826';
-
-const toLower = (value) => (value || '').toLowerCase();
-
-const normalizeBaseUrl = (url) => {
-    return url.endsWith('/') ? url.slice(0, -1) : url;
-};
-
-const stringifyJsonKeepingBigInts = (body) => {
-    return JSON.stringify(body, (_, value) => {
-        if (typeof value === 'bigint') {
-            return `__BIGINT__${value.toString()}__`;
-        }
-        return value;
-    }).replace(/"__BIGINT__(-?\d+)__"/g, '$1');
-};
-
-const buildRequestOptions = (url, method, bodyString) => {
-    const parsedUrl = new URL(url);
-    const headers = {
-        Accept: 'application/json',
-    };
-    if (bodyString != null) {
-        headers['Content-Type'] = 'application/json';
-        headers['Content-Length'] = Buffer.byteLength(bodyString);
-    }
-    return {
-        protocol: parsedUrl.protocol,
-        hostname: parsedUrl.hostname,
-        port: parsedUrl.port,
-        path: parsedUrl.pathname + parsedUrl.search,
-        method,
-        headers,
-    };
-};
-
-const httpRequest = (url, method = 'GET', body = null) => {
-    return new Promise((resolve, reject) => {
-        const bodyString = body == null ? null : stringifyJsonKeepingBigInts(body);
-        const requestOptions = buildRequestOptions(url, method, bodyString);
-        const requestFn = requestOptions.protocol === 'https:' ? https.request : http.request;
-        const req = requestFn(requestOptions, (res) => {
-            let responseText = '';
-            res.on('data', (chunk) => {
-                responseText += chunk.toString();
-            });
-            res.on('end', () => {
-                let parsedBody = null;
-                if (responseText.length > 0) {
-                    try {
-                        parsedBody = JSON.parse(responseText);
-                    } catch (e) {
-                        parsedBody = responseText;
-                    }
-                }
-                resolve({
-                    statusCode: res.statusCode,
-                    body: parsedBody,
-                    rawBody: responseText,
-                });
-            });
-        });
-        req.on('error', reject);
-        if (bodyString != null) {
-            req.write(bodyString);
-        }
-        req.end();
-    });
-};
+const {
+    REQUIRED_SMOKE_ENV_VARS,
+    skipIfMissingEnvVars,
+    getExpectedContractAddresses,
+    assertSplitContractsDeployed,
+    getProviderId,
+    selectProvider,
+    buildQuoteRequest,
+    normalizeBaseUrl,
+    toLower,
+    httpRequest,
+} = require('../lib/flyover-smoke-test-utils');
 
 describe('Flyover split-contract smoke test (LPS + regtest wiring)', function () {
     let rskTxHelper;
     let flyoverLpsUrl;
-    let providerApiBaseUrl;
     let expectedContractAddresses;
     let quoteRequest;
     let providerId;
 
     before(async function () {
-        const missingVars = REQUIRED_ENV_VARS.filter((name) => !process.env[name]);
-        if (missingVars.length > 0) {
-            this.skip();
-            return;
-        }
+        skipIfMissingEnvVars.call(this, REQUIRED_SMOKE_ENV_VARS);
 
         rskTxHelper = getRskTransactionHelper();
         flyoverLpsUrl = normalizeBaseUrl(process.env.FLYOVER_LPS_URL);
-        expectedContractAddresses = {
-            pegin: toLower(process.env.PEGIN_CONTRACT_ADDRESS),
-            pegout: toLower(process.env.PEGOUT_CONTRACT_ADDRESS),
-            discovery: toLower(process.env.DISCOVERY_ADDRESS),
-            collateralManagement: toLower(process.env.COLLATERAL_MANAGEMENT_ADDRESS),
-        };
-        providerId = process.env.FLYOVER_PROVIDER_ID ? Number(process.env.FLYOVER_PROVIDER_ID) : null;
+        expectedContractAddresses = getExpectedContractAddresses();
+        providerId = getProviderId();
 
-        const codeByAddress = await Promise.all([
-            rskTxHelper.getClient().eth.getCode(expectedContractAddresses.pegin),
-            rskTxHelper.getClient().eth.getCode(expectedContractAddresses.pegout),
-            rskTxHelper.getClient().eth.getCode(expectedContractAddresses.discovery),
-            rskTxHelper.getClient().eth.getCode(expectedContractAddresses.collateralManagement),
-        ]);
-
-        codeByAddress.forEach((code) => {
-            expect(code, 'Expected deployed bytecode at split contract addresses').to.not.equal('0x');
-        });
-
-        const refundAddress = process.env.FLYOVER_TEST_REFUND_ADDRESS || DEFAULT_QUOTE_ADDRESS;
-        const destinationAddress =
-            process.env.FLYOVER_TEST_DESTINATION_ADDRESS || DEFAULT_QUOTE_ADDRESS;
-
-        quoteRequest = {
-            callEoaOrContractAddress: destinationAddress,
-            callContractArguments: '0x',
-            valueToTransfer: BigInt(
-                process.env.FLYOVER_TEST_VALUE_WEIS || DEFAULT_VALUE_TO_TRANSFER_WEIS
-            ),
-            rskRefundAddress: refundAddress,
-        };
+        await assertSplitContractsDeployed(rskTxHelper, expectedContractAddresses);
+        quoteRequest = buildQuoteRequest();
     });
 
     it('should fetch health/providers, get quote, and accept pegin quote', async function () {
@@ -142,15 +41,12 @@ describe('Flyover split-contract smoke test (LPS + regtest wiring)', function ()
         expect(providersResponse.statusCode, '/getProviders should return 200').to.equal(200);
         expect(providersResponse.body).to.be.an('array').that.is.not.empty;
 
-        let provider = providersResponse.body[0];
-        if (providerId != null) {
-            const providerById = providersResponse.body.find((item) => Number(item.id) === providerId);
-            expect(providerById, `Provider id ${providerId} not found in /getProviders response`).to
-                .exist;
-            provider = providerById;
-        }
-
-        providerApiBaseUrl = normalizeBaseUrl(provider.apiBaseUrl);
+        const provider = selectProvider(
+            providersResponse.body,
+            providerId,
+            `Provider id ${providerId} not found in /getProviders response`
+        );
+        const providerApiBaseUrl = normalizeBaseUrl(provider.apiBaseUrl);
 
         const providerDetailsResponse = await httpRequest(`${providerApiBaseUrl}/providers/details`);
         expect(providerDetailsResponse.statusCode, '/providers/details should return 200').to.equal(200);
