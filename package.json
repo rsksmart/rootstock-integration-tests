@@ -9,6 +9,8 @@
     "run-tests-multiple-times": "node multipleTestExecutionsRunner.js",
     "run-single-test-file": "node singleTestFileRunner.js",
     "run-with-docker": "node runWithDocker.js",
+    "compat:check": "bash scripts/run-lps-lbc-compat-check.sh",
+    "compat:matrix": "bash scripts/run-lps-lbc-compat-matrix-all.sh",
     "lint": "eslint --cache .",
     "lint:fix": "eslint --cache --fix .",
     "format": "prettier --check .",

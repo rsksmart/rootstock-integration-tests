@@ -1,0 +1,66 @@
+# LPS x LBC compatibility matrix (source of truth)
+# Architecture: split contracts (PegIn, PegOut, FlyoverDiscovery, CollateralManagement)
+# Human-readable view: docs/COMPATIBILITY.md
+#
+# PoC scope: 2x2 matrix — integration branch (QA-Test) and master.
+
+schemaVersion: 1
+majorLine: 2
+architecture: split-contracts
+updatedAt: "2026-06-09"
+declaredBy: flyover-team
+
+supportWindow:
+  description: "PoC — LPS/LBC refs QA-Test and master"
+  lps:
+    - "QA-Test"
+    - "master"
+  lbc:
+    - "QA-Test"
+    - "master"
+
+pairs:
+  - lps: "QA-Test"
+    lbc: "QA-Test"
+    status: supported
+    notes: >
+      Integration branch pair; lps-env.sh deploys LBC from QA-Test by default.
+      Local validation: npm run compat:check
+
+  - lps: "QA-Test"
+    lbc: "master"
+    status: not-tested
+    notes: >
+      Integration LPS with LBC master; not yet smoke-validated.
+
+  - lps: "master"
+    lbc: "QA-Test"
+    status: not-tested
+    notes: >
+      LPS master with integration LBC branch; not yet smoke-validated.
+
+  - lps: "master"
+    lbc: "master"
+    status: not-tested
+    notes: >
+      Both repos on master; not yet smoke-validated.
+      Local validation: npm run compat:check -- master master
+
+preReleasePolicy: >
+  Release candidates (tags matching *-rc*) are excluded from the PoC matrix.
+
+crossMajorPolicy: >
+  Cross-MAJOR and legacy monolithic LBC_ADDR deployments are out of scope.
+  See LP Migration Utilities in the LPS repo.
+
+smokeTests:
+  config: config/regtest-external-lps-smoke.js
+  cases:
+    - id: "01_08_00"
+      file: tests/01_08_00-flyover_split_contracts_smoke.js
+      description: LPS API health, providers, pegin getQuote/accept (split contracts)
+      required: true
+    - id: "01_08_01"
+      file: tests/01_08_01-flyover_sdk_smoke.js
+      description: Flyover SDK quote flow against LPS + split contracts
+      required: false
