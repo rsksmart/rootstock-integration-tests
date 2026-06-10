@@ -144,6 +144,7 @@ MATRIX_CLI="${SCRIPT_DIR}/lib/compat-matrix-cli.js"
 
 matrix_cli() {
   node "$MATRIX_CLI" "$@"
+  return 0
 }
 
 resolve_smoke_settings() {
@@ -163,10 +164,12 @@ cleanup() {
 trap cleanup EXIT
 
 require_cmd() {
-  if ! command -v "$1" >/dev/null 2>&1; then
-    echo "ERROR: required command not found: $1" >&2
+  local cmd="$1"
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "ERROR: required command not found: ${cmd}" >&2
     exit 1
   fi
+  return 0
 }
 
 lps_local_dir() {
@@ -542,8 +545,7 @@ prepare_rit_worktree() {
 
 verify_smoke_tests_exist() {
   local rit_dir="$1"
-  local IFS=','
-  for case_prefix in $SMOKE_TESTS; do
+  for case_prefix in ${SMOKE_TESTS//,/ }; do
     local matches
     matches="$(find "${rit_dir}/tests" -maxdepth 1 -name "${case_prefix}*" -print 2>/dev/null | head -1 || true)"
     if [[ -z "$matches" ]]; then
@@ -552,6 +554,7 @@ verify_smoke_tests_exist() {
     fi
     echo "Smoke test: $(basename "$matches")"
   done
+  return 0
 }
 
 run_rit_smoke() {

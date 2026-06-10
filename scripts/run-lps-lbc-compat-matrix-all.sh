@@ -11,6 +11,7 @@ MATRIX_CLI="${SCRIPT_DIR}/lib/compat-matrix-cli.js"
 
 matrix_cli() {
   node "$MATRIX_CLI" "$@"
+  return 0
 }
 
 TOTAL_CELLS="$(matrix_cli pair-count)"
@@ -22,6 +23,7 @@ CELL_INDEX=0
 
 cleanup() {
   rm -f "$RESULTS_FILE"
+  return 0
 }
 trap cleanup EXIT
 
@@ -30,6 +32,7 @@ init_results_file() {
 const fs = require('fs');
 fs.writeFileSync(process.argv[1], JSON.stringify({ startedAt: new Date().toISOString(), cells: {} }, null, 2));
 " "$RESULTS_FILE"
+  return 0
 }
 
 record_cell_result() {
@@ -57,6 +60,7 @@ if (process.env.REASON) {
 data.cells[key] = cell;
 fs.writeFileSync(process.env.RESULTS_FILE, JSON.stringify(data, null, 2));
 "
+  return 0
 }
 
 finalize_results_file() {
@@ -67,6 +71,7 @@ const data = JSON.parse(fs.readFileSync(file, 'utf8'));
 data.completedAt = new Date().toISOString();
 fs.writeFileSync(file, JSON.stringify(data, null, 2));
 " "$RESULTS_FILE"
+  return 0
 }
 
 parse_smoke_summary() {
@@ -90,7 +95,7 @@ extract_failure_reason() {
     reason="$(matrix_cli smoke-reason "$SMOKE_PASSED" "$SMOKE_TOTAL")"
     if [[ -n "$reason" ]]; then
       echo "$reason"
-      return
+      return 0
     fi
   fi
 
@@ -111,6 +116,7 @@ extract_failure_reason() {
   reason="${reason//$'\n'/ }"
   reason="${reason:0:240}"
   echo "$reason"
+  return 0
 }
 
 run_cell() {
@@ -161,7 +167,10 @@ run_cell() {
   esac
 
   rm -f "$cell_log"
-  [[ "$status" == "pass" ]]
+  if [[ "$status" == "pass" ]]; then
+    return 0
+  fi
+  return 1
 }
 
 echo "=== LPS x LBC smoke matrix (${TOTAL_CELLS} pairs from compat/lps-lbc-matrix.yaml) ==="

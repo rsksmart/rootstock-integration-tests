@@ -1,144 +1,42 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
+const yaml = require('yaml');
 
-function parseIndentedList(lines, startIndex) {
-  const items = [];
-  for (let i = startIndex; i < lines.length; i += 1) {
-    const line = lines[i];
-    const itemMatch = line.match(/^\s+-\s+"?([^"]+)"?\s*$/);
-    if (itemMatch) {
-      items.push(itemMatch[1]);
-      continue;
-    }
-    if (line.trim() !== '' && !line.match(/^\s+-/)) {
-      break;
-    }
+function normalizeSmokeCase(smokeCase) {
+  return {
+    id: smokeCase.id,
+    file: smokeCase.file ?? null,
+    required: smokeCase.required !== false,
+  };
+}
+
+function normalizePair(pair) {
+  return {
+    lps: pair.lps,
+    lbc: pair.lbc,
+    status: pair.status ?? null,
+  };
+}
+
+function resolveAxisRefs(explicitRefs, pairs, axis) {
+  if (explicitRefs.length > 0) {
+    return explicitRefs;
   }
-  return items;
+  return [...new Set(pairs.map((pair) => pair[axis]))];
 }
 
 function parseMatrixYaml(yamlPath) {
   const content = fs.readFileSync(yamlPath, 'utf8');
-  const lines = content.split('\n');
+  const doc = yaml.parse(content) ?? {};
 
-  let lpsRefs = [];
-  let lbcRefs = [];
-  const pairs = [];
-  let inPairs = false;
-  let currentPair = null;
+  const pairs = (doc.pairs ?? []).map(normalizePair);
+  const smokeTests = {
+    config: doc.smokeTests?.config ?? null,
+    cases: (doc.smokeTests?.cases ?? []).map(normalizeSmokeCase),
+  };
 
-  let inSmokeTests = false;
-  let inSmokeCases = false;
-  let currentSmokeCase = null;
-  const smokeTests = { config: null, cases: [] };
-
-  for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i];
-
-    if (/^\s+lps:\s*$/.test(line) && !inSmokeTests) {
-      lpsRefs = parseIndentedList(lines, i + 1);
-      continue;
-    }
-    if (/^\s+lbc:\s*$/.test(line) && !inSmokeTests) {
-      lbcRefs = parseIndentedList(lines, i + 1);
-      continue;
-    }
-
-    if (line.startsWith('pairs:')) {
-      inPairs = true;
-      inSmokeTests = false;
-      inSmokeCases = false;
-      continue;
-    }
-    if (line.startsWith('preReleasePolicy:') || line.startsWith('crossMajorPolicy:')) {
-      inPairs = false;
-      inSmokeTests = false;
-      inSmokeCases = false;
-      if (currentPair) {
-        pairs.push(currentPair);
-        currentPair = null;
-      }
-      continue;
-    }
-    if (line.startsWith('smokeTests:')) {
-      inPairs = false;
-      inSmokeTests = true;
-      inSmokeCases = false;
-      if (currentPair) {
-        pairs.push(currentPair);
-        currentPair = null;
-      }
-      continue;
-    }
-
-    if (inSmokeTests) {
-      const configMatch = line.match(/^\s+config:\s+(\S+)\s*$/);
-      if (configMatch) {
-        smokeTests.config = configMatch[1];
-        continue;
-      }
-      if (/^\s+cases:\s*$/.test(line)) {
-        inSmokeCases = true;
-        continue;
-      }
-      if (inSmokeCases) {
-        const idMatch = line.match(/^\s+-\s+id:\s+"?([^"]+)"?\s*$/);
-        if (idMatch) {
-          if (currentSmokeCase) {
-            smokeTests.cases.push(currentSmokeCase);
-          }
-          currentSmokeCase = { id: idMatch[1], file: null, required: true };
-          continue;
-        }
-        const fileMatch = line.match(/^\s+file:\s+(\S+)\s*$/);
-        if (fileMatch && currentSmokeCase) {
-          currentSmokeCase.file = fileMatch[1];
-          continue;
-        }
-        const requiredMatch = line.match(/^\s+required:\s+(\S+)\s*$/);
-        if (requiredMatch && currentSmokeCase) {
-          currentSmokeCase.required = requiredMatch[1] === 'true';
-        }
-      }
-      continue;
-    }
-
-    if (!inPairs) {
-      continue;
-    }
-
-    const lpsMatch = line.match(/^\s+-\s+lps:\s+"?([^"]+)"?\s*$/);
-    if (lpsMatch) {
-      if (currentPair) {
-        pairs.push(currentPair);
-      }
-      currentPair = { lps: lpsMatch[1], lbc: null, status: null };
-      continue;
-    }
-    const lbcMatch = line.match(/^\s+lbc:\s+"?([^"]+)"?\s*$/);
-    if (lbcMatch && currentPair) {
-      currentPair.lbc = lbcMatch[1];
-      continue;
-    }
-    const statusMatch = line.match(/^\s+status:\s+(\S+)\s*$/);
-    if (statusMatch && currentPair) {
-      currentPair.status = statusMatch[1];
-    }
-  }
-
-  if (currentPair) {
-    pairs.push(currentPair);
-  }
-  if (currentSmokeCase) {
-    smokeTests.cases.push(currentSmokeCase);
-  }
-
-  if (lpsRefs.length === 0) {
-    lpsRefs = [...new Set(pairs.map((p) => p.lps))];
-  }
-  if (lbcRefs.length === 0) {
-    lbcRefs = [...new Set(pairs.map((p) => p.lbc))];
-  }
+  const lpsRefs = resolveAxisRefs(doc.supportWindow?.lps ?? [], pairs, 'lps');
+  const lbcRefs = resolveAxisRefs(doc.supportWindow?.lbc ?? [], pairs, 'lbc');
 
   return {
     lpsRefs,

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const fs = require('fs');
+const fs = require('node:fs');
 const { cellKey, loadMatrix, smokeStatusFromCounts } = require('./lib/compat-matrix-lib');
 
 const GREEN = '\x1b[32m';
@@ -81,16 +81,13 @@ function printGrid({ title, subtitle, lpsRefs, lbcRefs, cellRenderer, legend }) 
   }
   console.log('');
 
-  let header = padVisible(`${BOLD}LPS \\ LBC${RESET}`, lpsColWidth);
+  let header = padVisible(`${BOLD}${String.raw`LPS \ LBC`}${RESET}`, lpsColWidth);
   for (const lbc of lbcRefs) {
     header += padVisible(`${BOLD}${lbc}${RESET}`, cellWidth);
   }
   console.log(header);
 
-  let separator = '-'.repeat(lpsColWidth);
-  for (let i = 0; i < lbcRefs.length; i += 1) {
-    separator += '-'.repeat(cellWidth);
-  }
+  const separator = `${'-'.repeat(lpsColWidth)}${'-'.repeat(cellWidth * lbcRefs.length)}`;
   console.log(separator);
 
   for (const lps of lpsRefs) {
