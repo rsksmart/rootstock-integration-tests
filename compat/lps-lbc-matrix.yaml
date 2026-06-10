@@ -1,6 +1,6 @@
 # LPS x LBC compatibility matrix (source of truth)
 # Architecture: split contracts (PegIn, PegOut, FlyoverDiscovery, CollateralManagement)
-# Human-readable view: docs/COMPATIBILITY.md
+# Human-readable view: README.md (Flyover compatibility section)
 #
 # PoC scope: 2x2 matrix — integration branch (QA-Test) and master.
 
