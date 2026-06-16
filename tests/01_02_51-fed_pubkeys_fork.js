@@ -3,7 +3,7 @@ const {
     assertContractCallReturnsWithCallback,
 } = require('../lib/assertions/contractMethods');
 const expect = require('chai').expect;
-const { assertIsPublicKey } = require('../lib/assertions/misc');
+const { assertIsPublicKey } = require('../lib/rsk-utils');
 const { KEY_TYPE_BTC } = require('../lib/constants/federation-constants');
 const { getBridge } = require('../lib/bridge-provider');
 const { getRskTransactionHelper } = require('../lib/rsk-tx-helper-provider');
