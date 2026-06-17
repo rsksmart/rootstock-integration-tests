@@ -1,6 +1,5 @@
 const whitelistingAssertions = require('../lib/assertions/whitelisting');
 const contractMethodAssertions = require('../lib/assertions/contractMethods');
-const { getBtcClient } = require('../lib/btc-client-provider');
 const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
 const { getBridge } = require('../lib/bridge-provider');
 
@@ -12,14 +11,12 @@ const WHITELIST_ADDRESSES = {
 
 const WHITELIST_ADDRESSES_ENTRIES = Object.entries(WHITELIST_ADDRESSES);
 
-let btcTxHelper;
 let rskTxHelper;
 let rskTxHelpers;
 let bridge;
 
 describe('Whitelist methods tests', () => {
     before(async () => {
-        btcTxHelper = getBtcClient();
         rskTxHelpers = getRskTransactionHelpers();
         rskTxHelper = rskTxHelpers[0];
         bridge = await getBridge(rskTxHelper.getClient());
