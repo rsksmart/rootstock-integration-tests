@@ -9,6 +9,8 @@
     "run-tests-multiple-times": "node multipleTestExecutionsRunner.js",
     "run-single-test-file": "node singleTestFileRunner.js",
     "run-with-docker": "node runWithDocker.js",
+    "compat:check": "bash scripts/run-lps-lbc-compat-check.sh",
+    "compat:matrix": "bash scripts/run-lps-lbc-compat-matrix-all.sh",
     "lint": "eslint --cache .",
     "lint:fix": "eslint --cache --fix .",
     "format": "prettier --check .",
@@ -22,8 +24,10 @@
     "@noble/secp256k1": "2.2.3",
     "@rsksmart/bridge-state-data-parser": "1.2.0",
     "@rsksmart/bridge-transaction-parser": "github:rsksmart/bridge-transaction-parser#v1.2.0",
+    "@rsksmart/bridges-core-sdk": "0.6.0",
     "@rsksmart/btc-eth-unit-converter": "1.0.1",
     "@rsksmart/btc-rsk-derivation": "0.0.2",
+    "@rsksmart/flyover-sdk": "1.9.0",
     "@rsksmart/pmt-builder": "3.0.1",
     "@rsksmart/powpeg-redeemscript-parser": "github:rsksmart/powpeg-redeemscript-parser#fbe3b981b3f768396833f5f832526a9751098089",
     "@rsksmart/rsk-precompiled-abis": "9.0.0-VETIVER",
@@ -47,7 +51,8 @@
     "solc": "0.8.34",
     "stream-line-wrapper": "0.1.1",
     "tmp": "0.2.5",
-    "wait-for-port": "0.0.2"
+    "wait-for-port": "0.0.2",
+    "yaml": "2.9.0"
   },
   "devDependencies": {
     "@eslint/js": "9.39.2",

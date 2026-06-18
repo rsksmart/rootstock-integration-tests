@@ -9,6 +9,68 @@ This library is intended to be used for testing purposes only, to avoid any poss
 
 All private keys used in the library are for testing only and not used in any production environment.
 
+## Flyover compatibility (LPS × LBC)
+
+Source of truth for which [Liquidity Provider Server (LPS)](https://github.com/rsksmart/liquidity-provider-server) and [Liquidity Bridge Contract (LBC)](https://github.com/rsksmart/liquidity-bridge-contract) versions work together on **split-contract** Flyover (PegIn, PegOut, FlyoverDiscovery, CollateralManagement).
+
+- **Config:** [`compat/lps-lbc-matrix.yaml`](compat/lps-lbc-matrix.yaml) — pairs, refs, and smoke tests for `compat:matrix` / `compat:check`
+- **PoC scope:** 2×2 — LPS `QA-Test`, `master` × LBC `QA-Test`, `master`
+- **Out of scope:** legacy monolithic `LBC_ADDR`, cross-major pairs — see [LP Migration Utilities](https://github.com/rsksmart/liquidity-provider-server/blob/master/docs/LP-Migration-Utils.md)
+
+LPS needs split-contract addresses: `PEGIN_CONTRACT_ADDRESS`, `PEGOUT_CONTRACT_ADDRESS`, `DISCOVERY_ADDRESS`, `COLLATERAL_MANAGEMENT_ADDRESS`.
+
+### Declared matrix
+
+| LPS \ LBC | [QA-Test](https://github.com/rsksmart/liquidity-bridge-contract/tree/QA-Test) | [master](https://github.com/rsksmart/liquidity-bridge-contract/tree/master) |
+|-----------|----------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
+| [QA-Test](https://github.com/rsksmart/liquidity-provider-server/tree/QA-Test) | **Supported** | Not tested |
+| [master](https://github.com/rsksmart/liquidity-provider-server/tree/master) | Not tested | Not tested |
+
+| Status | Meaning |
+|--------|---------|
+| **Supported** | Declared safe for split-contract deployments |
+| **Not tested** | In scope; not yet smoke-validated |
+| **Unsupported** | Known incompatible |
+
+### Local validation
+
+| Command | What it does |
+|---------|----------------|
+| `npm run compat:matrix` | All 4 pairs; grid: **green** = all smokes pass, **orange** = some pass, **red** = none pass |
+| `npm run compat:check` | Single pair (default QA-Test × QA-Test) |
+| `npm run compat:check -- <lbc-ref> <lps-ref>` | Custom pair (LBC ref first, then LPS) |
+
+```bash
+npm run compat:matrix
+npm run compat:check
+npm run compat:check -- master master
+npm run compat:check -- master QA-Test
+
+# Smoke only (stack already running)
+./scripts/run-lps-lbc-compat-check.sh --skip-lps-up
+```
+
+**Prerequisites:** Docker, Git, Node.js, npm; LPS and LBC clones at `../liquidity-provider-server` and `../liquidity-bridge-contract`.
+
+Each full run: (1) `git fetch` + detached checkout at `origin/<ref>` in LPS and LBC (logged SHA, no patches to tracked source), (2) deploy — `compat:matrix` cleans Docker volumes per cell, then `lps-env.sh up` (or `lps-local.sh` on newer LPS branches), (3) smoke — [`01_08_00`](tests/01_08_00-flyover_split_contracts_smoke.js) and [`01_08_01`](tests/01_08_01-flyover_sdk_smoke.js) via [`config/regtest-external-lps-smoke.js`](config/regtest-external-lps-smoke.js).
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--lps-ref` / `--lbc-ref` | `QA-Test` | Matrix label; checked out as `origin/<ref>` |
+| `--skip-lps-up` | off | Skip deploy; expect stack running |
+| `--clean-before-up` | off (on in matrix) | Wipe bind-mount volumes before deploy |
+| `--start-existing` | off | Start stopped containers without pulls |
+| `--smoke-tests` | from YAML | Comma-separated test prefixes (override matrix default) |
+
+| Issue | Action |
+|-------|--------|
+| `chown: Operation not permitted` (WSL) | Use `compat:matrix` or `--clean-before-up` |
+| LPS health timeout | `docker logs lps01`; try `--start-existing` |
+| Deploy failed, 0 smokes run | See cell **Details** in matrix summary |
+| Wrong pair tested | Use full `compat:check` / `compat:matrix`, not `--skip-lps-up` |
+
+To update: edit [`compat/lps-lbc-matrix.yaml`](compat/lps-lbc-matrix.yaml) and the declared matrix table above; after a green run, add validation notes in the YAML (e.g. `validated: rit-smoke-2026-06-09`).
+
 ## Prerequisites
 
 ### bitcoind
@@ -98,6 +160,47 @@ Simply run:
 
 1. Create a configuration file, e.g., `config/another_config.js`.
 2. Run `CONFIG_FILE_PATH=path_to_another_config_file npm test` or simply set the `CONFIG_FILE_PATH` value in the `.env` file.
+
+## Flyover smoke tests (optional)
+
+The `01_08_00` and `01_08_01` tests run automatically via `npm run compat:check` / `compat:matrix` (see above). To run them manually against an already-running LPS stack, they are skipped by default when required env vars are unset, so the main integration suite is unaffected.
+
+**Prerequisites**
+
+1. A running LPS and deployed split contracts (pegin, pegout, discovery, collateral management).
+2. Optionally set `CONFIG_FILE_PATH=./config/regtest-external-lps-smoke` when using a
+   pre-running federate node and bitcoind instead of the default RIT runners.
+
+**Required environment variables**
+
+| Variable | Description |
+|---|---|
+| `FLYOVER_LPS_URL` | Base URL of the LPS (e.g. `http://127.0.0.1:8080`) |
+| `PEGIN_CONTRACT_ADDRESS` | Deployed pegin contract address |
+| `PEGOUT_CONTRACT_ADDRESS` | Deployed pegout contract address |
+| `DISCOVERY_ADDRESS` | Deployed discovery contract address |
+| `COLLATERAL_MANAGEMENT_ADDRESS` | Deployed collateral management contract address |
+
+**Optional environment variables**
+
+| Variable | Default | Description |
+|---|---|---|
+| `FLYOVER_PROVIDER_ID` | first provider | LPS provider id to use |
+| `FLYOVER_RSK_RPC_URL` | `http://127.0.0.1:4444` | RSK RPC endpoint (SDK test) |
+| `FLYOVER_SDK_NETWORK` | `Regtest` | Flyover SDK network name |
+| `FLYOVER_TEST_DESTINATION_ADDRESS` | test address | Quote destination |
+| `FLYOVER_TEST_REFUND_ADDRESS` | test address | Quote refund address |
+| `FLYOVER_TEST_VALUE_WEIS` | `1e18` | Quote transfer value in wei |
+
+**Run only the smoke tests**
+
+```bash
+INCLUDE_CASES=01_08_00,01_08_01 npm test
+```
+
+The SDK smoke test (`01_08_01`) includes a temporary shim that re-points SDK contract
+instances to locally deployed split contracts. Remove that shim once SDK regtest constants
+match the external LPS deployment.
 
 ## Including/Excluding test cases
 
