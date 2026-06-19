@@ -46,7 +46,7 @@
     "rsk-transaction-helper": "git+https://github.com/rsksmart/rootstock-transaction-helper#v3.1.0",
     "solc": "0.8.34",
     "stream-line-wrapper": "0.1.1",
-    "tmp": "0.2.5",
+    "tmp": "0.2.7",
     "wait-for-port": "0.0.2"
   },
   "devDependencies": {
