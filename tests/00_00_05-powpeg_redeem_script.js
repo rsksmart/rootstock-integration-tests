@@ -30,7 +30,7 @@ describe('Calling getActivePowpegRedeemScript method before federation change', 
             const activeFederationAddressFromBridge = await bridge.methods
                 .getFederationAddress()
                 .call();
-            const addressFromRedeemScript = redeemScriptParser.getAddressFromRedeemScript(
+            const addressFromRedeemScript = redeemScriptParser.getP2shP2wshAddressFromRedeemScript(
                 'REGTEST',
                 Buffer.from(removePrefix0x(activePowpegRedeemScript), 'hex')
             );
