@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rootstock integration tests</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --danger: #f85149;
+      --ok: #3fb950;
+      --border: #30363d;
+      --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.45;
+    }
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.25rem 1.5rem 2rem;
+    }
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin: 0 0 0.25rem;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.25rem;
+    }
+    .grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: 1fr 1fr;
+    }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1rem 0.75rem;
+    }
+    .panel h2 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      margin: 0 0 0.75rem;
+      font-weight: 600;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      align-items: center;
+    }
+    button {
+      font-family: inherit;
+      font-size: 0.85rem;
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #21262d;
+      color: var(--text);
+      cursor: pointer;
+    }
+    button:hover:not(:disabled) {
+      background: #30363d;
+    }
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    button.primary {
+      background: #238636;
+      border-color: #238636;
+      color: #fff;
+    }
+    button.primary:hover:not(:disabled) {
+      background: #2ea043;
+    }
+    button.danger {
+      background: transparent;
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+    .tab-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-bottom: 0.65rem;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    .tab-bar button.tab {
+      background: #21262d;
+      border: 1px solid var(--border);
+      font-size: 0.78rem;
+      padding: 0.35rem 0.6rem;
+      max-width: 100%;
+    }
+    .tab-bar button.tab.active {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .test-list {
+      max-height: 320px;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.35rem 0.5rem;
+      font-size: 0.8rem;
+      font-family: var(--mono);
+    }
+    .test-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      padding: 0.2rem 0;
+      border-bottom: 1px solid #21262d;
+    }
+    .test-row:last-child { border-bottom: none; }
+    .test-row label {
+      cursor: pointer;
+      flex: 1;
+      word-break: break-all;
+    }
+    .test-row.setup label { color: #79c0ff; }
+    .status-bar {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 0.5rem;
+      min-height: 1.25rem;
+    }
+    .status-bar.running { color: var(--accent); }
+    .status-bar.error { color: var(--danger); }
+    .status-bar.ok { color: var(--ok); }
+    .log-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      align-items: center;
+    }
+    .log-toolbar input[type="search"],
+    .log-toolbar select {
+      font-family: inherit;
+      font-size: 0.85rem;
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #0d1117;
+      color: var(--text);
+      min-width: 140px;
+    }
+    .log-toolbar input[type="search"] { flex: 1; min-width: 180px; }
+    .log-toolbar label {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .log-toolbar.muted select[name="logKind"] {
+      opacity: 0.45;
+      pointer-events: none;
+    }
+    .log-panel {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      line-height: 1.45;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.5rem 0.65rem;
+      height: min(50vh, 420px);
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .log-panel .line {
+      margin: 0;
+      white-space: pre-wrap;
+    }
+    .log-panel .line.hide { display: none; }
+    .empty-log {
+      color: var(--muted);
+      font-style: italic;
+    }
+    .fed-meta {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Integration test runner</h1>
+    <p class="sub">
+      Setup tests (<code>00*</code>) are selected by default. Uses <code>INCLUDE_CASES</code> like <code>npm test</code>.
+      Test output preserves ANSI colors. Federator logs come from <code>LOG_HOME</code> (see <code>.env</code>).
+    </p>
+
+    <div class="grid">
+      <div class="panel">
+        <h2>Tests</h2>
+        <div class="toolbar">
+          <button type="button" id="btnSelNonSetup">Select non-setup</button>
+          <button type="button" id="btnClearNonSetup">Unselect non-setup</button>
+          <button type="button" id="btnSelAll">Select all</button>
+          <button type="button" id="btnClearAll">Unselect all</button>
+        </div>
+        <div id="testList" class="test-list" aria-label="Test files"></div>
+        <div class="toolbar" style="margin-top: 0.75rem;">
+          <button type="button" class="primary" id="btnRun">Run selected</button>
+          <button type="button" class="danger" id="btnStop" disabled>Stop run</button>
+        </div>
+        <div id="runStatus" class="status-bar"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Output</h2>
+        <div class="tab-bar" id="tabBar" role="tablist"></div>
+        <div id="fedMeta" class="fed-meta" hidden></div>
+        <div class="log-toolbar" id="logToolbar">
+          <input type="search" id="logSearch" placeholder="Filter lines (substring)…" autocomplete="off" />
+          <select id="logKind" name="logKind" aria-label="Line kind filter">
+            <option value="all">All lines</option>
+            <option value="errors">Errors &amp; failures</option>
+            <option value="pass">Passes only</option>
+            <option value="stdout">Stdout only</option>
+            <option value="stderr">Stderr only</option>
+          </select>
+          <label>
+            <input type="checkbox" id="logAutoscroll" checked />
+            Auto-scroll
+          </label>
+          <button type="button" id="btnClearLog" title="Test: clears this view. Federator: truncates the log file on disk.">
+            Clear log
+          </button>
+          <button type="button" id="btnClearAllLogs" title="Clears test output in the UI and truncates every .log file under LOG_HOME.">
+            Clear all logs
+          </button>
+        </div>
+        <div id="logPanel" class="log-panel" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const testListEl = document.getElementById('testList');
+      const runStatusEl = document.getElementById('runStatus');
+      const logPanelEl = document.getElementById('logPanel');
+      const tabBarEl = document.getElementById('tabBar');
+      const fedMetaEl = document.getElementById('fedMeta');
+      const logToolbarEl = document.getElementById('logToolbar');
+      const btnRun = document.getElementById('btnRun');
+      const btnStop = document.getElementById('btnStop');
+      const logSearch = document.getElementById('logSearch');
+      const logKind = document.getElementById('logKind');
+      const logAutoscroll = document.getElementById('logAutoscroll');
+
+      /** @type {{ file: string, prefix: string, isSetup: boolean }[]} */
+      let tests = [];
+      /** @type {Map<string, HTMLInputElement>} */
+      const checkboxes = new Map();
+      let running = false;
+
+      /** @type {{ channel: string, linePlain: string, lineHtml: string }[]} */
+      let testLogLines = [];
+      /** @type {Record<string, { lines: { channel: string, linePlain: string, lineHtml: string }[], offset: number, buf: string }>} */
+      const fedByRel = {};
+
+      /** 'test' | string (fed rel) */
+      let activeView = 'test';
+      let fedLogRoot = '';
+      /** @type {{ rel: string, label: string, lineCount: number }[]} */
+      let fedFiles = [];
+      let fedPollTimer = null;
+      /** @type {ReturnType<typeof setInterval> | null} */
+      let fedListPollTimer = null;
+
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, (c) => {
+          if (c === '&') return '&amp;';
+          if (c === '<') return '&lt;';
+          if (c === '>') return '&gt;';
+          if (c === '"') return '&quot;';
+          return c;
+        });
+      }
+
+      function setRunning(on) {
+        running = on;
+        btnRun.disabled = on;
+        btnStop.disabled = !on;
+      }
+
+      function setStatus(text, cls) {
+        runStatusEl.textContent = text;
+        runStatusEl.className = 'status-bar' + (cls ? ' ' + cls : '');
+      }
+
+      function renderTests() {
+        testListEl.innerHTML = '';
+        checkboxes.clear();
+        for (const t of tests) {
+          const row = document.createElement('div');
+          row.className = 'test-row' + (t.isSetup ? ' setup' : '');
+          const id = 'cb-' + t.prefix.replace(/[^a-z0-9_-]/gi, '_');
+          const input = document.createElement('input');
+          input.type = 'checkbox';
+          input.id = id;
+          input.checked = t.isSetup;
+          input.dataset.prefix = t.prefix;
+          const label = document.createElement('label');
+          label.htmlFor = id;
+          label.textContent = t.file;
+          row.appendChild(input);
+          row.appendChild(label);
+          testListEl.appendChild(row);
+          checkboxes.set(t.prefix, input);
+        }
+      }
+
+      function selectedPrefixes() {
+        const out = [];
+        for (const [prefix, el] of checkboxes) {
+          if (el.checked) out.push(prefix);
+        }
+        return out;
+      }
+
+      function forEachNonSetup(cb) {
+        for (const t of tests) {
+          if (!t.isSetup) cb(checkboxes.get(t.prefix));
+        }
+      }
+
+      document.getElementById('btnSelNonSetup').onclick = () => {
+        forEachNonSetup((el) => {
+          if (el) el.checked = true;
+        });
+      };
+      document.getElementById('btnClearNonSetup').onclick = () => {
+        forEachNonSetup((el) => {
+          if (el) el.checked = false;
+        });
+      };
+      document.getElementById('btnSelAll').onclick = () => {
+        for (const el of checkboxes.values()) el.checked = true;
+      };
+      document.getElementById('btnClearAll').onclick = () => {
+        for (const el of checkboxes.values()) el.checked = false;
+      };
+
+      function classifyLine(line) {
+        const lower = line.toLowerCase();
+        const err =
+          /error|fail|✖|assertionerror|exception|timed out|timeout/i.test(line) ||
+          lower.includes(' err ');
+        const pass = /✓|passing|\d+ passing|✔/i.test(line);
+        return { err, pass };
+      }
+
+      function lineVisible(row) {
+        const channel = row.channel;
+        const line = row.linePlain || '';
+        const q = logSearch.value.trim();
+        if (q && !line.includes(q)) return false;
+        const kind = logKind.value;
+        if (kind === 'stdout' && channel !== 'stdout') return false;
+        if (kind === 'stderr' && channel !== 'stderr') return false;
+        if (channel === 'fed' && (kind === 'stdout' || kind === 'stderr')) return false;
+        const { err, pass } = classifyLine(line);
+        if (kind === 'errors' && !err) return false;
+        if (kind === 'pass' && !pass) return false;
+        return true;
+      }
+
+      function getActiveLines() {
+        if (activeView === 'test') return testLogLines;
+        return fedByRel[activeView] ? fedByRel[activeView].lines : [];
+      }
+
+      function renderLog() {
+        logPanelEl.innerHTML = '';
+        const lines = getActiveLines();
+        if (lines.length === 0) {
+          logPanelEl.innerHTML =
+            '<div class="empty-log">' +
+            (activeView === 'test'
+              ? 'No output yet. Run tests to stream logs here.'
+              : 'Loading or empty log. Polling for new lines…') +
+            '</div>';
+          return;
+        }
+        const frag = document.createDocumentFragment();
+        for (const row of lines) {
+          const p = document.createElement('div');
+          p.className = 'line';
+          p.innerHTML = row.lineHtml || escapeHtml(row.linePlain || '');
+          if (!lineVisible(row)) p.classList.add('hide');
+          frag.appendChild(p);
+        }
+        logPanelEl.appendChild(frag);
+        if (logAutoscroll.checked) {
+          logPanelEl.scrollTop = logPanelEl.scrollHeight;
+        }
+      }
+
+      function pushTestLine(row) {
+        testLogLines.push(row);
+        if (activeView !== 'test') return;
+        const p = document.createElement('div');
+        p.className = 'line';
+        p.innerHTML = row.lineHtml || escapeHtml(row.linePlain || '');
+        if (!lineVisible(row)) p.classList.add('hide');
+        const empty = logPanelEl.querySelector('.empty-log');
+        if (empty) empty.remove();
+        logPanelEl.appendChild(p);
+        if (logAutoscroll.checked) {
+          logPanelEl.scrollTop = logPanelEl.scrollHeight;
+        }
+      }
+
+      function updateToolbarForView() {
+        const isFed = activeView !== 'test';
+        logToolbarEl.classList.toggle('muted', isFed);
+        fedMetaEl.hidden = !isFed;
+        if (isFed) {
+          fedMetaEl.textContent = fedLogRoot
+            ? 'LOG_HOME: ' + fedLogRoot + ' — ' + activeView
+            : activeView;
+        }
+      }
+
+      function setActiveView(view) {
+        activeView = view;
+        for (const b of tabBarEl.querySelectorAll('button.tab')) {
+          b.classList.toggle('active', b.dataset.view === view);
+        }
+        updateToolbarForView();
+        stopFedPoll();
+        if (view !== 'test') {
+          startFedPoll(view);
+        }
+        renderLog();
+      }
+
+      function formatLineCount(n) {
+        return typeof n === 'number' ? n.toLocaleString() : '0';
+      }
+
+      function fedTabLabel(f) {
+        const lines = formatLineCount(f.lineCount);
+        return f.label + ' (' + lines + ' lines)';
+      }
+
+      function renderTabs() {
+        tabBarEl.innerHTML = '';
+        const mk = (id, label) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'tab' + (activeView === id ? ' active' : '');
+          b.dataset.view = id;
+          b.textContent = label;
+          b.onclick = () => setActiveView(id);
+          tabBarEl.appendChild(b);
+        };
+        mk('test', 'Test output');
+        for (const f of fedFiles) {
+          mk(f.rel, fedTabLabel(f));
+        }
+      }
+
+      function reapplyFilters() {
+        renderLog();
+      }
+
+      logSearch.addEventListener('input', reapplyFilters);
+      logKind.addEventListener('change', reapplyFilters);
+
+      document.getElementById('btnClearLog').onclick = async () => {
+        if (activeView === 'test') {
+          testLogLines = [];
+          logPanelEl.innerHTML = '<div class="empty-log">Log cleared.</div>';
+          return;
+        }
+        const rel = activeView;
+        try {
+          const res = await fetch('/api/fed-logs/clear', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ file: rel }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            setStatus(err.error || 'Could not clear log file.', 'error');
+            return;
+          }
+          delete fedByRel[rel];
+          await loadFedList();
+          logPanelEl.innerHTML = '<div class="empty-log">Log cleared (file truncated).</div>';
+        } catch (_) {
+          setStatus('Could not clear log file.', 'error');
+        }
+      };
+
+      document.getElementById('btnClearAllLogs').onclick = async () => {
+        testLogLines = [];
+        try {
+          const res = await fetch('/api/fed-logs/clear-all', { method: 'POST' });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            setStatus(err.error || 'Could not clear federator logs.', 'error');
+          }
+        } catch (_) {
+          setStatus('Could not reach server to clear federator logs.', 'error');
+        }
+        for (const k of Object.keys(fedByRel)) {
+          delete fedByRel[k];
+        }
+        stopFedPoll();
+        activeView = 'test';
+        await loadFedList();
+        logPanelEl.innerHTML = '<div class="empty-log">All logs cleared.</div>';
+      };
+
+      async function loadFedList() {
+        try {
+          const r = await fetch('/api/fed-logs');
+          const data = await r.json();
+          fedLogRoot = data.root || '';
+          const next = data.files || [];
+          const missing =
+            activeView !== 'test' && !next.some((f) => f.rel === activeView);
+          fedFiles = next;
+          if (missing) {
+            stopFedPoll();
+            activeView = 'test';
+          }
+          renderTabs();
+          updateToolbarForView();
+          if (missing) {
+            renderLog();
+          }
+        } catch (_) {
+          fedFiles = [];
+          if (activeView !== 'test') {
+            stopFedPoll();
+            activeView = 'test';
+          }
+          renderTabs();
+          updateToolbarForView();
+          renderLog();
+        }
+      }
+
+      function startFedListPolling() {
+        if (fedListPollTimer) {
+          clearInterval(fedListPollTimer);
+        }
+        fedListPollTimer = setInterval(() => {
+          loadFedList().catch(() => {});
+        }, 2000);
+      }
+
+      function stopFedPoll() {
+        if (fedPollTimer) {
+          clearInterval(fedPollTimer);
+          fedPollTimer = null;
+        }
+      }
+
+      function startFedPoll(rel) {
+        stopFedPoll();
+        if (!fedByRel[rel]) {
+          fedByRel[rel] = { lines: [], offset: 0, buf: '' };
+        }
+        const tick = () => pollFedRel(rel);
+        tick();
+        fedPollTimer = setInterval(tick, 1500);
+      }
+
+      async function pollFedRel(rel) {
+        const st = fedByRel[rel];
+        if (!st) return;
+        try {
+          const r = await fetch(
+            '/api/fed-logs/read?file=' + encodeURIComponent(rel) + '&from=' + st.offset
+          );
+          if (!r.ok) return;
+          const d = await r.json();
+          if (d.error) return;
+          st.offset = d.nextOffset;
+          if (d.text) {
+            st.buf += d.text;
+            const parts = st.buf.split('\n');
+            st.buf = parts.pop() || '';
+            for (const line of parts) {
+              const row = {
+                channel: 'fed',
+                linePlain: line,
+                lineHtml: escapeHtml(line),
+              };
+              st.lines.push(row);
+              if (activeView === rel) {
+                const p = document.createElement('div');
+                p.className = 'line';
+                p.innerHTML = row.lineHtml;
+                if (!lineVisible(row)) p.classList.add('hide');
+                const empty = logPanelEl.querySelector('.empty-log');
+                if (empty) empty.remove();
+                logPanelEl.appendChild(p);
+                if (logAutoscroll.checked) {
+                  logPanelEl.scrollTop = logPanelEl.scrollHeight;
+                }
+              }
+            }
+          }
+        } catch (_) {}
+      }
+
+      async function loadTests() {
+        const r = await fetch('/api/tests');
+        const data = await r.json();
+        tests = data.tests || [];
+        renderTests();
+      }
+
+      btnRun.onclick = async () => {
+        const prefixes = selectedPrefixes();
+        if (prefixes.length === 0) {
+          setStatus('Select at least one test.', 'error');
+          return;
+        }
+        setStatus('Starting…', 'running');
+        const res = await fetch('/api/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prefixes }),
+        });
+        if (!res.ok) {
+          const e = await res.json().catch(() => ({}));
+          setStatus(e.error || 'Could not start run.', 'error');
+          return;
+        }
+        testLogLines = [];
+        if (activeView === 'test') {
+          logPanelEl.innerHTML = '<div class="empty-log">Running…</div>';
+        }
+        setRunning(true);
+        setStatus('Tests running…', 'running');
+      };
+
+      btnStop.onclick = async () => {
+        const res = await fetch('/api/abort', { method: 'POST' });
+        if (!res.ok) {
+          const e = await res.json().catch(() => ({}));
+          setStatus(e.error || 'Could not stop.', 'error');
+        }
+      };
+
+      const es = new EventSource('/api/stream');
+      es.addEventListener('log', (ev) => {
+        try {
+          const d = JSON.parse(ev.data);
+          const plain =
+            d.linePlain != null ? d.linePlain : d.line != null ? d.line : '';
+          const html =
+            d.lineHtml != null
+              ? d.lineHtml
+              : escapeHtml(plain);
+          pushTestLine({
+            channel: d.channel || 'stdout',
+            linePlain: plain,
+            lineHtml: html,
+          });
+        } catch (_) {}
+      });
+      es.addEventListener('status', (ev) => {
+        try {
+          const d = JSON.parse(ev.data);
+          if (d.message) setStatus(d.message, d.phase === 'error' ? 'error' : 'running');
+        } catch (_) {}
+      });
+      es.addEventListener('done', (ev) => {
+        setRunning(false);
+        try {
+          const d = JSON.parse(ev.data);
+          const ok = d.code === 0;
+          setStatus(
+            ok ? 'Finished successfully.' : 'Finished with failures or non-zero exit.',
+            ok ? 'ok' : 'error'
+          );
+        } catch (_) {
+          setStatus('Finished.', '');
+        }
+      });
+
+      Promise.all([loadTests(), loadFedList()])
+        .then(() => {
+          setActiveView('test');
+          startFedListPolling();
+        })
+        .catch(() => {
+          setStatus('Failed to load test list. Is the server running?', 'error');
+        });
+    })();
+  </script>
+</body>
+</html>
