@@ -47,7 +47,7 @@ chmod +x ./configure.sh && chmod +x gradlew
 POWPEG_VERSION=$(bash configure_gradle_powpeg.sh)
 echo "POWPEG_VERSION=$POWPEG_VERSION"
 ./configure.sh
-./gradlew  --info --no-daemon clean build -x test
+./gradlew  --info --no-daemon --dependency-verification=lenient clean build -x test
 
 echo -e "\n\n--------- Starting the configuration of RIT ---------\n\n"
 
