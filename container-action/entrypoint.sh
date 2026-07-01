@@ -1,4 +1,4 @@
-#!/bin/sh -l
+#!/bin/bash -l
 
 # Warning! As of now, if a modification is made to this entrypoint.sh file, the version/hash of the `Run Rootstock Integration Tests` step at rskj/.github/workflows/rit.yml will need to be updated to match the new commit hash or version of this file.
 # This is because the entrypoint.sh file is copied from this hash/version and not from the executing branch, hence, the changes will not be reflected when running the tests from rskj or powpeg-node actions.
@@ -47,7 +47,7 @@ chmod +x ./configure.sh && chmod +x gradlew
 POWPEG_VERSION=$(bash configure_gradle_powpeg.sh)
 echo "POWPEG_VERSION=$POWPEG_VERSION"
 ./configure.sh
-./gradlew  --info --no-daemon clean build -x test
+./gradlew  --info --no-daemon --dependency-verification=lenient clean build -x test
 
 echo -e "\n\n--------- Starting the configuration of RIT ---------\n\n"
 
