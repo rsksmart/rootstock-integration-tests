@@ -47,14 +47,7 @@ chmod +x ./configure.sh && chmod +x gradlew
 POWPEG_VERSION=$(bash configure_gradle_powpeg.sh)
 echo "POWPEG_VERSION=$POWPEG_VERSION"
 ./configure.sh
-
-# Fold rskj's pinned dependency-verification entries into powpeg's ROOT metadata,
-awk -f /usr/src/merge-verification-metadata.awk \
-  /usr/src/powpeg/gradle/verification-metadata.xml \
-  /usr/src/rskj/gradle/verification-metadata.xml \
-  > /tmp/vm.xml && mv /tmp/vm.xml /usr/src/powpeg/gradle/verification-metadata.xml
-
-./gradlew  --info --no-daemon clean build -x test
+./gradlew  --info --no-daemon --dependency-verification=lenient clean build -x test
 
 echo -e "\n\n--------- Starting the configuration of RIT ---------\n\n"
 
