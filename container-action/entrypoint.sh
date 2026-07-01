@@ -9,7 +9,18 @@ POWPEG_NODE_BRANCH="${INPUT_POWPEG_NODE_BRANCH}"
 RIT_BRANCH="${INPUT_RIT_BRANCH}"
 LOG_LEVEL="${INPUT_RIT_LOG_LEVEL}"
 REPO_OWNER="${INPUT_REPO_OWNER:-rsksmart}"  # Default to 'rsksmart' if not provided
-IS_RSKJ_BRANCH=$(curl -s -o /dev/null -w "%{http_code}" "https://api.github.com/repos/$REPO_OWNER/rskj/branches/$RSKJ_BRANCH")
+RSKJ_REPO="${INPUT_RSKJ_REPO:-rskj}"        # Name of the base rskj repo; default to 'rskj'
+GH_TOKEN="${INPUT_GITHUB_TOKEN}"            # Optional; required to clone a private base rskj repo
+
+# Build optional auth for inspecting/cloning a private base rskj repository.
+# When no token is provided, behaviour is identical to the previous public-only flow.
+if [ -n "$GH_TOKEN" ]; then
+  RSKJ_CLONE_AUTH="x-access-token:${GH_TOKEN}@"
+  IS_RSKJ_BRANCH=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${GH_TOKEN}" "https://api.github.com/repos/$REPO_OWNER/$RSKJ_REPO/branches/$RSKJ_BRANCH")
+else
+  RSKJ_CLONE_AUTH=""
+  IS_RSKJ_BRANCH=$(curl -s -o /dev/null -w "%{http_code}" "https://api.github.com/repos/$REPO_OWNER/$RSKJ_REPO/branches/$RSKJ_BRANCH")
+fi
 IS_POWPEG_BRANCH=$(curl -s -o /dev/null -w "%{http_code}" "https://api.github.com/repos/$REPO_OWNER/powpeg-node/branches/$POWPEG_NODE_BRANCH")
 
 echo -e "\n\n--------- Input parameters received ---------\n\n"
@@ -18,12 +29,13 @@ echo "POWPEG_NODE_BRANCH=$POWPEG_NODE_BRANCH"
 echo "RIT_BRANCH=$RIT_BRANCH"
 echo "LOG_LEVEL=$LOG_LEVEL"
 echo "REPO_OWNER=$REPO_OWNER"
+echo "RSKJ_REPO=$RSKJ_REPO"
 
 echo -e "\n\n--------- Starting the configuration of rskj ---------\n\n"
 cd /usr/src/
-if [[ "$IS_RSKJ_BRANCH" -eq 200 ]]; then
-  echo "Found matching branch name in $REPO_OWNER/rskj.git repo"
-  git clone "https://github.com/$REPO_OWNER/rskj.git" rskj
+if [ "$IS_RSKJ_BRANCH" -eq 200 ]; then
+  echo "Found matching branch name in $REPO_OWNER/$RSKJ_REPO.git repo"
+  git clone "https://${RSKJ_CLONE_AUTH}github.com/$REPO_OWNER/$RSKJ_REPO.git" rskj
 else
   echo "Found matching branch name in rsksmart/rskj.git repo"
   git clone "https://github.com/rsksmart/rskj.git" rskj
@@ -34,7 +46,7 @@ chmod +x ./configure.sh && chmod +x gradlew
 
 echo -e  "\n\n--------- Starting the configuration of powpeg ---------\n\n"
 cd /usr/src/
-if [[ "$IS_POWPEG_BRANCH" -eq 200 ]]; then
+if [ "$IS_POWPEG_BRANCH" -eq 200 ]; then
   echo "Found matching branch name in $REPO_OWNER/powpeg-node.git repo"
   git clone "https://github.com/$REPO_OWNER/powpeg-node.git" powpeg
 else
@@ -75,7 +87,7 @@ npm run test-fail-fast
 STATUS=$?
 
 echo -e "\n\n--------- RIT Tests Result ---------\n\n"
-if [[ $STATUS -ne 0 ]]; then
+if [ "$STATUS" -ne 0 ]; then
   MESSAGE="Rootstock Integration Tests Status: FAILED"
 else
   MESSAGE="Rootstock Integration Tests Status: PASSED"
@@ -85,7 +97,7 @@ echo -e "$MESSAGE"
 echo "status=${STATUS}" >> "${GITHUB_OUTPUT}"
 echo "message=${MESSAGE}" >> "${GITHUB_OUTPUT}"
 
-if [[ $STATUS -ne 0 ]]; then
+if [ "$STATUS" -ne 0 ]; then
   exit 1
 fi
 exit 0
