@@ -42,7 +42,7 @@ if [ "$IS_RSKJ_BRANCH" -eq 200 ]; then
     git clone "https://github.com/$REPO_OWNER/$RSKJ_REPO.git" rskj
   fi
 elif [ "$IS_RSKJ_BRANCH" -eq 404 ]; then
-  echo "No matching branch in $REPO_OWNER/$RSKJ_REPO.git; falling back to default rsksmart/rskj.git repo"
+  echo "Got HTTP 404 for branch $RSKJ_BRANCH in $REPO_OWNER/$RSKJ_REPO.git (branch not found, or repo not accessible with the provided token); falling back to default rsksmart/rskj.git repo"
   git clone "https://github.com/rsksmart/rskj.git" rskj
 else
   echo "Error: unexpected HTTP status $IS_RSKJ_BRANCH while checking $REPO_OWNER/$RSKJ_REPO for branch $RSKJ_BRANCH (check the token permissions or GitHub rate limits)" >&2
@@ -91,8 +91,13 @@ export LOG_LEVEL="$LOG_LEVEL"
 
 echo -e "\n\n--------- Executing Rootstock Integration Tests ---------\n\n"
 npm install -y
-npm run test-fail-fast
-STATUS=$?
+# Capture the exit code without letting `set -e` abort the script, so the
+# reporting block below always runs and writes status/message to GITHUB_OUTPUT.
+if npm run test-fail-fast; then
+  STATUS=0
+else
+  STATUS=$?
+fi
 
 echo -e "\n\n--------- RIT Tests Result ---------\n\n"
 if [ "$STATUS" -ne 0 ]; then
