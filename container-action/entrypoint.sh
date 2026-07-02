@@ -35,9 +35,12 @@ cd /usr/src/
 if [ "$IS_RSKJ_BRANCH" -eq 200 ]; then
   echo "Found matching branch name in $REPO_OWNER/$RSKJ_REPO.git repo"
   # Pass the token via a per-command HTTP header (with -c) so it is never
-  # embedded in the remote URL nor persisted in rskj/.git/config.
+  # embedded in the remote URL nor persisted in rskj/.git/config. GitHub's
+  # git-over-HTTPS endpoint expects Basic auth (base64 of "x-access-token:<token>"),
+  # not a bearer scheme, so build the credential accordingly.
   if [ -n "$GH_TOKEN" ]; then
-    git -c http.extraheader="AUTHORIZATION: bearer ${GH_TOKEN}" clone "https://github.com/$REPO_OWNER/$RSKJ_REPO.git" rskj
+    GH_BASIC_AUTH=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')
+    GIT_TERMINAL_PROMPT=0 git -c http.extraheader="AUTHORIZATION: basic ${GH_BASIC_AUTH}" clone "https://github.com/$REPO_OWNER/$RSKJ_REPO.git" rskj
   else
     git clone "https://github.com/$REPO_OWNER/$RSKJ_REPO.git" rskj
   fi
