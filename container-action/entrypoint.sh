@@ -45,8 +45,18 @@ if [ "$IS_RSKJ_BRANCH" -eq 200 ]; then
     git clone "https://github.com/$REPO_OWNER/$RSKJ_REPO.git" rskj
   fi
 elif [ "$IS_RSKJ_BRANCH" -eq 404 ]; then
-  echo "Got HTTP 404 for branch $RSKJ_BRANCH in $REPO_OWNER/$RSKJ_REPO.git (branch not found, or repo not accessible with the provided token); falling back to default rsksmart/rskj.git repo"
-  git clone "https://github.com/rsksmart/rskj.git" rskj
+  # Only fall back to upstream rsksmart/rskj when the caller kept the default
+  # base repo name. If a custom rskj-repo was explicitly configured, falling
+  # back would silently run the tests against a different codebase than
+  # requested (and can mask a missing/insufficient token for a private repo),
+  # so treat that as a hard error instead.
+  if [ "$RSKJ_REPO" = "rskj" ]; then
+    echo "No branch $RSKJ_BRANCH in $REPO_OWNER/$RSKJ_REPO.git (branch not found, or repo not accessible with the provided token); falling back to default rsksmart/rskj.git repo"
+    git clone "https://github.com/rsksmart/rskj.git" rskj
+  else
+    echo "Error: branch $RSKJ_BRANCH not found in the explicitly configured $REPO_OWNER/$RSKJ_REPO.git (branch missing, or repo not accessible with the provided token). Refusing to fall back to rsksmart/rskj so the tests are not silently run against a different codebase." >&2
+    exit 1
+  fi
 else
   echo "Error: unexpected HTTP status $IS_RSKJ_BRANCH while checking $REPO_OWNER/$RSKJ_REPO for branch $RSKJ_BRANCH (check the token permissions or GitHub rate limits)" >&2
   exit 1
