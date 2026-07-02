@@ -12,13 +12,12 @@ REPO_OWNER="${INPUT_REPO_OWNER:-rsksmart}"  # Default to 'rsksmart' if not provi
 RSKJ_REPO="${INPUT_RSKJ_REPO:-rskj}"        # Name of the base rskj repo; default to 'rskj'
 GH_TOKEN="${INPUT_GITHUB_TOKEN}"            # Optional; required to clone a private base rskj repo
 
-# Build optional auth for inspecting/cloning a private base rskj repository.
-# When no token is provided, behaviour is identical to the previous public-only flow.
+# Inspect the configured base rskj repository. When a token is provided the
+# request is authenticated so private repos can be checked; otherwise behaviour
+# is identical to the previous public-only flow.
 if [ -n "$GH_TOKEN" ]; then
-  RSKJ_CLONE_AUTH="x-access-token:${GH_TOKEN}@"
   IS_RSKJ_BRANCH=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${GH_TOKEN}" "https://api.github.com/repos/$REPO_OWNER/$RSKJ_REPO/branches/$RSKJ_BRANCH")
 else
-  RSKJ_CLONE_AUTH=""
   IS_RSKJ_BRANCH=$(curl -s -o /dev/null -w "%{http_code}" "https://api.github.com/repos/$REPO_OWNER/$RSKJ_REPO/branches/$RSKJ_BRANCH")
 fi
 IS_POWPEG_BRANCH=$(curl -s -o /dev/null -w "%{http_code}" "https://api.github.com/repos/$REPO_OWNER/powpeg-node/branches/$POWPEG_NODE_BRANCH")
@@ -35,10 +34,19 @@ echo -e "\n\n--------- Starting the configuration of rskj ---------\n\n"
 cd /usr/src/
 if [ "$IS_RSKJ_BRANCH" -eq 200 ]; then
   echo "Found matching branch name in $REPO_OWNER/$RSKJ_REPO.git repo"
-  git clone "https://${RSKJ_CLONE_AUTH}github.com/$REPO_OWNER/$RSKJ_REPO.git" rskj
-else
-  echo "Found matching branch name in rsksmart/rskj.git repo"
+  # Pass the token via a per-command HTTP header (with -c) so it is never
+  # embedded in the remote URL nor persisted in rskj/.git/config.
+  if [ -n "$GH_TOKEN" ]; then
+    git -c http.extraheader="AUTHORIZATION: bearer ${GH_TOKEN}" clone "https://github.com/$REPO_OWNER/$RSKJ_REPO.git" rskj
+  else
+    git clone "https://github.com/$REPO_OWNER/$RSKJ_REPO.git" rskj
+  fi
+elif [ "$IS_RSKJ_BRANCH" -eq 404 ]; then
+  echo "No matching branch in $REPO_OWNER/$RSKJ_REPO.git; falling back to default rsksmart/rskj.git repo"
   git clone "https://github.com/rsksmart/rskj.git" rskj
+else
+  echo "Error: unexpected HTTP status $IS_RSKJ_BRANCH while checking $REPO_OWNER/$RSKJ_REPO for branch $RSKJ_BRANCH (check the token permissions or GitHub rate limits)" >&2
+  exit 1
 fi
 cd rskj && git checkout -f "$RSKJ_BRANCH"
 chmod +x ./configure.sh && chmod +x gradlew
