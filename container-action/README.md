@@ -98,3 +98,5 @@ Notes:
 - Only the characters `[-+./0-9A-Z_a-z]` are allowed in the branch name.
 - Any override that is omitted falls back to its default (`master` for `rskj`
   and `fed`; for `rit`, the PR's own head branch).
+- To run tests against a fork/private `rskj`, set `repo-owner` (and optionally `rskj-repo`)
+  and provide `github-token` when the repository is private.

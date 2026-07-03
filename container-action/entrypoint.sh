@@ -71,6 +71,7 @@ if [[ "$RSKJ_REF_STATUS" == "found" ]]; then
     # not mask it automatically.
     echo "::add-mask::${GH_BASIC_AUTH}"
     GIT_TERMINAL_PROMPT=0 git -c http.extraheader="Authorization: Basic ${GH_BASIC_AUTH}" clone "https://github.com/$REPO_OWNER/$RSKJ_REPO.git" rskj
+    unset GH_BASIC_AUTH
   else
     git clone "https://github.com/$REPO_OWNER/$RSKJ_REPO.git" rskj
   fi
