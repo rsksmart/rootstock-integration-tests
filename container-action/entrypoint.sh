@@ -20,8 +20,9 @@ GH_TOKEN="${INPUT_GITHUB_TOKEN}"            # Optional; required to clone a priv
 # (e.g. "feature/foo"); Node is already installed in this container.
 #
 # Echoes "found", "notfound" or "error:<http_code>" so callers can keep 404 as
-# the only fallback case and fail fast on auth/rate-limit errors. When a token
-# is set the request is authenticated so private repos can be inspected.
+# the only fallback case and fail fast on any other status (auth, invalid ref,
+# rate limits, ...). When a token is set the request is authenticated so private
+# repos can be inspected.
 ref_status() {
   local owner="$1" repo="$2" ref="$3" ref_enc code
   ref_enc=$(node -e 'process.stdout.write(encodeURIComponent(process.argv[1]))' "$ref")
@@ -32,11 +33,14 @@ ref_status() {
   fi
   if [[ "$code" -eq 200 ]]; then
     echo "found"
-  elif [[ "$code" -eq 404 || "$code" -eq 422 ]]; then
-    # 404: ref not found (or repo not accessible with the given token).
-    # 422: unprocessable ref (e.g. malformed commit sha).
+  elif [[ "$code" -eq 404 ]]; then
+    # 404 is the only "ref not found" case (or repo not accessible with the
+    # given token) and the sole trigger for the upstream fallback.
     echo "notfound"
   else
+    # Everything else (401/403 auth, 422 unprocessable/invalid ref, rate limits,
+    # 5xx, ...) is a hard error so we fail fast instead of silently switching
+    # repos.
     echo "error:$code"
   fi
 }
@@ -84,7 +88,7 @@ elif [[ "$RSKJ_REF_STATUS" == "notfound" ]]; then
     exit 1
   fi
 else
-  echo "Error: unexpected HTTP status ${RSKJ_REF_STATUS#error:} while checking $REPO_OWNER/$RSKJ_REPO for ref $RSKJ_BRANCH (check the token permissions or GitHub rate limits)" >&2
+  echo "Error: unexpected HTTP status ${RSKJ_REF_STATUS#error:} while checking $REPO_OWNER/$RSKJ_REPO for ref $RSKJ_BRANCH (invalid ref, insufficient token permissions, or GitHub rate limits)" >&2
   exit 1
 fi
 cd rskj && git checkout -f "$RSKJ_BRANCH"
@@ -104,7 +108,7 @@ elif [[ "$POWPEG_REF_STATUS" == "notfound" ]]; then
   echo "No ref $POWPEG_NODE_BRANCH in $REPO_OWNER/powpeg-node.git; falling back to default rsksmart/powpeg-node.git repo"
   git clone "https://github.com/rsksmart/powpeg-node.git" powpeg
 else
-  echo "Error: unexpected HTTP status ${POWPEG_REF_STATUS#error:} while checking $REPO_OWNER/powpeg-node for ref $POWPEG_NODE_BRANCH (check the token permissions or GitHub rate limits)" >&2
+  echo "Error: unexpected HTTP status ${POWPEG_REF_STATUS#error:} while checking $REPO_OWNER/powpeg-node for ref $POWPEG_NODE_BRANCH (invalid ref, insufficient token permissions, or GitHub rate limits)" >&2
   exit 1
 fi
 cp configure_gradle_powpeg.sh powpeg

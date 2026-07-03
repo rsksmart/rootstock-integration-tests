@@ -58,3 +58,43 @@ with:
   powpeg-node-branch: master
   rit-branch: main
 ```
+
+## Customising the branches
+
+There are two ways to tell the integration tests which branch (or tag/commit) of
+`rskj`, `powpeg-node` and `rootstock-integration-tests` to check out.
+
+### 1. From the workflow
+
+Pass them explicitly through the `with:` block of the action, as shown in the
+example above (`rskj-branch`, `powpeg-node-branch`, `rit-branch`).
+
+### 2. From the Pull Request description
+
+When the tests are triggered by a pull request, the branches can be overridden
+directly from the **PR description**, without touching any workflow file. This is
+handled by the [`set-branch-variables`](../.github/actions/set-branch-variables/action.yml)
+composite action, which scans the PR body for override tokens.
+
+Each token must be wrapped in backticks and use the `prefix:value` format
+(the backticks and the colon are both required):
+
+- `` `rskj:<branch>` `` — the base rskj branch/tag/commit
+- `` `fed:<branch>` `` — the powpeg-node branch/tag/commit (powpeg is referred to as *fed*)
+- `` `rit:<branch>` `` — the rootstock-integration-tests branch/tag/commit
+
+For example, adding the following anywhere in the PR description runs the tests
+against a custom rskj branch and a specific powpeg tag, while keeping the default
+`rit` branch:
+
+```
+Testing the peg-out changes.
+
+`rskj:my-feature-branch`
+`fed:6.4.0.0-rc`
+```
+
+Notes:
+- Only the characters `[-+./0-9A-Z_a-z]` are allowed in the branch name.
+- Any override that is omitted falls back to its default (`master` for `rskj`
+  and `fed`; for `rit`, the PR's own head branch).
