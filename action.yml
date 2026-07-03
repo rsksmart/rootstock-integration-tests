@@ -28,7 +28,7 @@ inputs:
     required: false
     default: 'rskj'
   github-token:
-    description: 'Token used to clone a private base rskj repository. Optional; only required when rskj-repo is private. Pass it via GitHub Actions secrets (e.g. secrets.MY_TOKEN) and do not hardcode.'
+    description: 'Token used to clone a private base rskj repository. Optional; only required when rskj-repo is private. Pass it via GitHub Actions secrets (e.g. ${{ secrets.MY_TOKEN }}) and do not hardcode.'
     required: false
     default: ''
 
