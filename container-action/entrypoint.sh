@@ -81,9 +81,15 @@ cd /usr/src/
 if [[ "$IS_POWPEG_BRANCH" -eq 200 ]]; then
   echo "Found matching branch name in $REPO_OWNER/powpeg-node.git repo"
   git clone "https://github.com/$REPO_OWNER/powpeg-node.git" powpeg
-else
-  echo "Found matching branch name in rsksmart/powpeg-node.git repo"
+elif [[ "$IS_POWPEG_BRANCH" -eq 404 ]]; then
+  # Only a genuine 404 (branch not found in the configured owner) triggers the
+  # fallback to upstream rsksmart/powpeg-node. Any other status (401/403/rate
+  # limit) is treated as a hard error so we never silently switch repos.
+  echo "No branch $POWPEG_NODE_BRANCH in $REPO_OWNER/powpeg-node.git; falling back to default rsksmart/powpeg-node.git repo"
   git clone "https://github.com/rsksmart/powpeg-node.git" powpeg
+else
+  echo "Error: unexpected HTTP status $IS_POWPEG_BRANCH while checking $REPO_OWNER/powpeg-node for branch $POWPEG_NODE_BRANCH (check the token permissions or GitHub rate limits)" >&2
+  exit 1
 fi
 cp configure_gradle_powpeg.sh powpeg
 cd powpeg && git checkout -f "$POWPEG_NODE_BRANCH"
