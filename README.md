@@ -94,6 +94,38 @@ Simply run:
 
 > sudo node cleanEnv.js
 
+## Test runner web UI
+
+A small local server serves a browser UI to pick integration tests, run them with the same `INCLUDE_CASES` rules as the CLI, and watch output in one place.
+
+1. Start the server (with your usual `.env` loaded):
+
+   ```bash
+   npm run test-runner-ui
+   ```
+
+2. Open the URL printed in the terminal (default **http://127.0.0.1:9876/**).
+
+**Behavior**
+
+- **Test selection:** All scripts under `tests/**/*.js` are listed. By default, only files whose names start with `00` (setup tests) are checked; you can change selection and use the bulk actions (non-setup only, or all tests).
+- **Run:** Starts Mocha with `INCLUDE_CASES` set to the selected file name prefixes (comma-separated), matching `test.js`.
+- **Stop:** Sends SIGTERM to the Mocha process group so the run actually stops (not only the shell wrapper).
+- **Output:** Test stdout/stderr are streamed live; ANSI colors from Mocha are rendered in the page.
+- **Federator logs:** If `LOG_HOME` is set (see [Logs](#logs)), each non-empty `*.log` file under that directory gets a tab. The label shows the line count (from the file on disk); counts refresh periodically. Tabs for empty files are hidden.
+- **Clear log:** On **Test output**, clears only the in-memory view. On a federator tab, **truncates that log file on disk** so the line count and tab list stay consistent.
+- **Clear all logs:** Clears the test output view and truncates every `.log` file under `LOG_HOME`.
+
+**Environment**
+
+| Variable | Meaning |
+|----------|---------|
+| `TEST_RUNNER_PORT` | HTTP port (default `9876`) |
+| `TEST_RUNNER_HOST` | Bind address (default `127.0.0.1`) |
+| `LOG_HOME` | Directory scanned for federator `.log` tabs (same as tests) |
+
+Implementation files: `test-runner-server.js`, `test-runner-ui/index.html`, and `lib/test-runner-ansi.js` (ANSI to HTML).
+
 ## Running the tests with a different configuration file
 
 1. Create a configuration file, e.g., `config/another_config.js`.
@@ -240,3 +272,15 @@ Running
 To run it, execute:
 
 > docker run --platform linux/amd64 -it rits
+
+
+
+INCLUDE_CASES=00_00_01-sync.js,00_00_02-disable_lock_whitelist.js,00_00_03-vote_for_locking_cap_to_21m.js,00_00_07-change-federation.js,<y aqui va tu archivo de tests>
+
+
+## INCLUDE_CASES=mi_set_1
+
+## Solo este correría on npm run test-fails-fast porque los otros están comentados.
+INCLUDE_CASES=mi_set_2
+
+## INCLUDE_CASES=mi_set_3
