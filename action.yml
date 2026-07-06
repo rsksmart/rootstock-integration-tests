@@ -23,6 +23,14 @@ inputs:
     description: 'The owner of the repository'
     required: false
     default: 'rsksmart'
+  rskj-repo:
+    description: 'The name of the base rskj repository to checkout (e.g. a private fork)'
+    required: false
+    default: 'rskj'
+  github-token:
+    description: 'Token used to clone a private base rskj repository. Optional; only required when rskj-repo is private. Pass it from a GitHub Actions secret (reference it with the standard secrets expression, e.g. secrets.MY_TOKEN) and do not hardcode.'
+    required: false
+    default: ''
 
 outputs:
   status:
@@ -39,3 +47,5 @@ runs:
     INPUT_RIT_BRANCH: ${{ inputs.rit-branch }}
     INPUT_RIT_LOG_LEVEL: ${{ inputs.rit-log-level }}
     INPUT_REPO_OWNER: ${{ inputs.repo-owner }}
+    INPUT_RSKJ_REPO: ${{ inputs.rskj-repo }}
+    INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}

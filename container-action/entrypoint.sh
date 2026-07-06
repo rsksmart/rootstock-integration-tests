@@ -9,8 +9,44 @@ POWPEG_NODE_BRANCH="${INPUT_POWPEG_NODE_BRANCH}"
 RIT_BRANCH="${INPUT_RIT_BRANCH}"
 LOG_LEVEL="${INPUT_RIT_LOG_LEVEL}"
 REPO_OWNER="${INPUT_REPO_OWNER:-rsksmart}"  # Default to 'rsksmart' if not provided
-IS_RSKJ_BRANCH=$(curl -s -o /dev/null -w "%{http_code}" "https://api.github.com/repos/$REPO_OWNER/rskj/branches/$RSKJ_BRANCH")
-IS_POWPEG_BRANCH=$(curl -s -o /dev/null -w "%{http_code}" "https://api.github.com/repos/$REPO_OWNER/powpeg-node/branches/$POWPEG_NODE_BRANCH")
+RSKJ_REPO="${INPUT_RSKJ_REPO:-rskj}"        # Name of the base rskj repo; default to 'rskj'
+GH_TOKEN="${INPUT_GITHUB_TOKEN}"            # Optional; required to clone a private base rskj repo
+
+# Resolve whether a git ref exists in a GitHub repository. The inputs may be a
+# branch, a tag or a specific commit (see container-action/README.md), so we use
+# the ref-aware REST "commits/{ref}" endpoint, which resolves all three, instead
+# of "branches/{ref}", which only matches branch names (and would 404 for a
+# valid tag/commit). The ref is URL-encoded because it can contain slashes
+# (e.g. "feature/foo"); Node is already installed in this container.
+#
+# Echoes "found", "notfound" or "error:<http_code>" so callers can keep 404 as
+# the only fallback case and fail fast on any other status (auth, invalid ref,
+# rate limits, ...). When a token is set the request is authenticated so private
+# repos can be inspected.
+ref_status() {
+  local owner="$1" repo="$2" ref="$3" ref_enc code
+  ref_enc=$(node -e 'process.stdout.write(encodeURIComponent(process.argv[1]))' "$ref")
+  if [[ -n "$GH_TOKEN" ]]; then
+    code=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${GH_TOKEN}" "https://api.github.com/repos/$owner/$repo/commits/$ref_enc")
+  else
+    code=$(curl -s -o /dev/null -w "%{http_code}" "https://api.github.com/repos/$owner/$repo/commits/$ref_enc")
+  fi
+  if [[ "$code" -eq 200 ]]; then
+    echo "found"
+  elif [[ "$code" -eq 404 ]]; then
+    # 404 is the only "ref not found" case (or repo not accessible with the
+    # given token) and the sole trigger for the upstream fallback.
+    echo "notfound"
+  else
+    # Everything else (401/403 auth, 422 unprocessable/invalid ref, rate limits,
+    # 5xx, ...) is a hard error so we fail fast instead of silently switching
+    # repos.
+    echo "error:$code"
+  fi
+}
+
+RSKJ_REF_STATUS=$(ref_status "$REPO_OWNER" "$RSKJ_REPO" "$RSKJ_BRANCH")
+POWPEG_REF_STATUS=$(ref_status "$REPO_OWNER" "powpeg-node" "$POWPEG_NODE_BRANCH")
 
 echo -e "\n\n--------- Input parameters received ---------\n\n"
 echo "RSKJ_BRANCH=$RSKJ_BRANCH"
@@ -18,15 +54,43 @@ echo "POWPEG_NODE_BRANCH=$POWPEG_NODE_BRANCH"
 echo "RIT_BRANCH=$RIT_BRANCH"
 echo "LOG_LEVEL=$LOG_LEVEL"
 echo "REPO_OWNER=$REPO_OWNER"
+echo "RSKJ_REPO=$RSKJ_REPO"
 
 echo -e "\n\n--------- Starting the configuration of rskj ---------\n\n"
 cd /usr/src/
-if [[ "$IS_RSKJ_BRANCH" -eq 200 ]]; then
-  echo "Found matching branch name in $REPO_OWNER/rskj.git repo"
-  git clone "https://github.com/$REPO_OWNER/rskj.git" rskj
+if [[ "$RSKJ_REF_STATUS" == "found" ]]; then
+  echo "Found matching ref $RSKJ_BRANCH in $REPO_OWNER/$RSKJ_REPO.git repo"
+  # Pass the token via a per-command HTTP header (with -c) so it is never
+  # embedded in the remote URL nor persisted in rskj/.git/config. GitHub's
+  # git-over-HTTPS endpoint expects Basic auth (base64 of "x-access-token:<token>"),
+  # not a bearer scheme, so build the credential accordingly.
+  if [[ -n "$GH_TOKEN" ]]; then
+    GH_BASIC_AUTH=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')
+    # Mask the derived credential so it is not printed in logs (e.g. under
+    # GIT_TRACE_CURL=1); it differs from the original secret so Actions would
+    # not mask it automatically.
+    echo "::add-mask::${GH_BASIC_AUTH}"
+    GIT_TERMINAL_PROMPT=0 git -c http.extraheader="Authorization: Basic ${GH_BASIC_AUTH}" clone "https://github.com/$REPO_OWNER/$RSKJ_REPO.git" rskj
+    unset GH_BASIC_AUTH
+  else
+    git clone "https://github.com/$REPO_OWNER/$RSKJ_REPO.git" rskj
+  fi
+elif [[ "$RSKJ_REF_STATUS" == "notfound" ]]; then
+  # Only fall back to upstream rsksmart/rskj when the caller kept the default
+  # base repo name. If a custom rskj-repo was explicitly configured, falling
+  # back would silently run the tests against a different codebase than
+  # requested (and can mask a missing/insufficient token for a private repo),
+  # so treat that as a hard error instead.
+  if [[ "$RSKJ_REPO" == "rskj" ]]; then
+    echo "No ref $RSKJ_BRANCH in $REPO_OWNER/$RSKJ_REPO.git (branch/tag/commit not found, or repo not accessible with the provided token); falling back to default rsksmart/rskj.git repo"
+    git clone "https://github.com/rsksmart/rskj.git" rskj
+  else
+    echo "Error: ref $RSKJ_BRANCH not found in the explicitly configured $REPO_OWNER/$RSKJ_REPO.git (branch/tag/commit missing, or repo not accessible with the provided token). Refusing to fall back to rsksmart/rskj so the tests are not silently run against a different codebase." >&2
+    exit 1
+  fi
 else
-  echo "Found matching branch name in rsksmart/rskj.git repo"
-  git clone "https://github.com/rsksmart/rskj.git" rskj
+  echo "Error: unexpected HTTP status ${RSKJ_REF_STATUS#error:} while checking $REPO_OWNER/$RSKJ_REPO for ref $RSKJ_BRANCH (invalid ref, insufficient token permissions, or GitHub rate limits)" >&2
+  exit 1
 fi
 cd rskj && git checkout -f "$RSKJ_BRANCH"
 chmod +x ./configure.sh && chmod +x gradlew
@@ -34,12 +98,19 @@ chmod +x ./configure.sh && chmod +x gradlew
 
 echo -e  "\n\n--------- Starting the configuration of powpeg ---------\n\n"
 cd /usr/src/
-if [[ "$IS_POWPEG_BRANCH" -eq 200 ]]; then
-  echo "Found matching branch name in $REPO_OWNER/powpeg-node.git repo"
+if [[ "$POWPEG_REF_STATUS" == "found" ]]; then
+  echo "Found matching ref $POWPEG_NODE_BRANCH in $REPO_OWNER/powpeg-node.git repo"
   git clone "https://github.com/$REPO_OWNER/powpeg-node.git" powpeg
-else
-  echo "Found matching branch name in rsksmart/powpeg-node.git repo"
+elif [[ "$POWPEG_REF_STATUS" == "notfound" ]]; then
+  # Only a genuine not-found (branch/tag/commit absent in the configured owner)
+  # triggers the fallback to upstream rsksmart/powpeg-node. Any other status
+  # (401/403/rate limit) is treated as a hard error so we never silently switch
+  # repos.
+  echo "No ref $POWPEG_NODE_BRANCH in $REPO_OWNER/powpeg-node.git; falling back to default rsksmart/powpeg-node.git repo"
   git clone "https://github.com/rsksmart/powpeg-node.git" powpeg
+else
+  echo "Error: unexpected HTTP status ${POWPEG_REF_STATUS#error:} while checking $REPO_OWNER/powpeg-node for ref $POWPEG_NODE_BRANCH (invalid ref, insufficient token permissions, or GitHub rate limits)" >&2
+  exit 1
 fi
 cp configure_gradle_powpeg.sh powpeg
 cd powpeg && git checkout -f "$POWPEG_NODE_BRANCH"
@@ -71,11 +142,16 @@ export LOG_LEVEL="$LOG_LEVEL"
 
 echo -e "\n\n--------- Executing Rootstock Integration Tests ---------\n\n"
 npm install -y
-npm run test-fail-fast
-STATUS=$?
+# Capture the exit code without letting `set -e` abort the script, so the
+# reporting block below always runs and writes status/message to GITHUB_OUTPUT.
+if npm run test-fail-fast; then
+  STATUS=0
+else
+  STATUS=$?
+fi
 
 echo -e "\n\n--------- RIT Tests Result ---------\n\n"
-if [[ $STATUS -ne 0 ]]; then
+if [[ "$STATUS" -ne 0 ]]; then
   MESSAGE="Rootstock Integration Tests Status: FAILED"
 else
   MESSAGE="Rootstock Integration Tests Status: PASSED"
@@ -85,7 +161,7 @@ echo -e "$MESSAGE"
 echo "status=${STATUS}" >> "${GITHUB_OUTPUT}"
 echo "message=${MESSAGE}" >> "${GITHUB_OUTPUT}"
 
-if [[ $STATUS -ne 0 ]]; then
+if [[ "$STATUS" -ne 0 ]]; then
   exit 1
 fi
 exit 0
