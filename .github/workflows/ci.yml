@@ -15,6 +15,14 @@ on:
         description: 'Branch for PowPeg Node'
         required: false
         default: 'master'
+      test-suite:
+        description: "Test suite to run: 'short' (fast PR subset) or 'full' (short + extra tests)"
+        required: false
+        default: 'full'
+        type: choice
+        options:
+          - short
+          - full
 
 permissions:
   contents: read
@@ -22,6 +30,9 @@ permissions:
 env:
   TEST_TAG:  ${{ github.event.repository.name }}/rit:test
   LATEST_TAG: ghcr.io/rsksmart/${{ github.event.repository.name }}/rit
+  # Every PR gets the short suite; pushes to main and manual runs default to the full (long) suite,
+  # which can also be pointed at 'short' via workflow_dispatch.
+  TEST_SUITE: ${{ github.event_name == 'pull_request' && 'short' || (github.event.inputs.test-suite || 'full') }}
 
 jobs:
   build-push-rit-action-container-action:
@@ -79,6 +90,7 @@ jobs:
             --env INPUT_POWPEG_NODE_BRANCH="${{ env.POWPEG_BRANCH }}"  \
             --env INPUT_RIT_BRANCH="${{ env.RIT_BRANCH }}"  \
             --env INPUT_RIT_LOG_LEVEL="${{ env.INPUT_RIT_LOG_LEVEL }}" \
+            --env INPUT_TEST_SUITE="${{ env.TEST_SUITE }}" \
             -v "$GITHUB_OUTPUT:/github-output"  \
             --rm ${{ env.TEST_TAG }}
 
@@ -123,6 +135,7 @@ jobs:
           rskj-branch: ${{ env.RSKJ_BRANCH }}
           powpeg-node-branch: ${{ env.POWPEG_BRANCH }}
           rit-branch: ${{ env.RIT_BRANCH }}
+          test-suite: ${{ env.TEST_SUITE }}
 
       - name: Print RIT Status and Message
         id: output

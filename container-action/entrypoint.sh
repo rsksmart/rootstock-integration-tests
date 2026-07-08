@@ -11,6 +11,7 @@ LOG_LEVEL="${INPUT_RIT_LOG_LEVEL}"
 REPO_OWNER="${INPUT_REPO_OWNER:-rsksmart}"  # Default to 'rsksmart' if not provided
 RSKJ_REPO="${INPUT_RSKJ_REPO:-rskj}"        # Name of the base rskj repo; default to 'rskj'
 GH_TOKEN="${INPUT_GITHUB_TOKEN}"            # Optional; required to clone a private base rskj repo
+TEST_SUITE="${INPUT_TEST_SUITE:-full}"      # Default to 'full' (long) suite if not provided
 
 # Resolve whether a git ref exists in a GitHub repository. The inputs may be a
 # branch, a tag or a specific commit (see container-action/README.md), so we use
@@ -55,6 +56,7 @@ echo "RIT_BRANCH=$RIT_BRANCH"
 echo "LOG_LEVEL=$LOG_LEVEL"
 echo "REPO_OWNER=$REPO_OWNER"
 echo "RSKJ_REPO=$RSKJ_REPO"
+echo "TEST_SUITE=$TEST_SUITE"
 
 echo -e "\n\n--------- Starting the configuration of rskj ---------\n\n"
 cd /usr/src/
@@ -140,11 +142,16 @@ chmod +x ./configure_rit_locally.sh
 
 export LOG_LEVEL="$LOG_LEVEL"
 
-echo -e "\n\n--------- Executing Rootstock Integration Tests ---------\n\n"
+echo -e "\n\n--------- Executing Rootstock Integration Tests ($TEST_SUITE suite) ---------\n\n"
 npm install -y
+if [[ "$TEST_SUITE" == "short" ]]; then
+  TEST_SCRIPT=test-short-fail-fast
+else
+  TEST_SCRIPT=test-fail-fast
+fi
 # Capture the exit code without letting `set -e` abort the script, so the
 # reporting block below always runs and writes status/message to GITHUB_OUTPUT.
-if npm run test-fail-fast; then
+if npm run "$TEST_SCRIPT"; then
   STATUS=0
 else
   STATUS=$?

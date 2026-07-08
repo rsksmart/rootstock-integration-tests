@@ -94,6 +94,17 @@ Simply run:
 
 > sudo node cleanEnv.js
 
+### Running the short or long test suite
+
+The full test suite takes a while to run, so there's a shorter subset intended for fast feedback on every PR, and the full ("long") suite intended to be run on demand before a release or before merging a feature branch into master. The long suite is the short suite plus every other test file.
+
+Test files that are part of the short suite live directly under `tests/`. Every other test file lives under `tests/extra/` and is only run as part of the long suite.
+
+- `npm run test-short` / `npm run test-short-fail-fast` — runs only the files directly under `tests/`.
+- `npm run test-long` / `npm run test-long-fail-fast` — runs every test file, including `tests/extra/` (same as `npm test` / `npm run test-fail-fast`).
+
+This is controlled by the `TEST_SUITE` environment variable (`short` or `full`, defaulting to `full`) read in [test.js](test.js). The RIT GitHub Action also accepts a `test-suite` input (`short` or `full`) to pick which suite to run; pull requests to this repo run `short` automatically, while pushes to `main` and manual `workflow_dispatch` runs default to `full`.
+
 ## Running the tests with a different configuration file
 
 1. Create a configuration file, e.g., `config/another_config.js`.

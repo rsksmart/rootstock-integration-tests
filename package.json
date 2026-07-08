@@ -6,6 +6,10 @@
   "scripts": {
     "test": "mocha --timeout 1200000",
     "test-fail-fast": "mocha -b --timeout 1200000 --trace-warnings",
+    "test-short": "TEST_SUITE=short mocha --timeout 1200000",
+    "test-short-fail-fast": "TEST_SUITE=short mocha -b --timeout 1200000 --trace-warnings",
+    "test-long": "npm run test",
+    "test-long-fail-fast": "npm run test-fail-fast",
     "run-tests-multiple-times": "node multipleTestExecutionsRunner.js",
     "run-single-test-file": "node singleTestFileRunner.js",
     "run-with-docker": "node runWithDocker.js",

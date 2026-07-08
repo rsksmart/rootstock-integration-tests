@@ -1,8 +1,8 @@
 const { bitcoin, rsk, pegUtils } = require('peglib');
 const NETWORK = bitcoin.networks.testnet;
-const CustomError = require('../lib/CustomError');
-const _2wpUtilsLegacy = require('../lib/2wp-utils-legacy');
-const pegAssertions = require('../lib/assertions/2wp');
+const CustomError = require('../../lib/CustomError');
+const _2wpUtilsLegacy = require('../../lib/2wp-utils-legacy');
+const pegAssertions = require('../../lib/assertions/2wp');
 
 // TODO: Refactor these tests
 // Some tests fail after running all tests with all forks active from scratch.

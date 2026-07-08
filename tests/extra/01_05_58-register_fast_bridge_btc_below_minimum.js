@@ -2,16 +2,16 @@ const expect = require('chai').expect;
 const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
 const {
     UNPROCESSABLE_TX_AMOUNT_SENT_BELOW_MINIMUM_ERROR,
-} = require('../lib/flyover-pegin-response-codes');
-const CustomError = require('../lib/CustomError');
-const lbc = require('../lib/liquidity-bridge-contract');
-const { sendTxWithCheck, getFedsPubKeys } = require('../lib/rsk-utils');
-const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
-const { getBtcClient } = require('../lib/btc-client-provider');
-const { ensure0x } = require('../lib/utils');
-const { fundAddressAndGetData } = require('../lib/btc-utils');
-const { getBridge } = require('../lib/bridge-provider');
-const { mineForPeginRegistration } = require('../lib/2wp-utils');
+} = require('../../lib/flyover-pegin-response-codes');
+const CustomError = require('../../lib/CustomError');
+const lbc = require('../../lib/liquidity-bridge-contract');
+const { sendTxWithCheck, getFedsPubKeys } = require('../../lib/rsk-utils');
+const { getRskTransactionHelpers } = require('../../lib/rsk-tx-helper-provider');
+const { getBtcClient } = require('../../lib/btc-client-provider');
+const { ensure0x } = require('../../lib/utils');
+const { fundAddressAndGetData } = require('../../lib/btc-utils');
+const { getBridge } = require('../../lib/bridge-provider');
+const { mineForPeginRegistration } = require('../../lib/2wp-utils');
 
 // TODO: Refactor these tests
 // Some tests fail after running all tests with all forks active from scratch.

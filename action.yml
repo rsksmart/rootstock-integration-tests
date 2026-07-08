@@ -31,6 +31,10 @@ inputs:
     description: 'Token used to clone a private base rskj repository. Optional; only required when rskj-repo is private. Pass it from a GitHub Actions secret (reference it with the standard secrets expression, e.g. secrets.MY_TOKEN) and do not hardcode.'
     required: false
     default: ''
+  test-suite:
+    description: "Which test suite to run: 'short' (fast PR subset) or 'full' (short + extra tests)"
+    required: false
+    default: 'full'
 
 outputs:
   status:
@@ -49,3 +53,4 @@ runs:
     INPUT_REPO_OWNER: ${{ inputs.repo-owner }}
     INPUT_RSKJ_REPO: ${{ inputs.rskj-repo }}
     INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+    INPUT_TEST_SUITE: ${{ inputs.test-suite }}

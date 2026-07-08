@@ -35,6 +35,9 @@ const testCasesInclude =
 const testCasesExclude =
     process.env.EXCLUDE_CASES != null ? process.env.EXCLUDE_CASES.split(',') : null;
 
+// 'short' runs only the top-level tests/*.js files. 'full' (default) also includes tests/extra/*.js.
+const testSuite = process.env.TEST_SUITE || 'full';
+
 // ***** CONSTANTS ***** //
 const outputConfig = config.output || {};
 const BITCOIND_OUTPUT = outputConfig.bitcoindPrefix || colors.green('bitcoind:');
@@ -362,10 +365,13 @@ const needsToBeTested = function (testFile) {
 const runTestThisTimes = process.env.RUN_EACH_TEST_FILE_THESE_TIMES || 1;
 
 // Register tests
+const testsGlobPattern = testSuite === 'short' ? './tests/*.js' : './tests/**/*.js';
 const sortedTests = glob
-    .sync('./tests/**/*.js')
+    .sync(testsGlobPattern)
     .filter((test) => needsToBeTested(test))
-    .sort();
+    // Tests depend on the blockchain state left by previous ones, so they must run in the order
+    // dictated by their filename regardless of which directory (tests/ or tests/extra/) they live in.
+    .sort((testA, testB) => path.basename(testA).localeCompare(path.basename(testB)));
 for (const test of sortedTests) {
     for (let i = 0; i < runTestThisTimes; i++) {
         delete require.cache[require.resolve(test)];

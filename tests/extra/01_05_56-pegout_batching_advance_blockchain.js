@@ -1,10 +1,10 @@
 const { rsk } = require('peglib');
-const rskUtilsLegacy = require('../lib/rsk-utils-legacy');
-const CustomError = require('../lib/CustomError');
-const pegAssertions = require('../lib/assertions/2wp');
-const { NUMBER_OF_BLOCKS_BTW_PEGOUTS } = require('../lib/constants/pegout-constants');
-const rskUtils = require('../lib/rsk-utils');
-const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
+const rskUtilsLegacy = require('../../lib/rsk-utils-legacy');
+const CustomError = require('../../lib/CustomError');
+const pegAssertions = require('../../lib/assertions/2wp');
+const { NUMBER_OF_BLOCKS_BTW_PEGOUTS } = require('../../lib/constants/pegout-constants');
+const rskUtils = require('../../lib/rsk-utils');
+const { getRskTransactionHelpers } = require('../../lib/rsk-tx-helper-provider');
 
 // TODO: Refactor these tests
 // Some tests fail after running all tests with all forks active from scratch.
