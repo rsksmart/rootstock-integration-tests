@@ -1,7 +1,9 @@
 #!/bin/bash -l
 
-# Warning! As of now, if a modification is made to this entrypoint.sh file, the version/hash of the `Run Rootstock Integration Tests` step at rskj/.github/workflows/rit.yml will need to be updated to match the new commit hash or version of this file.
-# This is because the entrypoint.sh file is copied from this hash/version and not from the executing branch, hence, the changes will not be reflected when running the tests from rskj or powpeg-node actions.
+# Note: this file is consumed directly by rskj and powpeg-node CI, which reference
+# this action via `@main` (not a pinned commit/tag). Changes here take effect in
+# their pipelines on the very next run — there is no version pin to bump and no
+# review gate on their side, so test changes carefully before merging to main.
 
 set -e
 RSKJ_BRANCH="${INPUT_RSKJ_BRANCH}"
