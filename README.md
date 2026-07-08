@@ -96,7 +96,7 @@ Simply run:
 
 ### Running the short or long test suite
 
-The full test suite takes a while to run, so there's a shorter subset intended for fast feedback on every PR, and the full ("long") suite intended to be run on demand before a release or before merging a feature branch into master. The long suite is the short suite plus every other test file.
+The full test suite takes a while to run, so there's a shorter subset intended for fast feedback on every PR, and the full ("long") suite intended to be run on demand before a release or before merging a feature branch into `main`. The long suite is the short suite plus every other test file.
 
 Test files that are part of the short suite live directly under `tests/`. Every other test file lives under `tests/extra/` and is only run as part of the long suite.
 
