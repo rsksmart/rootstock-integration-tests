@@ -3,12 +3,12 @@ const expect = chai.expect;
 chai.use(require('chai-as-promised'));
 const BN = require('bn.js');
 
-const { getRskTransactionHelper } = require('../lib/rsk-tx-helper-provider');
+const { getRskTransactionHelper } = require('../../lib/rsk-tx-helper-provider');
 const {
     abi: blockHeaderAbi,
     address: BLOCK_HEADER_ADDRESS,
 } = require('@rsksmart/rsk-precompiled-abis/blockHeader');
-const { removePrefix0x } = require('../lib/utils');
+const { removePrefix0x } = require('../../lib/utils');
 
 /** Matches {@link co.rsk.pcc.blockheader.BlockAccessor#maximumBlockDepth} in rskj */
 const MAX_BLOCK_HEADER_DEPTH = 4000;
@@ -80,7 +80,10 @@ describe('BlockHeader native precompile (0x…1000010)', () => {
 
     before(async () => {
         rskTxHelper = getRskTransactionHelper();
-        blockHeader = new (rskTxHelper.getClient()).eth.Contract(blockHeaderAbi, BLOCK_HEADER_ADDRESS);
+        blockHeader = new (rskTxHelper.getClient().eth.Contract)(
+            blockHeaderAbi,
+            BLOCK_HEADER_ADDRESS
+        );
     });
 
     it('should use the BlockHeader native address from @rsksmart/rsk-precompiled-abis', () => {
@@ -104,28 +107,30 @@ describe('BlockHeader native precompile (0x…1000010)', () => {
 
                 const block = await rskTxHelper.getClient().eth.getBlock(targetBlockNumber);
 
-                const coinbaseBytes = await blockHeader.methods.getCoinbaseAddress(blockDepth).call();
+                const coinbaseBytes = await blockHeader.methods
+                    .getCoinbaseAddress(blockDepth)
+                    .call();
                 expect(bytesHexToAddressHex(coinbaseBytes)).to.equal(block.miner.toLowerCase());
 
                 const hashBytes = await blockHeader.methods.getBlockHash(blockDepth).call();
                 expect(bytesHexToBlockHashHex(hashBytes)).to.equal(block.hash.toLowerCase());
 
                 const gasLimitBytes = await blockHeader.methods.getGasLimit(blockDepth).call();
-                expect(
-                    bnFromUnsignedBytesHex(gasLimitBytes).eq(bnFromRpcQuantity(block.gasLimit))
-                ).to.be.true;
+                expect(bnFromUnsignedBytesHex(gasLimitBytes).eq(bnFromRpcQuantity(block.gasLimit)))
+                    .to.be.true;
 
                 const gasUsedBytes = await blockHeader.methods.getGasUsed(blockDepth).call();
-                expect(
-                    bnFromUnsignedBytesHex(gasUsedBytes).eq(bnFromRpcQuantity(block.gasUsed))
-                ).to.be.true;
+                expect(bnFromUnsignedBytesHex(gasUsedBytes).eq(bnFromRpcQuantity(block.gasUsed))).to
+                    .be.true;
 
                 const difficultyBytes = await blockHeader.methods.getDifficulty(blockDepth).call();
                 expect(
                     bnFromUnsignedBytesHex(difficultyBytes).eq(bnFromRpcQuantity(block.difficulty))
                 ).to.be.true;
 
-                const minGasPriceBytes = await blockHeader.methods.getMinGasPrice(blockDepth).call();
+                const minGasPriceBytes = await blockHeader.methods
+                    .getMinGasPrice(blockDepth)
+                    .call();
                 const rpcMinGas =
                     block.minimumGasPrice == null ? null : bnFromRpcQuantity(block.minimumGasPrice);
                 const mgpBn = bnFromUnsignedBytesHex(minGasPriceBytes);
@@ -135,16 +140,22 @@ describe('BlockHeader native precompile (0x…1000010)', () => {
                     expect(mgpBn != null || isEmptyBytes(minGasPriceBytes)).to.be.true;
                 }
 
-                const btcHeaderBytes = await blockHeader.methods.getBitcoinHeader(blockDepth).call();
+                const btcHeaderBytes = await blockHeader.methods
+                    .getBitcoinHeader(blockDepth)
+                    .call();
                 expect(removePrefix0x(btcHeaderBytes).length).to.be.at.least(
                     80,
                     'merged-mining Bitcoin header is expected to be at least 80 bytes on RSK'
                 );
 
-                const mergedTagsBytes = await blockHeader.methods.getMergedMiningTags(blockDepth).call();
+                const mergedTagsBytes = await blockHeader.methods
+                    .getMergedMiningTags(blockDepth)
+                    .call();
                 expect(mergedTagsBytes).to.be.a('string');
 
-                const cumulativeWorkBytes = await blockHeader.methods.getCumulativeWork(blockDepth).call();
+                const cumulativeWorkBytes = await blockHeader.methods
+                    .getCumulativeWork(blockDepth)
+                    .call();
                 const difficultyWithUnclesBytes = await blockHeader.methods
                     .getDifficultyWithUncles(blockDepth)
                     .call();
