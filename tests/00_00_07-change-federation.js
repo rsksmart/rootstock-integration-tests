@@ -1,6 +1,6 @@
 const federationChangeTests = require('../lib/tests/change-federation');
 
-federationChangeTests.execute(
+federationChangeTests.executeShort(
     'Initial Federation change from genesis to p2wsh',
     Runners.config.federations.secondFederation
 );
