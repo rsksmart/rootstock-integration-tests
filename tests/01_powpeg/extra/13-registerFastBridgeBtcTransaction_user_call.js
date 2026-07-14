@@ -3,7 +3,6 @@ const peglib = require('peglib');
 const bitcoin = peglib.bitcoin;
 const rsk = peglib.rsk;
 const pegUtils = peglib.pegUtils;
-const rskUtilsLegacy = require('../../../lib/rsk-utils-legacy');
 const libUtils = require('../../../lib/utils');
 const CustomError = require('../../../lib/CustomError');
 
