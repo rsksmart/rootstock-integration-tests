@@ -35,7 +35,7 @@ const testCasesInclude =
 const testCasesExclude =
     process.env.EXCLUDE_CASES != null ? process.env.EXCLUDE_CASES.split(',') : null;
 
-// 'short' runs only the top-level tests/*.js files. 'full' (default) also includes tests/extra/*.js.
+// 'short' skips every tests/**/extra/ folder. 'full' (default) runs everything.
 const testSuite = process.env.TEST_SUITE || 'full';
 
 // ***** CONSTANTS ***** //
@@ -346,17 +346,18 @@ after(() => {
 
 const needsToBeTested = function (testFile) {
     const testFileName = path.basename(testFile);
+    const relativePath = path.relative('tests', testFile); // e.g. '01_powpeg/extra/05-2wp-full.js'
+    // Patterns match either the bare filename or the path relative to tests/, so a group folder
+    // can be used as a qualifier (e.g. '01_powpeg/', '01_powpeg/extra', '01_powpeg/01').
+    // Note: number-only prefixes can match files in several folders since file numbering is
+    // folder-local; use the descriptive name or a path-qualified pattern to disambiguate.
+    const matches = (pattern) =>
+        testFileName.startsWith(pattern) || relativePath.startsWith(pattern);
     // Order is include, exclude
-    if (
-        testCasesInclude != null &&
-        testCasesInclude.some((inclusion) => testFileName.startsWith(inclusion))
-    ) {
+    if (testCasesInclude != null && testCasesInclude.some(matches)) {
         return true;
     }
-    if (
-        testCasesExclude != null &&
-        testCasesExclude.some((exclusion) => testFileName.startsWith(exclusion))
-    ) {
+    if (testCasesExclude != null && testCasesExclude.some(matches)) {
         return false;
     }
     return testCasesInclude == null;
@@ -365,13 +366,16 @@ const needsToBeTested = function (testFile) {
 const runTestThisTimes = process.env.RUN_EACH_TEST_FILE_THESE_TIMES || 1;
 
 // Register tests
-const testsGlobPattern = testSuite === 'short' ? './tests/*.js' : './tests/**/*.js';
+const testsGlobPattern = './tests/**/*.js';
 const sortedTests = glob
     .sync(testsGlobPattern)
     .filter((test) => needsToBeTested(test))
+    // The 'short' suite skips the extra/ folder inside each test group
+    .filter((test) => testSuite !== 'short' || !test.includes('/extra/'))
     // Tests depend on the blockchain state left by previous ones, so they must run in the order
-    // dictated by their filename regardless of which directory (tests/ or tests/extra/) they live in.
-    .sort((testA, testB) => path.basename(testA).localeCompare(path.basename(testB)));
+    // dictated by the folder structure: numbered group folders run in sequence, and within each
+    // group the extra/ tests run after the short ones (digits sort before the letter 'e').
+    .sort((testA, testB) => testA.localeCompare(testB));
 for (const test of sortedTests) {
     for (let i = 0; i < runTestThisTimes; i++) {
         delete require.cache[require.resolve(test)];
