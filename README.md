@@ -98,10 +98,24 @@ Simply run:
 
 The full test suite takes a while to run, so there's a shorter subset intended for fast feedback on every PR, and the full ("long") suite intended to be run on demand before a release or before merging a feature branch into `main`. The long suite is the short suite plus every other test file.
 
-Test files that are part of the short suite live directly under `tests/`. Every other test file lives under `tests/extra/` and is only run as part of the long suite.
+Tests are organized in numbered group folders that run in sequence. Within each group, the short-suite files live at the folder root and the long-suite-only files live in an `extra/` subfolder, which runs right after the group's short files:
 
-- `npm run test-short` / `npm run test-short-fail-fast` — runs only the files directly under `tests/`.
-- `npm run test-long` / `npm run test-long-fail-fast` — runs every test file, including `tests/extra/` (same as `npm test` / `npm run test-fail-fast`).
+```
+tests/
+├── 00_sync/              # syncs the network and mines the initial blocks
+├── 01_powpeg/            # change federation + 2wp
+│   └── extra/            # extra powpeg tests (long suite only)
+├── 02_core/              # core tests
+│   └── extra/
+├── 03_flyover/           # flyover tests
+│   └── extra/
+└── 99_fork_activation/   # activates the latest fork, always runs last
+```
+
+Execution order is dictated by the full file path, so group folders run in numeric order and files within a folder run in filename order.
+
+- `npm run test-short` / `npm run test-short-fail-fast` — runs every test file except those under an `extra/` folder.
+- `npm run test-long` / `npm run test-long-fail-fast` — runs every test file, including the `extra/` folders (same as `npm test` / `npm run test-fail-fast`).
 
 This is controlled by the `TEST_SUITE` environment variable (`short` or `full`, defaulting to `full`) read in [test.js](test.js). The RIT GitHub Action also accepts a `test-suite` input (`short` or `full`) to pick which suite to run; pull requests to this repo run `short` automatically, while pushes to `main` and manual `workflow_dispatch` runs default to `full`.
 
@@ -123,6 +137,14 @@ or
 b. `EXCLUDE_CASES=file3,file4 npm test`
 
 which will test everything under `tests` except for test scripts that begin with either `file3` or `file4`.
+
+Patterns match either the bare filename or the path relative to `tests/`, so a group folder can be used as a qualifier:
+
+- `INCLUDE_CASES=01_powpeg/` — run only the powpeg group (including its `extra/`).
+- `EXCLUDE_CASES=01_powpeg/extra` — skip the powpeg extras.
+- `INCLUDE_CASES=01_powpeg/01` — a numeric prefix qualified by its folder.
+
+Since file numbering is folder-local, a number-only pattern like `01-` can match files in several folders. Use the descriptive part of the filename or a path-qualified pattern to disambiguate.
 
 ## Running the tests on an existing running bitcoind and/or federate node(s)
 
@@ -168,7 +190,7 @@ The `npm run run-tests-multiple-times` command is executing the file `testRunner
 To run a specific test file multiple times, include the test file name in the `INCLUDE_CASES` property in the `.env` file, like:
 
 ```
-INCLUDE_CASES=01_01_01-pre_orchid_2wp.js
+INCLUDE_CASES=03-2wp.js
 ```
 
 Then update the `RUN_EACH_TEST_FILE_THESE_TIMES` property in the `.env` file to indicate how many times to run this single file.
@@ -214,11 +236,11 @@ To run a test file that has the `fulfillRequirementsToRunAsSingleTestFile` funct
 
 For example:
 
-> npm run run-single-test-file 01_02_51-post_wasabi_fed_pubkeys_fork.js
+> npm run run-single-test-file 08-fed_pubkeys_fork.js
 
 The command `run-single-test-file` will execute the file `singleTestFileRunner.js` which has some simple logic:
 
-1 - It will assign the `01_02_51-post_wasabi_fed_pubkeys_fork.js` test file name to the `process.env.INCLUDE_CASES` variable. Since it will be the one in that `INCLUDE_CASES` variable, then only that test file will be run.
+1 - It will assign the `08-fed_pubkeys_fork.js` test file name to the `process.env.INCLUDE_CASES` variable. Since it will be the one in that `INCLUDE_CASES` variable, then only that test file will be run.
 
 2 - It will setup a boolean `process.env.RUNNING_SINGLE_TEST_FILE` variable to `true` so the `fulfillRequirementsToRunAsSingleTestFile` function can check if it needs to manually take the blockchain to a state where the test file can run or not.
 
