@@ -3,16 +3,16 @@ const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
 const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const {
     UNPROCESSABLE_TX_ALREADY_PROCESSED_ERROR,
-} = require('../../lib/flyover-pegin-response-codes');
-const CustomError = require('../../lib/CustomError');
-const lbc = require('../../lib/liquidity-bridge-contract');
-const { sendTxWithCheck, getFedsPubKeys, sendTransaction } = require('../../lib/rsk-utils');
-const { getRskTransactionHelpers } = require('../../lib/rsk-tx-helper-provider');
-const { getBtcClient } = require('../../lib/btc-client-provider');
-const { ensure0x } = require('../../lib/utils');
-const { fundAddressAndGetData } = require('../../lib/btc-utils');
-const { getBridge } = require('../../lib/bridge-provider');
-const { mineForPeginRegistration } = require('../../lib/2wp-utils');
+} = require('../../../lib/flyover-pegin-response-codes');
+const CustomError = require('../../../lib/CustomError');
+const lbc = require('../../../lib/liquidity-bridge-contract');
+const { sendTxWithCheck, getFedsPubKeys, sendTransaction } = require('../../../lib/rsk-utils');
+const { getRskTransactionHelpers } = require('../../../lib/rsk-tx-helper-provider');
+const { getBtcClient } = require('../../../lib/btc-client-provider');
+const { ensure0x } = require('../../../lib/utils');
+const { fundAddressAndGetData } = require('../../../lib/btc-utils');
+const { getBridge } = require('../../../lib/bridge-provider');
+const { mineForPeginRegistration } = require('../../../lib/2wp-utils');
 
 // TODO: Fails with 'Internal AssertionError: expected 40000000000000000 to equal -304' error. Pending to analyze.
 describe.skip('Executing registerFastBridgeBtcTransaction post hop - sending same tx with witness twice', () => {

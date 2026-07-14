@@ -3,14 +3,14 @@ chai.use(require('chai-as-promised'));
 const expect = chai.expect;
 
 const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
-const CustomError = require('../../lib/CustomError');
-const removePrefix0x = require('../../lib/utils').removePrefix0x;
-const { getRskTransactionHelpers } = require('../../lib/rsk-tx-helper-provider');
-const { getBridge } = require('../../lib/bridge-provider');
+const CustomError = require('../../../lib/CustomError');
+const removePrefix0x = require('../../../lib/utils').removePrefix0x;
+const { getRskTransactionHelpers } = require('../../../lib/rsk-tx-helper-provider');
+const { getBridge } = require('../../../lib/bridge-provider');
 const {
     GENESIS_FEDERATION_ADDRESS,
     GENESIS_FEDERATION_REDEEM_SCRIPT,
-} = require('../../lib/constants/federation-constants');
+} = require('../../../lib/constants/federation-constants');
 
 // TODO: Refactor these tests
 // Some tests fail after running all tests with all forks active from scratch.

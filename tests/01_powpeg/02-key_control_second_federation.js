@@ -1,5 +1,5 @@
 const rsk = require('peglib').rsk;
-const fedAssertions = require('../lib/assertions/fed');
+const fedAssertions = require('../../lib/assertions/fed');
 
 let fedAssert;
 

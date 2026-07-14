@@ -3,12 +3,12 @@ const expect = chai.expect;
 chai.use(require('chai-as-promised'));
 const BN = require('bn.js');
 
-const { getRskTransactionHelper } = require('../../lib/rsk-tx-helper-provider');
+const { getRskTransactionHelper } = require('../../../lib/rsk-tx-helper-provider');
 const {
     abi: blockHeaderAbi,
     address: BLOCK_HEADER_ADDRESS,
 } = require('@rsksmart/rsk-precompiled-abis/blockHeader');
-const { removePrefix0x } = require('../../lib/utils');
+const { removePrefix0x } = require('../../../lib/utils');
 
 /** Matches {@link co.rsk.pcc.blockheader.BlockAccessor#maximumBlockDepth} in rskj */
 const MAX_BLOCK_HEADER_DEPTH = 4000;

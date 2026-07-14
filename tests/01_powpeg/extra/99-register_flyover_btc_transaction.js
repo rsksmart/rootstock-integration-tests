@@ -1,15 +1,15 @@
 const expect = require('chai').expect;
 const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
-const { ensure0x, additionalFederationAddresses } = require('../../lib/utils');
-const { fundAddressAndGetData } = require('../../lib/btc-utils');
-const lbc = require('../../lib/liquidity-bridge-contract');
-const { sendTxWithCheck, getFedsPubKeys } = require('../../lib/rsk-utils');
-const { getRskTransactionHelpers } = require('../../lib/rsk-tx-helper-provider');
-const { getBridge } = require('../../lib/bridge-provider');
+const { ensure0x, additionalFederationAddresses } = require('../../../lib/utils');
+const { fundAddressAndGetData } = require('../../../lib/btc-utils');
+const lbc = require('../../../lib/liquidity-bridge-contract');
+const { sendTxWithCheck, getFedsPubKeys } = require('../../../lib/rsk-utils');
+const { getRskTransactionHelpers } = require('../../../lib/rsk-tx-helper-provider');
+const { getBridge } = require('../../../lib/bridge-provider');
 const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
-const { getBtcClient } = require('../../lib/btc-client-provider');
-const CustomError = require('../../lib/CustomError');
-const { mineForPeginRegistration } = require('../../lib/2wp-utils');
+const { getBtcClient } = require('../../../lib/btc-client-provider');
+const CustomError = require('../../../lib/CustomError');
+const { mineForPeginRegistration } = require('../../../lib/2wp-utils');
 
 let rskTxHelpers;
 let rskTxHelper;

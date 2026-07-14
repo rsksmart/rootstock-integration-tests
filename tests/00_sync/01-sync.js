@@ -1,8 +1,8 @@
-const { wait } = require('../lib/utils');
-const CustomError = require('../lib/CustomError');
-const rskUtils = require('../lib/rsk-utils');
+const { wait } = require('../../lib/utils');
+const CustomError = require('../../lib/CustomError');
+const rskUtils = require('../../lib/rsk-utils');
 const { expect, assert } = require('chai');
-const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
+const { getRskTransactionHelpers } = require('../../lib/rsk-tx-helper-provider');
 
 const WAIT_IN_MILLISECONDS = 5000;
 

@@ -1,12 +1,12 @@
 const expect = require('chai').expect;
 const bitcoinJs = require('bitcoinjs-lib');
-const rskUtils = require('../lib/rsk-utils');
-const { wait, ensure0x, retryWithCheck } = require('../lib/utils');
-const CustomError = require('../lib/CustomError');
-const { getBridge } = require('../lib/bridge-provider');
-const { getBtcClient } = require('../lib/btc-client-provider');
+const rskUtils = require('../../../lib/rsk-utils');
+const { wait, ensure0x, retryWithCheck } = require('../../../lib/utils');
+const CustomError = require('../../../lib/CustomError');
+const { getBridge } = require('../../../lib/bridge-provider');
+const { getBtcClient } = require('../../../lib/btc-client-provider');
 const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
-const { getRskTransactionHelpers } = require('../lib/rsk-tx-helper-provider');
+const { getRskTransactionHelpers } = require('../../../lib/rsk-tx-helper-provider');
 
 describe('Calling coinbase information methods', () => {
     let btcClient;
