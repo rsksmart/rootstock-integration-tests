@@ -150,15 +150,26 @@ jobs:
           INPUT_RIT_BRANCH: ${{ env.RIT_BRANCH }}
           INPUT_RIT_LOG_LEVEL: info
         run: |
+          mkdir -p "${{ github.workspace }}/reports"
           docker run \
             --env GITHUB_OUTPUT="/github-output"  \
+            --env GITHUB_WORKSPACE="/github/workspace"  \
             --env INPUT_RSKJ_BRANCH="${{ env.RSKJ_BRANCH }}"  \
             --env INPUT_POWPEG_NODE_BRANCH="${{ env.POWPEG_BRANCH }}"  \
             --env INPUT_RIT_BRANCH="${{ env.RIT_BRANCH }}"  \
             --env INPUT_RIT_LOG_LEVEL="${{ env.INPUT_RIT_LOG_LEVEL }}" \
             --env INPUT_TEST_SUITE="${{ env.TEST_SUITE }}" \
             -v "$GITHUB_OUTPUT:/github-output"  \
+            -v "${{ github.workspace }}/reports:/github/workspace/reports"  \
             --rm ${{ env.TEST_TAG }}
+
+      - name: Upload JUnit report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: rit-junit-report
+          path: reports/junit.xml
+          if-no-files-found: warn
 
       - name: Check Slack Token
         id: check-slack-token
@@ -282,7 +293,6 @@ jobs:
           install: true
           driver-opts: network=host
           platforms: linux/amd64
-
       - name: GitHub container registry login
         uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
