@@ -190,7 +190,7 @@ The `npm run run-tests-multiple-times` command is executing the file `testRunner
 To run a specific test file multiple times, include the test file name in the `INCLUDE_CASES` property in the `.env` file, like:
 
 ```
-INCLUDE_CASES=03-2wp.js
+INCLUDE_CASES=02-2wp.js
 ```
 
 Then update the `RUN_EACH_TEST_FILE_THESE_TIMES` property in the `.env` file to indicate how many times to run this single file.
