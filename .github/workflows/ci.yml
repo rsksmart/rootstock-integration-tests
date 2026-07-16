@@ -101,6 +101,17 @@ jobs:
             printf '%s' "$1" | tr -c '[:alnum:]_ -' ' ' | tr -s ' ' | sed 's/^ *//;s/ *$//' | cut -c1-75
           }
 
+          # Write NAME=VALUE to GITHUB_ENV as a heredoc with a random delimiter, so a crafted
+          # value (e.g. a PR title containing newlines) can never inject additional variables.
+          write_env() {
+            _delim="__EOF_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')__"
+            {
+              echo "$1<<$_delim"
+              echo "$2"
+              echo "$_delim"
+            } >> "$GITHUB_ENV"
+          }
+
           if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
             NOTIFICATION_TITLE="PR #${GITHUB_EVENT_PULL_REQUEST_NUMBER}"
             NOTIFICATION_SUBTITLE=$(sanitize "$GITHUB_EVENT_PULL_REQUEST_TITLE")
@@ -120,10 +131,10 @@ jobs:
             NOTIFICATION_ACTION_LABEL="View Commit"
           fi
 
-          echo "NOTIFICATION_TITLE=$NOTIFICATION_TITLE" >> $GITHUB_ENV
-          echo "NOTIFICATION_SUBTITLE=$NOTIFICATION_SUBTITLE" >> $GITHUB_ENV
-          echo "NOTIFICATION_URL=$NOTIFICATION_URL" >> $GITHUB_ENV
-          echo "NOTIFICATION_ACTION_LABEL=$NOTIFICATION_ACTION_LABEL" >> $GITHUB_ENV
+          write_env NOTIFICATION_TITLE "$NOTIFICATION_TITLE"
+          write_env NOTIFICATION_SUBTITLE "$NOTIFICATION_SUBTITLE"
+          write_env NOTIFICATION_URL "$NOTIFICATION_URL"
+          write_env NOTIFICATION_ACTION_LABEL "$NOTIFICATION_ACTION_LABEL"
 
       - name: Test the RIT Container Action
         id: test-container
@@ -321,6 +332,17 @@ jobs:
             printf '%s' "$1" | tr -c '[:alnum:]_ -' ' ' | tr -s ' ' | sed 's/^ *//;s/ *$//' | cut -c1-75
           }
 
+          # Write NAME=VALUE to GITHUB_ENV as a heredoc with a random delimiter, so a crafted
+          # value (e.g. a commit message containing newlines) can never inject additional variables.
+          write_env() {
+            _delim="__EOF_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')__"
+            {
+              echo "$1<<$_delim"
+              echo "$2"
+              echo "$_delim"
+            } >> "$GITHUB_ENV"
+          }
+
           # This job only runs on main (push/workflow_dispatch), never on pull_request.
           NOTIFICATION_TITLE="Push to ${GITHUB_REF_NAME}"
           NOTIFICATION_SUBTITLE=$(sanitize "$(printf '%s' "$GITHUB_EVENT_HEAD_COMMIT_MESSAGE" | head -n1)")
@@ -330,10 +352,10 @@ jobs:
           NOTIFICATION_URL="$GITHUB_EVENT_HEAD_COMMIT_URL"
           NOTIFICATION_ACTION_LABEL="View Commit"
 
-          echo "NOTIFICATION_TITLE=$NOTIFICATION_TITLE" >> $GITHUB_ENV
-          echo "NOTIFICATION_SUBTITLE=$NOTIFICATION_SUBTITLE" >> $GITHUB_ENV
-          echo "NOTIFICATION_URL=$NOTIFICATION_URL" >> $GITHUB_ENV
-          echo "NOTIFICATION_ACTION_LABEL=$NOTIFICATION_ACTION_LABEL" >> $GITHUB_ENV
+          write_env NOTIFICATION_TITLE "$NOTIFICATION_TITLE"
+          write_env NOTIFICATION_SUBTITLE "$NOTIFICATION_SUBTITLE"
+          write_env NOTIFICATION_URL "$NOTIFICATION_URL"
+          write_env NOTIFICATION_ACTION_LABEL "$NOTIFICATION_ACTION_LABEL"
 
       - name: Test RIT Action
         id: test-rit-action
