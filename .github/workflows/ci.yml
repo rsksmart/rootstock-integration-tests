@@ -1,4 +1,4 @@
-name: RIT Action Continuous Integration Test
+name: CI
 
 on:
   pull_request:
@@ -27,33 +27,30 @@ on:
 permissions:
   contents: read
 
+# Cancel a still-running PR run when a new commit lands on the same PR, so a superseded commit
+# doesn't keep occupying a runner. Push/workflow_dispatch runs are only serialized (queued), not
+# cancelled, since those represent completed states worth validating to completion.
+concurrency:
+  group: rit-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   TEST_TAG:  ${{ github.event.repository.name }}/rit:test
   LATEST_TAG: ghcr.io/rsksmart/${{ github.event.repository.name }}/rit
-  # Every PR gets the short suite; pushes to main and manual runs default to the full (long) suite,
-  # which can also be pointed at 'short' via workflow_dispatch.
-  TEST_SUITE: ${{ github.event_name == 'pull_request' && 'short' || (github.event.inputs.test-suite || 'full') }}
+  # TEST_SUITE is exported by the set-branch-variables composite action: PRs get the short suite
+  # (overridable with a `test-suite:full` tag in the PR description, like in rskj/powpeg-node);
+  # pushes to main and manual runs default to the full (long) suite.
 
 jobs:
-  build-push-rit-action-container-action:
-    name: Test RIT Action docker container-action
+  test-container-action:
+    name: Rootstock Integration Tests
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    permissions:
-      packages: write
 
     steps:
       - name: Checkout
         id: checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
-        with:
-          images: |
-            ${{ env.LATEST_TAG }}
-            ${{ env.TEST_TAG }}
 
       - name: Setup Docker BuildX
         id: setup-buildx
@@ -69,12 +66,81 @@ jobs:
           context: container-action/
           load: true
           tags: ${{ env.TEST_TAG }}
+          # mode=max caches every layer so the publish job's rebuild is a pure cache replay.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       # Call the composite action to set branch variables
       - name: Set Branch Variables
         uses: ./.github/actions/set-branch-variables
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set Build URL
+        id: set-build-url
+        # always() so the failure notification still gets a valid BUILD_URL when an earlier
+        # step (e.g. the Docker build) fails.
+        if: always()
+        run: |
+          BUILD_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo "BUILD_URL=$BUILD_URL" >> $GITHUB_ENV
+
+      - name: Set Notification Context
+        id: set-notification-context
+        # always() so the failure notification still gets its title/URL/label when an earlier
+        # step fails; this step only reads the github context, never earlier steps' results.
+        if: always()
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number || '' }}
+          GITHUB_EVENT_PULL_REQUEST_TITLE: ${{ github.event.pull_request.title || '' }}
+          GITHUB_EVENT_PULL_REQUEST_HTML_URL: ${{ github.event.pull_request.html_url || '' }}
+          GITHUB_EVENT_HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message || '' }}
+          GITHUB_EVENT_HEAD_COMMIT_URL: ${{ github.event.head_commit.url || '' }}
+          GITHUB_REF_NAME: ${{ github.ref_name || '' }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          # Replace (not delete) non-alphanumeric characters so stripped punctuation never welds
+          # two words together (e.g. "rsksmart/rit-update" must not become "rsksmartrit-update"),
+          # then squeeze runs of spaces and trim, and cap length to keep the Slack message concise.
+          sanitize() {
+            printf '%s' "$1" | tr -c '[:alnum:]_ -' ' ' | tr -s ' ' | sed 's/^ *//;s/ *$//' | cut -c1-75
+          }
+
+          # Write NAME=VALUE to GITHUB_ENV as a heredoc with a random delimiter, so a crafted
+          # value (e.g. a PR title containing newlines) can never inject additional variables.
+          write_env() {
+            _delim="__EOF_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')__"
+            {
+              echo "$1<<$_delim"
+              echo "$2"
+              echo "$_delim"
+            } >> "$GITHUB_ENV"
+          }
+
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            NOTIFICATION_TITLE="PR #${GITHUB_EVENT_PULL_REQUEST_NUMBER}"
+            NOTIFICATION_SUBTITLE=$(sanitize "$GITHUB_EVENT_PULL_REQUEST_TITLE")
+            # A PR title made up entirely of characters sanitize() replaces with spaces (e.g. only emoji)
+            # would otherwise produce an empty string, which Slack's Block Kit rejects (text
+            # objects require a minimum length of 1), failing this step and misreporting a
+            # successful run as failed.
+            : "${NOTIFICATION_SUBTITLE:=PR #${GITHUB_EVENT_PULL_REQUEST_NUMBER}}"
+            NOTIFICATION_URL="$GITHUB_EVENT_PULL_REQUEST_HTML_URL"
+            NOTIFICATION_ACTION_LABEL="Open PR"
+          else
+            NOTIFICATION_TITLE="Push to ${GITHUB_REF_NAME}"
+            NOTIFICATION_SUBTITLE=$(sanitize "$(printf '%s' "$GITHUB_EVENT_HEAD_COMMIT_MESSAGE" | head -n1)")
+            # Same empty-string risk as above, for commit messages.
+            : "${NOTIFICATION_SUBTITLE:=Commit ${GITHUB_SHA:0:7}}"
+            NOTIFICATION_URL="$GITHUB_EVENT_HEAD_COMMIT_URL"
+            NOTIFICATION_ACTION_LABEL="View Commit"
+          fi
+
+          write_env NOTIFICATION_TITLE "$NOTIFICATION_TITLE"
+          write_env NOTIFICATION_SUBTITLE "$NOTIFICATION_SUBTITLE"
+          write_env NOTIFICATION_URL "$NOTIFICATION_URL"
+          write_env NOTIFICATION_ACTION_LABEL "$NOTIFICATION_ACTION_LABEL"
 
       - name: Test the RIT Container Action
         id: test-container
@@ -94,6 +160,129 @@ jobs:
             -v "$GITHUB_OUTPUT:/github-output"  \
             --rm ${{ env.TEST_TAG }}
 
+      - name: Check Slack Token
+        id: check-slack-token
+        # always() so this still runs (and the failure-notification step can gate on its output)
+        # even if a step above failed.
+        if: always()
+        # Kept in its own step-scoped env (not job-level) so the token itself is never exposed
+        # to other steps; only a boolean flag is exposed as an output.
+        env:
+          SLACK_NOTIFICATION_TOKEN: ${{ secrets.GHA_SLACK_NOTIFICATION_TOKEN }}
+        run: |
+          if [ -n "$SLACK_NOTIFICATION_TOKEN" ]; then
+            echo "has_token=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_token=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Send Slack Notification on Success
+        if: success() && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.owner.login == 'rsksmart')) && steps.check-slack-token.outputs.has_token == 'true'
+        # Notifications are best-effort: a Slack API failure must not flip the CI result.
+        continue-on-error: true
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+        with:
+          token: ${{ secrets.GHA_SLACK_NOTIFICATION_TOKEN }}
+          method: chat.postMessage
+          payload: |
+            channel: ${{ vars.GHA_SLACK_NOTIFICATION_CHANNEL }}
+            blocks:
+              - type: header
+                text:
+                  type: plain_text
+                  text: "✅ PASSED — ${{ github.repository }} – ${{ env.NOTIFICATION_TITLE }}"
+                  emoji: true
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "*${{ env.NOTIFICATION_SUBTITLE }}*"
+                fields:
+                  - type: mrkdwn
+                    text: "• rskj: `${{ env.RSKJ_BRANCH }}`\n• fed: `${{ env.POWPEG_BRANCH }}`\n• rit: `${{ env.RIT_BRANCH }}`"
+              - type: actions
+                elements:
+                  - type: button
+                    text:
+                      type: plain_text
+                      text: "${{ env.NOTIFICATION_ACTION_LABEL }}"
+                    url: "${{ env.NOTIFICATION_URL }}"
+                  - type: button
+                    text:
+                      type: plain_text
+                      text: View Actions Run
+                    url: "${{ env.BUILD_URL }}"
+
+      - name: Send Slack Notification on Failure
+        if: failure() && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.owner.login == 'rsksmart')) && steps.check-slack-token.outputs.has_token == 'true'
+        # Notifications are best-effort: a Slack API failure must not add noise on top of
+        # the real CI failure.
+        continue-on-error: true
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+        with:
+          token: ${{ secrets.GHA_SLACK_NOTIFICATION_TOKEN }}
+          method: chat.postMessage
+          payload: |
+            channel: ${{ vars.GHA_SLACK_NOTIFICATION_CHANNEL }}
+            blocks:
+              - type: header
+                text:
+                  type: plain_text
+                  text: "❌ FAILED — ${{ github.repository }} – ${{ env.NOTIFICATION_TITLE }}"
+                  emoji: true
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "*${{ env.NOTIFICATION_SUBTITLE }}*"
+                fields:
+                  - type: mrkdwn
+                    text: "• rskj: `${{ env.RSKJ_BRANCH }}`\n• fed: `${{ env.POWPEG_BRANCH }}`\n• rit: `${{ env.RIT_BRANCH }}`"
+              - type: actions
+                elements:
+                  - type: button
+                    style: danger
+                    text:
+                      type: plain_text
+                      text: "${{ env.NOTIFICATION_ACTION_LABEL }}"
+                    url: "${{ env.NOTIFICATION_URL }}"
+                  - type: button
+                    style: danger
+                    text:
+                      type: plain_text
+                      text: View Actions Run
+                    url: "${{ env.BUILD_URL }}"
+
+  # Publishes the prebuilt image to GHCR only from main, after tests pass. Note that consumers of
+  # the action itself (uses: rsksmart/rootstock-integration-tests@main) rebuild from the Dockerfile
+  # at run time; the GHCR image is for running the suite directly with docker run.
+  publish-container-action-image:
+    name: Publish Image (main only)
+    needs: test-container-action
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ env.LATEST_TAG }}
+
+      - name: Setup Docker BuildX
+        id: setup-buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        with:
+          install: true
+          driver-opts: network=host
+          platforms: linux/amd64
+
       - name: GitHub container registry login
         uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
@@ -101,21 +290,26 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build the RIT Action Container Image
+      - name: Build and push the RIT Action Container Image
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: container-action/
           tags: ${{ env.LATEST_TAG }}
           labels: ${{ steps.meta.outputs.labels }}
-          load: true
           push: true
+          # Replays the layers already built (and fully cached with mode=max) by the test job.
+          cache-from: type=gha
 
+  # Runs the action through GitHub's own container-action machinery (uses: ./), the way rskj and
+  # powpeg-node consume it — validating the action.yml contract (inputs mapping, outputs parsing),
+  # not re-running the full suite: the test-container-action job above already runs the full suite
+  # on pushes to main, so this one runs the short suite to keep the wiring check cheap.
   test-rit-action:
     if: ${{ github.ref == 'refs/heads/main' }}
-    needs: build-push-rit-action-container-action
-    name: GitHub Actions Test
+    needs: test-container-action
+    name: Test Action Wiring (main only)
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -128,6 +322,58 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set Build URL
+        id: set-build-url
+        # always() so the failure notification still gets a valid BUILD_URL when an earlier
+        # step (e.g. the Docker build) fails.
+        if: always()
+        run: |
+          BUILD_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo "BUILD_URL=$BUILD_URL" >> $GITHUB_ENV
+
+      - name: Set Notification Context
+        id: set-notification-context
+        # always() so the failure notification still gets its title/URL/label when an earlier
+        # step fails; this step only reads the github context, never earlier steps' results.
+        if: always()
+        env:
+          GITHUB_EVENT_HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message || '' }}
+          GITHUB_EVENT_HEAD_COMMIT_URL: ${{ github.event.head_commit.url || '' }}
+          GITHUB_REF_NAME: ${{ github.ref_name || '' }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          # Replace (not delete) non-alphanumeric characters so stripped punctuation never welds
+          # two words together (e.g. "rsksmart/rit-update" must not become "rsksmartrit-update"),
+          # then squeeze runs of spaces and trim, and cap length to keep the Slack message concise.
+          sanitize() {
+            printf '%s' "$1" | tr -c '[:alnum:]_ -' ' ' | tr -s ' ' | sed 's/^ *//;s/ *$//' | cut -c1-75
+          }
+
+          # Write NAME=VALUE to GITHUB_ENV as a heredoc with a random delimiter, so a crafted
+          # value (e.g. a commit message containing newlines) can never inject additional variables.
+          write_env() {
+            _delim="__EOF_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')__"
+            {
+              echo "$1<<$_delim"
+              echo "$2"
+              echo "$_delim"
+            } >> "$GITHUB_ENV"
+          }
+
+          # This job only runs on main (push/workflow_dispatch), never on pull_request.
+          NOTIFICATION_TITLE="Push to ${GITHUB_REF_NAME}"
+          NOTIFICATION_SUBTITLE=$(sanitize "$(printf '%s' "$GITHUB_EVENT_HEAD_COMMIT_MESSAGE" | head -n1)")
+          # A commit message made up entirely of characters sanitize() replaces with spaces
+          # would otherwise produce an empty string, which Slack's Block Kit rejects.
+          : "${NOTIFICATION_SUBTITLE:=Commit ${GITHUB_SHA:0:7}}"
+          NOTIFICATION_URL="$GITHUB_EVENT_HEAD_COMMIT_URL"
+          NOTIFICATION_ACTION_LABEL="View Commit"
+
+          write_env NOTIFICATION_TITLE "$NOTIFICATION_TITLE"
+          write_env NOTIFICATION_SUBTITLE "$NOTIFICATION_SUBTITLE"
+          write_env NOTIFICATION_URL "$NOTIFICATION_URL"
+          write_env NOTIFICATION_ACTION_LABEL "$NOTIFICATION_ACTION_LABEL"
+
       - name: Test RIT Action
         id: test-rit-action
         uses: ./
@@ -135,10 +381,105 @@ jobs:
           rskj-branch: ${{ env.RSKJ_BRANCH }}
           powpeg-node-branch: ${{ env.POWPEG_BRANCH }}
           rit-branch: ${{ env.RIT_BRANCH }}
-          test-suite: ${{ env.TEST_SUITE }}
+          test-suite: short
 
       - name: Print RIT Status and Message
         id: output
         run: |
           echo "RIT Status = ${{ steps.test-rit-action.outputs.status }}"
           echo "RIT Message = ${{ steps.test-rit-action.outputs.message }}"
+
+      - name: Check Slack Token
+        id: check-slack-token
+        # always() so this still runs (and the failure-notification step can gate on its output)
+        # even if a step above failed.
+        if: always()
+        # Kept in its own step-scoped env (not job-level) so the token itself is never exposed
+        # to other steps (e.g. the RIT action above); only a boolean flag is exposed as an output.
+        env:
+          SLACK_NOTIFICATION_TOKEN: ${{ secrets.GHA_SLACK_NOTIFICATION_TOKEN }}
+        run: |
+          if [ -n "$SLACK_NOTIFICATION_TOKEN" ]; then
+            echo "has_token=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_token=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Send Slack Notification on Success
+        # Gated to push events, like the rskj/powpeg-node workflows: a workflow_dispatch run has no
+        # head_commit, so the commit-URL button would be empty and rejected by Slack's Block Kit.
+        if: success() && github.event_name == 'push' && steps.check-slack-token.outputs.has_token == 'true'
+        # Notifications are best-effort: a Slack API failure must not flip the CI result.
+        continue-on-error: true
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+        with:
+          token: ${{ secrets.GHA_SLACK_NOTIFICATION_TOKEN }}
+          method: chat.postMessage
+          payload: |
+            channel: ${{ vars.GHA_SLACK_NOTIFICATION_CHANNEL }}
+            blocks:
+              - type: header
+                text:
+                  type: plain_text
+                  text: "✅ PASSED — ${{ github.repository }} – ${{ env.NOTIFICATION_TITLE }}"
+                  emoji: true
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "*${{ env.NOTIFICATION_SUBTITLE }}*"
+                fields:
+                  - type: mrkdwn
+                    text: "• rskj: `${{ env.RSKJ_BRANCH }}`\n• fed: `${{ env.POWPEG_BRANCH }}`\n• rit: `${{ env.RIT_BRANCH }}`"
+              - type: actions
+                elements:
+                  - type: button
+                    text:
+                      type: plain_text
+                      text: "${{ env.NOTIFICATION_ACTION_LABEL }}"
+                    url: "${{ env.NOTIFICATION_URL }}"
+                  - type: button
+                    text:
+                      type: plain_text
+                      text: View Actions Run
+                    url: "${{ env.BUILD_URL }}"
+
+      - name: Send Slack Notification on Failure
+        # Gated to push events, like the rskj/powpeg-node workflows: a workflow_dispatch run has no
+        # head_commit, so the commit-URL button would be empty and rejected by Slack's Block Kit.
+        if: failure() && github.event_name == 'push' && steps.check-slack-token.outputs.has_token == 'true'
+        # Notifications are best-effort: a Slack API failure must not add noise on top of
+        # the real CI failure.
+        continue-on-error: true
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+        with:
+          token: ${{ secrets.GHA_SLACK_NOTIFICATION_TOKEN }}
+          method: chat.postMessage
+          payload: |
+            channel: ${{ vars.GHA_SLACK_NOTIFICATION_CHANNEL }}
+            blocks:
+              - type: header
+                text:
+                  type: plain_text
+                  text: "❌ FAILED — ${{ github.repository }} – ${{ env.NOTIFICATION_TITLE }}"
+                  emoji: true
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "*${{ env.NOTIFICATION_SUBTITLE }}*"
+                fields:
+                  - type: mrkdwn
+                    text: "• rskj: `${{ env.RSKJ_BRANCH }}`\n• fed: `${{ env.POWPEG_BRANCH }}`\n• rit: `${{ env.RIT_BRANCH }}`"
+              - type: actions
+                elements:
+                  - type: button
+                    style: danger
+                    text:
+                      type: plain_text
+                      text: "${{ env.NOTIFICATION_ACTION_LABEL }}"
+                    url: "${{ env.NOTIFICATION_URL }}"
+                  - type: button
+                    style: danger
+                    text:
+                      type: plain_text
+                      text: View Actions Run
+                    url: "${{ env.BUILD_URL }}"

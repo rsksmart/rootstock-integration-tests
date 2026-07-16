@@ -13,6 +13,7 @@ runs:
         GITHUB_TOKEN: ${{ inputs.token }}
         github_event_inputs_powpeg_branch: ${{ github.event.inputs.powpeg-branch }}
         github_event_inputs_rskj_branch: ${{ github.event.inputs.rskj-branch }}
+        github_event_inputs_test_suite: ${{ github.event.inputs.test-suite }}
         github_event_name: ${{ github.event_name }}
         github_event_pull_request_number: ${{ github.event.pull_request.number }}
         github_head_ref: ${{ github.head_ref }}
@@ -23,6 +24,7 @@ runs:
         default_rskj_branch=master
         default_powpeg_branch=master
         default_rit_branch=main
+        default_test_suite=full
 
         get_branch_from_description() {
           _prefix=$1
@@ -37,9 +39,10 @@ runs:
         }
 
         if [ "$github_event_name" = workflow_dispatch ]; then
-          RSKJ_BRANCH=${github_event_inputs_rskj_branch:-$default_rit_branch}
+          RSKJ_BRANCH=${github_event_inputs_rskj_branch:-$default_rskj_branch}
           POWPEG_BRANCH=${github_event_inputs_powpeg_branch:-$default_powpeg_branch}
           RIT_BRANCH=$github_ref_name
+          TEST_SUITE=${github_event_inputs_test_suite:-$default_test_suite}
         elif [ "$github_event_name" = pull_request ]; then
           gh pr view "$github_event_pull_request_number" --json body -q .body >"$PR_DESCRIPTION"
           RSKJ_BRANCH=$(get_branch_from_description rskj)
@@ -47,11 +50,16 @@ runs:
           POWPEG_BRANCH=$(get_branch_from_description fed)
           : ${POWPEG_BRANCH:=$default_powpeg_branch}
           RIT_BRANCH=$(get_branch_from_description rit)
-          : ${RIT_BRANCH:=${github_head_ref:-$default_rskj_branch}}
+          : ${RIT_BRANCH:=${github_head_ref:-$default_rit_branch}}
+          # PRs default to the short suite for fast feedback, but can opt into the full suite
+          # via a `test-suite:full` tag in the PR description (e.g. before merging into main).
+          TEST_SUITE=$(get_branch_from_description test-suite)
+          : ${TEST_SUITE:=short}
         else
           RSKJ_BRANCH=$default_rskj_branch
           POWPEG_BRANCH=$default_powpeg_branch
           RIT_BRANCH=$default_rit_branch
+          TEST_SUITE=$default_test_suite
         fi
 
         if ! is_valid_branch_name "$RSKJ_BRANCH"; then
@@ -66,7 +74,12 @@ runs:
           echo "rit: invalid branch name: $RIT_BRANCH" >&2
           exit 1
         fi
-        
+        if [ "$TEST_SUITE" != "short" ] && [ "$TEST_SUITE" != "full" ]; then
+          echo "test-suite: invalid value: $TEST_SUITE, must be 'short' or 'full'" >&2
+          exit 1
+        fi
+
         echo "RSKJ_BRANCH=$RSKJ_BRANCH" >> $GITHUB_ENV
         echo "RIT_BRANCH=$RIT_BRANCH" >> $GITHUB_ENV
         echo "POWPEG_BRANCH=$POWPEG_BRANCH" >> $GITHUB_ENV
+        echo "TEST_SUITE=$TEST_SUITE" >> $GITHUB_ENV
