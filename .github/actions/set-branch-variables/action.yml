@@ -50,7 +50,7 @@ runs:
           POWPEG_BRANCH=$(get_branch_from_description fed)
           : ${POWPEG_BRANCH:=$default_powpeg_branch}
           RIT_BRANCH=$(get_branch_from_description rit)
-          : ${RIT_BRANCH:=${github_head_ref:-$default_rskj_branch}}
+          : ${RIT_BRANCH:=${github_head_ref:-$default_rit_branch}}
           # PRs default to the short suite for fast feedback, but can opt into the full suite
           # via a `test-suite:full` tag in the PR description (e.g. before merging into main).
           TEST_SUITE=$(get_branch_from_description test-suite)
