@@ -1,4 +1,4 @@
-name: RIT Action Continuous Integration Test
+name: CI
 
 on:
   pull_request:
@@ -37,30 +37,20 @@ concurrency:
 env:
   TEST_TAG:  ${{ github.event.repository.name }}/rit:test
   LATEST_TAG: ghcr.io/rsksmart/${{ github.event.repository.name }}/rit
-  # Every PR gets the short suite; pushes to main and manual runs default to the full (long) suite,
-  # which can also be pointed at 'short' via workflow_dispatch.
-  TEST_SUITE: ${{ github.event_name == 'pull_request' && 'short' || (github.event.inputs.test-suite || 'full') }}
+  # TEST_SUITE is exported by the set-branch-variables composite action: PRs get the short suite
+  # (overridable with a `test-suite:full` tag in the PR description, like in rskj/powpeg-node);
+  # pushes to main and manual runs default to the full (long) suite.
 
 jobs:
-  build-push-rit-action-container-action:
-    name: Test RIT Action docker container-action
+  test-container-action:
+    name: Rootstock Integration Tests
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    permissions:
-      packages: write
 
     steps:
       - name: Checkout
         id: checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
-        with:
-          images: |
-            ${{ env.LATEST_TAG }}
-            ${{ env.TEST_TAG }}
 
       - name: Setup Docker BuildX
         id: setup-buildx
@@ -76,6 +66,9 @@ jobs:
           context: container-action/
           load: true
           tags: ${{ env.TEST_TAG }}
+          # mode=max caches every layer so the publish job's rebuild is a pure cache replay.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       # Call the composite action to set branch variables
       - name: Set Branch Variables
@@ -149,22 +142,6 @@ jobs:
             --env INPUT_TEST_SUITE="${{ env.TEST_SUITE }}" \
             -v "$GITHUB_OUTPUT:/github-output"  \
             --rm ${{ env.TEST_TAG }}
-
-      - name: GitHub container registry login
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build the RIT Action Container Image
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
-        with:
-          context: container-action/
-          tags: ${{ env.LATEST_TAG }}
-          labels: ${{ steps.meta.outputs.labels }}
-          load: true
-          push: true
 
       - name: Check Slack Token
         id: check-slack-token
@@ -252,12 +229,65 @@ jobs:
                       text: View Actions Run
                     url: "${{ env.BUILD_URL }}"
 
+  # Publishes the prebuilt image to GHCR only from main, after tests pass. Note that consumers of
+  # the action itself (uses: rsksmart/rootstock-integration-tests@main) rebuild from the Dockerfile
+  # at run time; the GHCR image is for running the suite directly with docker run.
+  publish-container-action-image:
+    name: Publish Image (main only)
+    needs: test-container-action
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ env.LATEST_TAG }}
+
+      - name: Setup Docker BuildX
+        id: setup-buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        with:
+          install: true
+          driver-opts: network=host
+          platforms: linux/amd64
+
+      - name: GitHub container registry login
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push the RIT Action Container Image
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: container-action/
+          tags: ${{ env.LATEST_TAG }}
+          labels: ${{ steps.meta.outputs.labels }}
+          push: true
+          # Replays the layers already built (and fully cached with mode=max) by the test job.
+          cache-from: type=gha
+
+  # Runs the action through GitHub's own container-action machinery (uses: ./), the way rskj and
+  # powpeg-node consume it — validating the action.yml contract (inputs mapping, outputs parsing),
+  # not re-running the full suite: the test-container-action job above already runs the full suite
+  # on pushes to main, so this one runs the short suite to keep the wiring check cheap.
   test-rit-action:
     if: ${{ github.ref == 'refs/heads/main' }}
-    needs: build-push-rit-action-container-action
-    name: GitHub Actions Test
+    needs: test-container-action
+    name: Test Action Wiring (main only)
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -312,7 +342,7 @@ jobs:
           rskj-branch: ${{ env.RSKJ_BRANCH }}
           powpeg-node-branch: ${{ env.POWPEG_BRANCH }}
           rit-branch: ${{ env.RIT_BRANCH }}
-          test-suite: ${{ env.TEST_SUITE }}
+          test-suite: short
 
       - name: Print RIT Status and Message
         id: output
