@@ -1,52 +1,45 @@
 const expect = require('chai').expect;
-const peglib = require('peglib');
-const bitcoin = peglib.bitcoin;
-const rsk = peglib.rsk;
-const pegUtils = peglib.pegUtils;
-const libUtils = require('../../../lib/utils');
+const { getRskTransactionHelpers } = require('../../../lib/rsk-tx-helper-provider');
+const { getBridge } = require('../../../lib/bridge-provider');
+const { getBtcClient } = require('../../../lib/btc-client-provider');
+const { ensure0x } = require('../../../lib/utils');
+const {
+    UNPROCESSABLE_TX_NOT_CONTRACT_ERROR,
+} = require('../../../lib/flyover-pegin-response-codes');
 const CustomError = require('../../../lib/CustomError');
 
-const NETWORK = bitcoin.networks.testnet;
-
 describe('Calling registerFastBridgeBtcTransaction', function () {
-    let rskClient;
-    let btcClient;
-    let pegClient;
+    let rskTxHelper;
+    let btcTxHelper;
+    let bridge;
 
-    before(() => {
-        rskClient = rsk.getClient(Runners.hosts.federate.host);
-        btcClient = bitcoin.getClient(
-            Runners.hosts.bitcoin.rpcHost,
-            Runners.hosts.bitcoin.rpcUser,
-            Runners.hosts.bitcoin.rpcPassword,
-            NETWORK
-        );
-        pegClient = pegUtils.using(btcClient, rskClient);
+    before(async () => {
+        rskTxHelper = getRskTransactionHelpers()[0];
+        btcTxHelper = getBtcClient();
+        bridge = await getBridge(rskTxHelper.getClient());
     });
 
     it('should return error when user calling registerFastBridgeBtcTransaction method', async () => {
         try {
-            let errorUserCalls = -300;
-            let randomHex = rskClient.utils.randomHex;
-            let stringHex = randomHex(32);
-            let randomAddress = randomHex(20);
-            let addressBtc = (await pegClient.generateNewAddress('test')).btc;
-            let addressBtcBytes = libUtils.ensure0x(
-                bitcoin.addresses.decodeBase58Address(addressBtc)
-            );
-            let callResult = await rskClient.rsk.bridge.methods
+            const randomHex = rskTxHelper.getClient().utils.randomHex;
+            const stringHex = randomHex(32);
+            const randomAddress = randomHex(20);
+            const btcAddress = (await btcTxHelper.generateBtcAddress('legacy')).address;
+            const btcAddressBytes = ensure0x(btcTxHelper.decodeBase58Address(btcAddress));
+
+            const callResult = await bridge.methods
                 .registerFastBridgeBtcTransaction(
                     '0x',
                     1,
                     stringHex,
                     stringHex,
-                    addressBtcBytes,
+                    btcAddressBytes,
                     randomAddress,
-                    addressBtcBytes,
+                    btcAddressBytes,
                     false
                 )
                 .call();
-            expect(Number(callResult)).to.equal(errorUserCalls);
+            expect(Number(callResult)).to.equal(UNPROCESSABLE_TX_NOT_CONTRACT_ERROR);
         } catch (err) {
             throw new CustomError('registerFastBridgeBtcTransaction call failure', err);
         }
