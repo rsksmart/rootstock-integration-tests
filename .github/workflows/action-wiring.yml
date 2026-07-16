@@ -1,49 +1,38 @@
-name: CI
+name: Action Wiring
+
+# Runs the action through GitHub's own container-action machinery (uses: ./), the way rskj and
+# powpeg-node consume it — validating the action.yml contract (inputs mapping, outputs parsing)
+# that ci.yml's raw `docker run` cannot fully replicate. It runs the short suite (the smallest
+# available payload) and only when the action packaging itself changes, so unrelated changes
+# skip it entirely and packaging changes get checked before merge, not after.
 
 on:
   pull_request:
+    paths:
+      - 'action.yml'
+      - 'container-action/**'
+      - '.github/workflows/action-wiring.yml'
   push:
     branches:
       - main
-  workflow_dispatch:
-    inputs:
-      rskj-branch:
-        description: 'Branch for RSKj'
-        required: false
-        default: 'master'
-      powpeg-branch:
-        description: 'Branch for PowPeg Node'
-        required: false
-        default: 'master'
-      test-suite:
-        description: "Test suite to run: 'short' (fast PR subset) or 'full' (short + extra tests)"
-        required: false
-        default: 'full'
-        type: choice
-        options:
-          - short
-          - full
+    paths:
+      - 'action.yml'
+      - 'container-action/**'
+      - '.github/workflows/action-wiring.yml'
 
 permissions:
   contents: read
 
 # Cancel a still-running PR run when a new commit lands on the same PR, so a superseded commit
-# doesn't keep occupying a runner. Push/workflow_dispatch runs are only serialized (queued), not
-# cancelled, since those represent completed states worth validating to completion.
+# doesn't keep occupying a runner. Push runs are only serialized (queued), not cancelled, since
+# those represent completed states worth validating to completion.
 concurrency:
-  group: rit-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  group: wiring-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-env:
-  TEST_TAG:  ${{ github.event.repository.name }}/rit:test
-  LATEST_TAG: ghcr.io/rsksmart/${{ github.event.repository.name }}/rit
-  # TEST_SUITE is exported by the set-branch-variables composite action: PRs get the short suite
-  # (overridable with a `test-suite:full` tag in the PR description, like in rskj/powpeg-node);
-  # pushes to main and manual runs default to the full (long) suite.
-
 jobs:
-  test-container-action:
-    name: Rootstock Integration Tests
+  test-action-wiring:
+    name: Test Action Wiring
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
@@ -52,25 +41,7 @@ jobs:
         id: checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
-      - name: Setup Docker BuildX
-        id: setup-buildx
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
-        with:
-          install: true
-          driver-opts: network=host
-          platforms: linux/amd64
-
-      - name: Build and export locally Docker
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
-        with:
-          context: container-action/
-          load: true
-          tags: ${{ env.TEST_TAG }}
-          # mode=max caches every layer so the publish job's rebuild is a pure cache replay.
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # Call the composite action to set branch variables
+      # Call the composite action here to set branch variables
       - name: Set Branch Variables
         uses: ./.github/actions/set-branch-variables
         with:
@@ -79,7 +50,7 @@ jobs:
       - name: Set Build URL
         id: set-build-url
         # always() so the failure notification still gets a valid BUILD_URL when an earlier
-        # step (e.g. the Docker build) fails.
+        # step fails.
         if: always()
         run: |
           BUILD_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
@@ -142,23 +113,20 @@ jobs:
           write_env NOTIFICATION_URL "$NOTIFICATION_URL"
           write_env NOTIFICATION_ACTION_LABEL "$NOTIFICATION_ACTION_LABEL"
 
-      - name: Test the RIT Container Action
-        id: test-container
-        env:
-          INPUT_RSKJ_BRANCH: ${{ env.RSKJ_BRANCH }}
-          INPUT_POWPEG_NODE_BRANCH: ${{ env.POWPEG_BRANCH }}
-          INPUT_RIT_BRANCH: ${{ env.RIT_BRANCH }}
-          INPUT_RIT_LOG_LEVEL: info
+      - name: Test RIT Action
+        id: test-rit-action
+        uses: ./
+        with:
+          rskj-branch: ${{ env.RSKJ_BRANCH }}
+          powpeg-node-branch: ${{ env.POWPEG_BRANCH }}
+          rit-branch: ${{ env.RIT_BRANCH }}
+          test-suite: short
+
+      - name: Print RIT Status and Message
+        id: output
         run: |
-          docker run \
-            --env GITHUB_OUTPUT="/github-output"  \
-            --env INPUT_RSKJ_BRANCH="${{ env.RSKJ_BRANCH }}"  \
-            --env INPUT_POWPEG_NODE_BRANCH="${{ env.POWPEG_BRANCH }}"  \
-            --env INPUT_RIT_BRANCH="${{ env.RIT_BRANCH }}"  \
-            --env INPUT_RIT_LOG_LEVEL="${{ env.INPUT_RIT_LOG_LEVEL }}" \
-            --env INPUT_TEST_SUITE="${{ env.TEST_SUITE }}" \
-            -v "$GITHUB_OUTPUT:/github-output"  \
-            --rm ${{ env.TEST_TAG }}
+          echo "RIT Status = ${{ steps.test-rit-action.outputs.status }}"
+          echo "RIT Message = ${{ steps.test-rit-action.outputs.message }}"
 
       - name: Check Slack Token
         id: check-slack-token
@@ -166,7 +134,7 @@ jobs:
         # even if a step above failed.
         if: always()
         # Kept in its own step-scoped env (not job-level) so the token itself is never exposed
-        # to other steps; only a boolean flag is exposed as an output.
+        # to other steps (e.g. the RIT action above); only a boolean flag is exposed as an output.
         env:
           SLACK_NOTIFICATION_TOKEN: ${{ secrets.GHA_SLACK_NOTIFICATION_TOKEN }}
         run: |
@@ -190,7 +158,7 @@ jobs:
               - type: header
                 text:
                   type: plain_text
-                  text: "✅ PASSED — ${{ github.repository }} – ${{ env.NOTIFICATION_TITLE }}"
+                  text: "✅ PASSED — ${{ github.repository }} (action wiring) – ${{ env.NOTIFICATION_TITLE }}"
                   emoji: true
               - type: section
                 text:
@@ -227,7 +195,7 @@ jobs:
               - type: header
                 text:
                   type: plain_text
-                  text: "❌ FAILED — ${{ github.repository }} – ${{ env.NOTIFICATION_TITLE }}"
+                  text: "❌ FAILED — ${{ github.repository }} (action wiring) – ${{ env.NOTIFICATION_TITLE }}"
                   emoji: true
               - type: section
                 text:
@@ -250,52 +218,3 @@ jobs:
                       type: plain_text
                       text: View Actions Run
                     url: "${{ env.BUILD_URL }}"
-
-  # Publishes the prebuilt image to GHCR only from main, after tests pass. Note that consumers of
-  # the action itself (uses: rsksmart/rootstock-integration-tests@main) rebuild from the Dockerfile
-  # at run time; the GHCR image is for running the suite directly with docker run.
-  publish-container-action-image:
-    name: Publish Image (main only)
-    needs: test-container-action
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout
-        id: checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
-        with:
-          images: ${{ env.LATEST_TAG }}
-
-      - name: Setup Docker BuildX
-        id: setup-buildx
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
-        with:
-          install: true
-          driver-opts: network=host
-          platforms: linux/amd64
-
-      - name: GitHub container registry login
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push the RIT Action Container Image
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
-        with:
-          context: container-action/
-          tags: ${{ env.LATEST_TAG }}
-          labels: ${{ steps.meta.outputs.labels }}
-          push: true
-          # Replays the layers already built (and fully cached with mode=max) by the test job.
-          cache-from: type=gha
