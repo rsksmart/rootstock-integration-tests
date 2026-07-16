@@ -39,7 +39,7 @@ runs:
         }
 
         if [ "$github_event_name" = workflow_dispatch ]; then
-          RSKJ_BRANCH=${github_event_inputs_rskj_branch:-$default_rit_branch}
+          RSKJ_BRANCH=${github_event_inputs_rskj_branch:-$default_rskj_branch}
           POWPEG_BRANCH=${github_event_inputs_powpeg_branch:-$default_powpeg_branch}
           RIT_BRANCH=$github_ref_name
           TEST_SUITE=${github_event_inputs_test_suite:-$default_test_suite}
