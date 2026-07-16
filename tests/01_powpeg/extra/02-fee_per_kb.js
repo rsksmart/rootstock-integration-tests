@@ -11,7 +11,7 @@ const {
 
 const RANDOM_ADDR = '42a3d6e125aad539ac15ed04e1478eb0a4dc1489';
 
-describe('Fee per kb change voting', function () {
+describe('@regression @bridge-methods Fee per kb change voting', function () {
     let rskTxHelper;
     let bridge;
 

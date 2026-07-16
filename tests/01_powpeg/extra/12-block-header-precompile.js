@@ -74,7 +74,7 @@ function bytesHexToBlockHashHex(hex) {
     return `0x${hashHex}`.toLowerCase();
 }
 
-describe('BlockHeader native precompile (0x…1000010)', () => {
+describe('@regression @bridge-methods BlockHeader native precompile (0x…1000010)', () => {
     let rskTxHelper;
     let blockHeader;
 

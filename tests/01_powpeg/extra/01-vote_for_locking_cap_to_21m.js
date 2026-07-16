@@ -7,7 +7,7 @@ const { expect } = require('chai');
 const lockingCapAuthorizerPrivateKey =
     'da6a5451bfd74829307ec6d4a8c55174d4859169f162a8ed8fcba8f7636e77cc';
 
-describe('Vote for locking cap to the max 21 million btc', function () {
+describe('@regression @bridge-methods Vote for locking cap to the max 21 million btc', function () {
     let rskTxHelpers;
 
     before(async () => {

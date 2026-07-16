@@ -122,6 +122,38 @@ This is controlled by the `TEST_SUITE` environment variable (`short` or `full`, 
 
 Pull requests are automatically escalated to the `full` suite when they modify files that only the full run exercises end-to-end: anything under a `tests/**/extra/` folder, the shared test-body and assertion modules (`lib/tests/`, `lib/assertions/`), or the suite machinery itself (`test.js`, `config/`). To override the suite selection explicitly, add a `` `test-suite:full` `` or `` `test-suite:short` `` tag to the PR description — an explicit tag always wins over the automatic escalation.
 
+### Running tests by tag (smoke / regression / behaviour area)
+
+Tests are also classified with tags embedded in their `describe`/`it` titles, so you can select a scope with Mocha's native [`--grep`](https://mochajs.org/#-grep-regexp-g-regexp) — no new dependency. `--grep` matches against the full test title, so a tag on a file's top-level `describe` applies to every test in that file.
+
+Tag vocabulary:
+
+| Tag | Selects |
+| --- | --- |
+| `@smoke` | Fast, high-signal subset for quick feedback (currently the foundational `00_sync` → federation change → core `2wp` flow). |
+| `@regression` | The full relevant set (every tagged test). |
+| `@sync` | Federator sync. |
+| `@federation-change` | Federation change flows and powpeg redeem script. |
+| `@2wp` / `@pegin` / `@pegout` | Two-way-peg tests (peg-in / peg-out). |
+| `@flyover` | Flyover / fast-bridge tests. |
+| `@union-bridge` | Union Bridge functionality. |
+| `@fork-activation` | Tests exercising fork-activated behaviour. |
+| `@bridge-methods` | Bridge JSON-RPC / precompile / governance-voting method tests. |
+
+Convenience scripts:
+
+- `npm run test:smoke` — runs the `@smoke` subset (`mocha --grep @smoke`).
+- `npm run test:regression` — runs the `@regression` set (`mocha --grep @regression`), equivalent to the full suite.
+
+Run any other tag (or combination) by passing `--grep` through `npm test`:
+
+```
+npm test -- --grep @flyover
+npm test -- --grep "@2wp"
+```
+
+> Note: tests share blockchain state and must run in folder order (see above). A `--grep` scope only runs green if the selected tests form a runnable prefix — `@smoke` is curated to satisfy this. Arbitrary single-area greps (e.g. `@flyover` alone) may fail on missing prerequisite state until per-test isolation lands.
+
 ## Running the tests with a different configuration file
 
 1. Create a configuration file, e.g., `config/another_config.js`.

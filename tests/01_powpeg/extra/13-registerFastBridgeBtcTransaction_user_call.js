@@ -7,7 +7,7 @@ const {
     UNPROCESSABLE_TX_NOT_CONTRACT_ERROR,
 } = require('../../../lib/flyover-pegin-response-codes');
 
-describe('Calling registerFastBridgeBtcTransaction', function () {
+describe('@regression @flyover Calling registerFastBridgeBtcTransaction', function () {
     let rskTxHelper;
     let btcTxHelper;
     let bridge;

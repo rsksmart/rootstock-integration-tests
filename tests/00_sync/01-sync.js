@@ -6,7 +6,7 @@ const { getRskTransactionHelpers } = require('../../lib/rsk-tx-helper-provider')
 
 const WAIT_IN_MILLISECONDS = 5000;
 
-describe('Federators sync', () => {
+describe('@smoke @regression @sync Federators sync', () => {
     it('should sync all rsk federator nodes when one of them manually mines', async () => {
         try {
             await wait(WAIT_IN_MILLISECONDS);
