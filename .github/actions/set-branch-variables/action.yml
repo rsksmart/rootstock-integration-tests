@@ -54,7 +54,22 @@ runs:
           # PRs default to the short suite for fast feedback, but can opt into the full suite
           # via a `test-suite:full` tag in the PR description (e.g. before merging into main).
           TEST_SUITE=$(get_branch_from_description test-suite)
-          : ${TEST_SUITE:=short}
+          if [ -z "$TEST_SUITE" ]; then
+            TEST_SUITE=short
+            # Auto-escalate to the full suite when the PR touches files that only the full
+            # run exercises end-to-end: the extra/ test folders, the shared test-body and
+            # assertion modules, and the suite machinery itself. An explicit
+            # `test-suite:<suite>` tag in the PR description always takes precedence.
+            FULL_SUITE_PATHS='^tests/.*/extra/|^lib/tests/|^lib/assertions/|^test\.js$|^config/'
+            if ! pr_files=$(gh pr diff "$github_event_pull_request_number" --name-only); then
+              echo "warning: could not list changed files for PR #$github_event_pull_request_number; running the full suite to be safe" >&2
+              TEST_SUITE=full
+            elif echo "$pr_files" | grep -qE "$FULL_SUITE_PATHS"; then
+              echo "PR touches full-suite-affecting paths; escalating to the full test suite:"
+              echo "$pr_files" | grep -E "$FULL_SUITE_PATHS" | sed 's/^/  /'
+              TEST_SUITE=full
+            fi
+          fi
         else
           RSKJ_BRANCH=$default_rskj_branch
           POWPEG_BRANCH=$default_powpeg_branch

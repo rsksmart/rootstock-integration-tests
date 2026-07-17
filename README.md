@@ -119,6 +119,8 @@ Execution order is dictated by the full file path, so group folders run in numer
 
 This is controlled by the `TEST_SUITE` environment variable (`short` or `full`, defaulting to `full`) read in [test.js](test.js). The RIT GitHub Action also accepts a `test-suite` input (`short` or `full`) to pick which suite to run; pull requests to this repo run `short` automatically, while pushes to `main` and manual `workflow_dispatch` runs default to `full`.
 
+Pull requests are automatically escalated to the `full` suite when they modify files that only the full run exercises end-to-end: anything under a `tests/**/extra/` folder, the shared test-body and assertion modules (`lib/tests/`, `lib/assertions/`), or the suite machinery itself (`test.js`, `config/`). To override the suite selection explicitly, add a `` `test-suite:full` `` or `` `test-suite:short` `` tag to the PR description — an explicit tag always wins over the automatic escalation.
+
 ## Running the tests with a different configuration file
 
 1. Create a configuration file, e.g., `config/another_config.js`.
