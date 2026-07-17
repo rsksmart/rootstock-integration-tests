@@ -3,7 +3,6 @@ const rskUtils = require('../../../lib/rsk-utils');
 const { getRskTransactionHelpers } = require('../../../lib/rsk-tx-helper-provider');
 const { getBridge } = require('../../../lib/bridge-provider');
 const { btcToSatoshis } = require('@rsksmart/btc-eth-unit-converter');
-const CustomError = require('../../../lib/CustomError');
 const {
     FEE_PER_KB_CHANGER_PRIVATE_KEY,
     FEE_PER_KB_CHANGER_ADDRESS,
@@ -24,71 +23,52 @@ describe('Fee per kb change voting', function () {
     });
 
     it('should have a default fee per kb of millicoin', async () => {
-        try {
-            const feePerKb = await bridge.methods.getFeePerKb().call();
-            expect(Number(feePerKb)).to.equal(GENESIS_FEE_PER_KB);
-        } catch (err) {
-            throw new CustomError('Having a default fee per kb millicoin failure', err);
-        }
+        const feePerKb = await bridge.methods.getFeePerKb().call();
+        expect(Number(feePerKb)).to.equal(GENESIS_FEE_PER_KB);
     });
 
     it('should reject unauthorized votes', async () => {
-        try {
-            const newFeePerKb = Number(btcToSatoshis(0.005));
+        const newFeePerKb = Number(btcToSatoshis(0.005));
 
-            // A read-only call needs no account in the node wallet; `from` is just the simulated sender.
-            const result = await bridge.methods
-                .voteFeePerKbChange(newFeePerKb)
-                .call({ from: RANDOM_ADDR });
-            expect(Number(result)).to.equal(FEE_PER_KB_RESPONSE_CODES.UNAUTHORIZED_CALLER);
+        // A read-only call needs no account in the node wallet; `from` is just the simulated sender.
+        const result = await bridge.methods
+            .voteFeePerKbChange(newFeePerKb)
+            .call({ from: RANDOM_ADDR });
+        expect(Number(result)).to.equal(FEE_PER_KB_RESPONSE_CODES.UNAUTHORIZED_CALLER);
 
-            const feePerKb = await bridge.methods.getFeePerKb().call();
-            expect(Number(feePerKb)).to.equal(GENESIS_FEE_PER_KB);
-        } catch (err) {
-            throw new CustomError('Reject unauthorized votes failure', err);
-        }
+        const feePerKb = await bridge.methods.getFeePerKb().call();
+        expect(Number(feePerKb)).to.equal(GENESIS_FEE_PER_KB);
     });
 
     it('should reject votes above the max fee per kb value', async () => {
-        try {
-            const newFeePerKb = MAX_FEE_PER_KB + 1;
-            await rskUtils.getUnlockedAddress(
-                rskTxHelper,
-                FEE_PER_KB_CHANGER_PRIVATE_KEY,
-                FEE_PER_KB_CHANGER_ADDRESS
-            );
+        const newFeePerKb = MAX_FEE_PER_KB + 1;
+        await rskUtils.getUnlockedAddress(
+            rskTxHelper,
+            FEE_PER_KB_CHANGER_PRIVATE_KEY,
+            FEE_PER_KB_CHANGER_ADDRESS
+        );
 
-            await rskUtils.sendTxWithCheck(
-                rskTxHelper,
-                bridge.methods.voteFeePerKbChange(newFeePerKb),
-                FEE_PER_KB_CHANGER_ADDRESS,
-                (result) => {
-                    expect(Number(result)).to.equal(FEE_PER_KB_RESPONSE_CODES.EXCESSIVE_FEE_VOTED);
-                }
-            );
+        await rskUtils.sendTxWithCheck(
+            rskTxHelper,
+            bridge.methods.voteFeePerKbChange(newFeePerKb),
+            FEE_PER_KB_CHANGER_ADDRESS,
+            (result) => {
+                expect(Number(result)).to.equal(FEE_PER_KB_RESPONSE_CODES.EXCESSIVE_FEE_VOTED);
+            }
+        );
 
-            const feePerKb = await bridge.methods.getFeePerKb().call();
-            expect(Number(feePerKb)).to.equal(GENESIS_FEE_PER_KB);
-        } catch (err) {
-            throw new CustomError(
-                'Should reject votes above the max fee per kb value failure',
-                err
-            );
-        }
+        const feePerKb = await bridge.methods.getFeePerKb().call();
+        expect(Number(feePerKb)).to.equal(GENESIS_FEE_PER_KB);
     });
 
     it('should be able to vote and change the fee per kb', async () => {
-        try {
-            const newFeePerKb = Number(btcToSatoshis(0.005));
+        const newFeePerKb = Number(btcToSatoshis(0.005));
 
-            // setFeePerKb votes with the changer account and asserts
-            // both the vote result and the resulting fee per kb value.
-            await rskUtils.setFeePerKb(rskTxHelper, newFeePerKb);
+        // setFeePerKb votes with the changer account and asserts
+        // both the vote result and the resulting fee per kb value.
+        await rskUtils.setFeePerKb(rskTxHelper, newFeePerKb);
 
-            // Changing back the fee per kb
-            await rskUtils.setFeePerKb(rskTxHelper, GENESIS_FEE_PER_KB);
-        } catch (err) {
-            throw new CustomError('Should be able to vote ands change the fee per kb failure', err);
-        }
+        // Changing back the fee per kb
+        await rskUtils.setFeePerKb(rskTxHelper, GENESIS_FEE_PER_KB);
     });
 });

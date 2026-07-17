@@ -6,7 +6,6 @@ const { ensure0x } = require('../../../lib/utils');
 const {
     UNPROCESSABLE_TX_NOT_CONTRACT_ERROR,
 } = require('../../../lib/flyover-pegin-response-codes');
-const CustomError = require('../../../lib/CustomError');
 
 describe('Calling registerFastBridgeBtcTransaction', function () {
     let rskTxHelper;
@@ -20,28 +19,24 @@ describe('Calling registerFastBridgeBtcTransaction', function () {
     });
 
     it('should return error when user calling registerFastBridgeBtcTransaction method', async () => {
-        try {
-            const randomHex = rskTxHelper.getClient().utils.randomHex;
-            const stringHex = randomHex(32);
-            const randomAddress = randomHex(20);
-            const btcAddress = (await btcTxHelper.generateBtcAddress('legacy')).address;
-            const btcAddressBytes = ensure0x(btcTxHelper.decodeBase58Address(btcAddress));
+        const randomHex = rskTxHelper.getClient().utils.randomHex;
+        const stringHex = randomHex(32);
+        const randomAddress = randomHex(20);
+        const btcAddress = (await btcTxHelper.generateBtcAddress('legacy')).address;
+        const btcAddressBytes = ensure0x(btcTxHelper.decodeBase58Address(btcAddress));
 
-            const callResult = await bridge.methods
-                .registerFastBridgeBtcTransaction(
-                    '0x',
-                    1,
-                    stringHex,
-                    stringHex,
-                    btcAddressBytes,
-                    randomAddress,
-                    btcAddressBytes,
-                    false
-                )
-                .call();
-            expect(Number(callResult)).to.equal(UNPROCESSABLE_TX_NOT_CONTRACT_ERROR);
-        } catch (err) {
-            throw new CustomError('registerFastBridgeBtcTransaction call failure', err);
-        }
+        const callResult = await bridge.methods
+            .registerFastBridgeBtcTransaction(
+                '0x',
+                1,
+                stringHex,
+                stringHex,
+                btcAddressBytes,
+                randomAddress,
+                btcAddressBytes,
+                false
+            )
+            .call();
+        expect(Number(callResult)).to.equal(UNPROCESSABLE_TX_NOT_CONTRACT_ERROR);
     });
 });
