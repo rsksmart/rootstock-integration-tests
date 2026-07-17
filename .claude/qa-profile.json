@@ -1,0 +1,62 @@
+{
+  "product": "rootstock-integration-tests",
+  "layer": "qa-blockchain",
+  "layers": [
+    "qa-blockchain"
+  ],
+  "environments": [
+    "regtest"
+  ],
+  "dimensions": {
+    "suite": [
+      "smoke",
+      "regression"
+    ],
+    "network": [
+      "regtest"
+    ]
+  },
+  "tagMatrix": {
+    "required": [
+      "suite",
+      "env"
+    ]
+  },
+  "blockchain": {
+    "runner": "mocha",
+    "scopes": [
+      "node-rpc-testing",
+      "onchain-validation",
+      "chain-infra",
+      "differential-compatibility"
+    ],
+    "buildsOn": []
+  },
+  "grid": {
+    "provider": "none"
+  },
+  "reporting": {
+    "adapter": "rootiematio",
+    "config": {
+      "repo": "rsksmart/rootstock-integration-tests",
+      "artifact": "junit-xml"
+    },
+    "_note": "mocha-multi-reporters keeps human-readable spec output AND writes JUnit XML to reports/junit.xml (gitignored *.xml). The ci.yml test-container-action job uploads it via actions/upload-artifact as a single artifact named 'rit-junit-report' on every trigger (PR and push to main). Rootiematio is outbound-only: it polls GHA and ingests the JUnit XML artifact — no in-suite SDK/token. Confirm the 'rit-junit-report' artifact name maps on the Rootiematio project side."
+  },
+  "ci": {
+    "host": "github-actions"
+  },
+  "loops": {
+    "nightly-triage": {
+      "enabled": false,
+      "cadence": "0 6 * * *",
+      "draftCap": 6
+    }
+  },
+  "configPointers": {
+    "baseUrls": "N/A — spins up a local rskj powpeg-node + bitcoind in regtest; node/JAR/bitcoind paths come from .env (see .env-example) and config/.",
+    "secrets": ".env (gitignored); .env-example is the template."
+  },
+  "_overlay": "qa-rootstock",
+  "_knowledge": "qa-rootstock/knowledge/ (RSK domain facts: bridge, json-rpc-catalog, regtest-accounts, differential-testing, rskj-node)."
+}

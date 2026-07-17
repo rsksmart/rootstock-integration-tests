@@ -144,6 +144,26 @@ chmod +x ./configure_rit_locally.sh
 
 export LOG_LEVEL="$LOG_LEVEL"
 
+# --- P0-01: preserve the JUnit report for CI artifact upload (on pass or fail) ---
+# The suite writes reports/junit.xml inside this container. GITHUB_WORKSPACE is the
+# runner-host path mounted in by the container action (and by the docker-run CI job).
+# Copying the report there on EXIT lets actions/upload-artifact collect it on every
+# exit path, including the `exit 1` taken when the test run fails below.
+copy_junit_report() {
+  local report="/usr/src/rit/reports/junit.xml"
+  local dest="${GITHUB_WORKSPACE:-}/reports"
+  # Nothing to do when not running under Actions or the suite produced no report.
+  [ -n "${GITHUB_WORKSPACE:-}" ] && [ -f "$report" ] || return 0
+  # Guard the copy in a conditional so a failure neither aborts the trap under
+  # `set -e` nor gets reported as a success.
+  if mkdir -p "$dest" && cp "$report" "$dest/junit.xml"; then
+    echo "Copied JUnit report to $dest/junit.xml"
+  else
+    echo "Warning: could not copy JUnit report to $dest/junit.xml" >&2
+  fi
+}
+trap copy_junit_report EXIT
+
 echo -e "\n\n--------- Executing Rootstock Integration Tests ($TEST_SUITE suite) ---------\n\n"
 npm install -y
 if [[ "$TEST_SUITE" == "short" ]]; then
