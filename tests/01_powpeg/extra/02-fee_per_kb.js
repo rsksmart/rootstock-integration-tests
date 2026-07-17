@@ -12,7 +12,6 @@ const {
     FEE_PER_KB_RESPONSE_CODES,
 } = require('../../../lib/constants/fee-per-kb-constants');
 
-const RANDOM_PK = 'a4896a3f93bf4bf58378e579f3cf193bb4af1022af7d2089f37d8bae7157b85f';
 const RANDOM_ADDR = '42a3d6e125aad539ac15ed04e1478eb0a4dc1489';
 
 describe('Fee per kb change voting', function () {
@@ -36,8 +35,8 @@ describe('Fee per kb change voting', function () {
     it('should reject unauthorized votes', async () => {
         try {
             const newFeePerKb = Number(btcToSatoshis(0.005));
-            await rskUtils.getUnlockedAddress(rskTxHelper, RANDOM_PK, RANDOM_ADDR);
 
+            // A read-only call needs no account in the node wallet; `from` is just the simulated sender.
             const result = await bridge.methods
                 .voteFeePerKbChange(newFeePerKb)
                 .call({ from: RANDOM_ADDR });
