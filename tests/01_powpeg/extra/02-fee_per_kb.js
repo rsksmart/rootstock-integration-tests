@@ -4,8 +4,6 @@ const { getRskTransactionHelpers } = require('../../../lib/rsk-tx-helper-provide
 const { getBridge } = require('../../../lib/bridge-provider');
 const { btcToSatoshis } = require('@rsksmart/btc-eth-unit-converter');
 const {
-    FEE_PER_KB_CHANGER_PRIVATE_KEY,
-    FEE_PER_KB_CHANGER_ADDRESS,
     GENESIS_FEE_PER_KB,
     MAX_FEE_PER_KB,
     FEE_PER_KB_RESPONSE_CODES,
@@ -42,19 +40,11 @@ describe('Fee per kb change voting', function () {
 
     it('should reject votes above the max fee per kb value', async () => {
         const newFeePerKb = MAX_FEE_PER_KB + 1;
-        await rskUtils.getUnlockedAddress(
-            rskTxHelper,
-            FEE_PER_KB_CHANGER_PRIVATE_KEY,
-            FEE_PER_KB_CHANGER_ADDRESS
-        );
 
-        await rskUtils.sendTxWithCheck(
+        await rskUtils.voteFeePerKbChange(
             rskTxHelper,
-            bridge.methods.voteFeePerKbChange(newFeePerKb),
-            FEE_PER_KB_CHANGER_ADDRESS,
-            (result) => {
-                expect(Number(result)).to.equal(FEE_PER_KB_RESPONSE_CODES.EXCESSIVE_FEE_VOTED);
-            }
+            newFeePerKb,
+            FEE_PER_KB_RESPONSE_CODES.EXCESSIVE_FEE_VOTED
         );
 
         const feePerKb = await bridge.methods.getFeePerKb().call();
