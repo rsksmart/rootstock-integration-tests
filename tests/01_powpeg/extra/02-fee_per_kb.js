@@ -7,16 +7,15 @@ const CustomError = require('../../../lib/CustomError');
 const {
     FEE_PER_KB_CHANGER_PRIVATE_KEY,
     FEE_PER_KB_CHANGER_ADDRESS,
+    GENESIS_FEE_PER_KB,
+    MAX_FEE_PER_KB,
     FEE_PER_KB_RESPONSE_CODES,
 } = require('../../../lib/constants/fee-per-kb-constants');
-
-const MAX_FEE_PER_KB = 5000000;
 
 const RANDOM_PK = 'a4896a3f93bf4bf58378e579f3cf193bb4af1022af7d2089f37d8bae7157b85f';
 const RANDOM_ADDR = '42a3d6e125aad539ac15ed04e1478eb0a4dc1489';
 
 describe('Fee per kb change voting', function () {
-    const startingFeePerKb = Number(btcToSatoshis(0.001));
     let rskTxHelper;
     let bridge;
 
@@ -28,7 +27,7 @@ describe('Fee per kb change voting', function () {
     it('should have a default fee per kb of millicoin', async () => {
         try {
             const feePerKb = await bridge.methods.getFeePerKb().call();
-            expect(Number(feePerKb)).to.equal(startingFeePerKb);
+            expect(Number(feePerKb)).to.equal(GENESIS_FEE_PER_KB);
         } catch (err) {
             throw new CustomError('Having a default fee per kb millicoin failure', err);
         }
@@ -45,7 +44,7 @@ describe('Fee per kb change voting', function () {
             expect(Number(result)).to.equal(FEE_PER_KB_RESPONSE_CODES.UNAUTHORIZED_CALLER);
 
             const feePerKb = await bridge.methods.getFeePerKb().call();
-            expect(Number(feePerKb)).to.equal(startingFeePerKb);
+            expect(Number(feePerKb)).to.equal(GENESIS_FEE_PER_KB);
         } catch (err) {
             throw new CustomError('Reject unauthorized votes failure', err);
         }
@@ -70,7 +69,7 @@ describe('Fee per kb change voting', function () {
             );
 
             const feePerKb = await bridge.methods.getFeePerKb().call();
-            expect(Number(feePerKb)).to.equal(startingFeePerKb);
+            expect(Number(feePerKb)).to.equal(GENESIS_FEE_PER_KB);
         } catch (err) {
             throw new CustomError(
                 'Should reject votes above the max fee per kb value failure',
@@ -88,7 +87,7 @@ describe('Fee per kb change voting', function () {
             await rskUtils.setFeePerKb(rskTxHelper, newFeePerKb);
 
             // Changing back the fee per kb
-            await rskUtils.setFeePerKb(rskTxHelper, startingFeePerKb);
+            await rskUtils.setFeePerKb(rskTxHelper, GENESIS_FEE_PER_KB);
         } catch (err) {
             throw new CustomError('Should be able to vote ands change the fee per kb failure', err);
         }
