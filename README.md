@@ -126,6 +126,49 @@ Pull requests are automatically escalated to the `full` suite when they modify f
 1. Create a configuration file, e.g., `config/another_config.js`.
 2. Run `CONFIG_FILE_PATH=path_to_another_config_file npm test` or simply set the `CONFIG_FILE_PATH` value in the `.env` file.
 
+## Flyover smoke tests (optional)
+
+The `01_08_00` and `01_08_01` test files validate Flyover split-contract wiring against a
+running Liquidity Provider Service (LPS). They are skipped automatically when the required
+environment variables are not set, so the default integration suite is unaffected.
+
+**Prerequisites**
+
+1. A running LPS and deployed split contracts (pegin, pegout, discovery, collateral management).
+2. Optionally set `CONFIG_FILE_PATH=./config/regtest-external-lps-smoke` when using a
+   pre-running federate node and bitcoind instead of the default RIT runners.
+
+**Required environment variables**
+
+| Variable | Description |
+|---|---|
+| `FLYOVER_LPS_URL` | Base URL of the LPS (e.g. `http://127.0.0.1:8080`) |
+| `PEGIN_CONTRACT_ADDRESS` | Deployed pegin contract address |
+| `PEGOUT_CONTRACT_ADDRESS` | Deployed pegout contract address |
+| `DISCOVERY_ADDRESS` | Deployed discovery contract address |
+| `COLLATERAL_MANAGEMENT_ADDRESS` | Deployed collateral management contract address |
+
+**Optional environment variables**
+
+| Variable | Default | Description |
+|---|---|---|
+| `FLYOVER_PROVIDER_ID` | first provider | LPS provider id to use |
+| `FLYOVER_RSK_RPC_URL` | `http://127.0.0.1:4444` | RSK RPC endpoint (SDK test) |
+| `FLYOVER_SDK_NETWORK` | `Regtest` | Flyover SDK network name |
+| `FLYOVER_TEST_DESTINATION_ADDRESS` | test address | Quote destination |
+| `FLYOVER_TEST_REFUND_ADDRESS` | test address | Quote refund address |
+| `FLYOVER_TEST_VALUE_WEIS` | `1e18` | Quote transfer value in wei |
+
+**Run only the smoke tests**
+
+```bash
+INCLUDE_CASES=01_08_00,01_08_01 npm test
+```
+
+The SDK smoke test (`01_08_01`) includes a temporary shim that re-points SDK contract
+instances to locally deployed split contracts. Remove that shim once SDK regtest constants
+match the external LPS deployment.
+
 ## Including/Excluding test cases
 
 Follow normal instructions as described before, replacing step 4 with either:
