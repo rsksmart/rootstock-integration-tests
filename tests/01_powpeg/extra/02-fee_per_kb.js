@@ -42,7 +42,7 @@ describe('Fee per kb change voting', function () {
             const result = await bridge.methods
                 .voteFeePerKbChange(newFeePerKb)
                 .call({ from: RANDOM_ADDR });
-            expect(Number(result)).to.equal(FEE_PER_KB_RESPONSE_CODES.UNAUTHORIZED_VOTER);
+            expect(Number(result)).to.equal(FEE_PER_KB_RESPONSE_CODES.UNAUTHORIZED_CALLER);
 
             const feePerKb = await bridge.methods.getFeePerKb().call();
             expect(Number(feePerKb)).to.equal(startingFeePerKb);
