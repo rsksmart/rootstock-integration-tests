@@ -37,9 +37,11 @@ concurrency:
 env:
   TEST_TAG:  ${{ github.event.repository.name }}/rit:test
   LATEST_TAG: ghcr.io/rsksmart/${{ github.event.repository.name }}/rit
-  # TEST_SUITE is exported by the set-branch-variables composite action: PRs get the short suite
-  # (overridable with a `test-suite:full` tag in the PR description, like in rskj/powpeg-node);
-  # pushes to main and manual runs default to the full (long) suite.
+  # TEST_SUITE is exported by the set-branch-variables composite action: PRs get the short suite,
+  # auto-escalated to full when the PR touches full-suite-affecting paths (tests/**/extra/,
+  # lib/tests/, lib/assertions/, test.js, config/) and overridable with a `test-suite:<suite>`
+  # tag in the PR description (like in rskj/powpeg-node); pushes to main and manual runs
+  # default to the full (long) suite.
 
 jobs:
   test-container-action:
