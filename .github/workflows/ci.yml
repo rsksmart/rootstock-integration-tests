@@ -144,7 +144,7 @@ jobs:
           write_env NOTIFICATION_URL "$NOTIFICATION_URL"
           write_env NOTIFICATION_ACTION_LABEL "$NOTIFICATION_ACTION_LABEL"
 
-      - name: Test the RIT Container Action
+      - name: Run Rootstock Integration Tests
         id: test-container
         env:
           INPUT_RSKJ_BRANCH: ${{ env.RSKJ_BRANCH }}
