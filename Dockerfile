@@ -27,7 +27,7 @@ ENV NODE_VERSION=v18.20.2
 ENV NVM_DIR=/usr/local/nvm
 RUN bash -c 'set -e; \
     mkdir -p "$NVM_DIR"; \
-    curl -fsSL --proto =https -o /tmp/nvm-install.sh https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh; \
+    curl -fsSL --proto "=https" -o /tmp/nvm-install.sh https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh; \
     echo "8e45fa547f428e9196a5613efad3bfa4d4608b74ca870f930090598f5af5f643  /tmp/nvm-install.sh" | sha256sum -c -; \
     bash /tmp/nvm-install.sh; \
     rm /tmp/nvm-install.sh; \
