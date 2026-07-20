@@ -34,13 +34,13 @@ ENV JAVA_VERSION 17
 ENV JAVA_HOME="/usr/lib/jvm/java-${JAVA_VERSION}-openjdk-amd64"
 
 # -- bitcoind ---------------------------------------------------------
-ENV BITCOIN_VERSION 0.18.1
+ENV BITCOIN_VERSION 31.1
 
 WORKDIR /tmp
 RUN wget "https://bitcoincore.org/bin/bitcoin-core-${BITCOIN_VERSION}/bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz" \
     && tar -xzvf "bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz" -C /opt \
     && mv  "/opt/bitcoin-${BITCOIN_VERSION}" /opt/bitcoin \
-    && rm -v /opt/bitcoin/bin/test_bitcoin /opt/bitcoin/bin/bitcoin-qt \
+    && rm -v /opt/bitcoin/bin/bitcoin-qt \
     && ln -sv /opt/bitcoin/bin/* /usr/local/bin
 
 # -- configure entrypoint to run RIT--------------------------------------------
