@@ -45,6 +45,8 @@ ENV BITCOIN_VERSION=31.1
 
 WORKDIR /tmp
 RUN wget "https://bitcoincore.org/bin/bitcoin-core-${BITCOIN_VERSION}/bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz" \
+    && wget "https://bitcoincore.org/bin/bitcoin-core-${BITCOIN_VERSION}/SHA256SUMS" \
+    && sha256sum --ignore-missing -c SHA256SUMS \
     && tar -xzvf "bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz" -C /opt \
     && mv "/opt/bitcoin-${BITCOIN_VERSION}" /opt/bitcoin \
     && rm -v /opt/bitcoin/bin/bitcoin-qt \
