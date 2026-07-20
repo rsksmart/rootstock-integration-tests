@@ -11,7 +11,7 @@ const BitcoinRunner = require('./lib/bitcoin-runner').Runner;
 
 const federateStarter = require('./lib/federate-starter');
 const rskUtils = require('./lib/rsk-utils');
-const btcNetworks = require('btc-transaction-helper').networks;
+const btcNetworks = require('@rsksmart/btc-transaction-helper').networks;
 const {
     getRskTransactionHelpers,
     getRskTransactionHelper,
