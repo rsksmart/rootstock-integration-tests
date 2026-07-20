@@ -21,7 +21,10 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 ENV NODE_VERSION  v20.14.0
 ENV NVM_DIR /usr/local/nvm
 RUN mkdir -p /usr/local/nvm && \
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash \
+    curl -fsSL --proto '=https' -o /tmp/nvm-install.sh https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh \
+    && echo "8e45fa547f428e9196a5613efad3bfa4d4608b74ca870f930090598f5af5f643  /tmp/nvm-install.sh" | sha256sum -c - \
+    && bash /tmp/nvm-install.sh \
+    && rm /tmp/nvm-install.sh \
     && . "$NVM_DIR/nvm.sh" \
     && nvm install "$NODE_VERSION" \
     && nvm alias default "$NODE_VERSION" \
@@ -37,10 +40,11 @@ ENV JAVA_HOME="/usr/lib/jvm/java-${JAVA_VERSION}-openjdk-amd64"
 ENV BITCOIN_VERSION 31.1
 
 WORKDIR /tmp
-RUN wget "https://bitcoincore.org/bin/bitcoin-core-${BITCOIN_VERSION}/bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz" \
-    && wget "https://bitcoincore.org/bin/bitcoin-core-${BITCOIN_VERSION}/SHA256SUMS" \
+RUN wget --https-only "https://bitcoincore.org/bin/bitcoin-core-${BITCOIN_VERSION}/bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz" \
+    && wget --https-only "https://bitcoincore.org/bin/bitcoin-core-${BITCOIN_VERSION}/SHA256SUMS" \
     && sha256sum --ignore-missing -c SHA256SUMS \
     && tar -xzvf "bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz" -C /opt \
+    && rm -v "bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz" SHA256SUMS \
     && mv  "/opt/bitcoin-${BITCOIN_VERSION}" /opt/bitcoin \
     && rm -v /opt/bitcoin/bin/bitcoin-qt \
     && ln -sv /opt/bitcoin/bin/* /usr/local/bin
