@@ -64,7 +64,8 @@ RUN mkdir /rits/bitcoin-data
 # Copy Node.js dependencies and install
 COPY package*.json ./
 RUN --mount=type=cache,target=/root/.npm \
-    npm install
+    npm ci --ignore-scripts \
+    && npm rebuild bufferutil keccak secp256k1 tiny-secp256k1 utf-8-validate
 
 # Copy the rest of the Node.js project
 COPY . .
