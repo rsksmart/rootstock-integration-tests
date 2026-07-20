@@ -10,11 +10,11 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         curl \
         git \
         gnupg2 \
+        libsecp256k1-dev \
         mocha \
-        wget \
         "openjdk-17-jdk" \
         procps \
-        libsecp256k1-dev \
+        wget \
     && apt-get clean
 
 # -- nodeJs ---------------------------------------------------------
@@ -40,8 +40,8 @@ ENV JAVA_HOME="/usr/lib/jvm/java-${JAVA_VERSION}-openjdk-amd64"
 ENV BITCOIN_VERSION 31.1
 
 WORKDIR /tmp
-RUN wget --https-only "https://bitcoincore.org/bin/bitcoin-core-${BITCOIN_VERSION}/bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz" \
-    && wget --https-only "https://bitcoincore.org/bin/bitcoin-core-${BITCOIN_VERSION}/SHA256SUMS" \
+RUN wget --https-only --max-redirect=0 "https://bitcoincore.org/bin/bitcoin-core-${BITCOIN_VERSION}/bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz" \
+    && wget --https-only --max-redirect=0 "https://bitcoincore.org/bin/bitcoin-core-${BITCOIN_VERSION}/SHA256SUMS" \
     && sha256sum --ignore-missing -c SHA256SUMS \
     && tar -xzvf "bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz" -C /opt \
     && rm -v "bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz" SHA256SUMS \
