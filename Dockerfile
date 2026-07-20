@@ -65,7 +65,7 @@ RUN mkdir /rits/bitcoin-data
 COPY package*.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --ignore-scripts \
-    && npm rebuild bufferutil keccak secp256k1 tiny-secp256k1 utf-8-validate
+    && npm rebuild bufferutil es5-ext keccak secp256k1 tiny-secp256k1 utf-8-validate web3 web3-bzz web3-shh
 
 # Copy the rest of the Node.js project
 COPY . .
