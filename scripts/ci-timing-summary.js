@@ -23,16 +23,22 @@ const TOP_SLOWEST_TESTS = 15;
 
 // Paths come from argv, so guard them before any file-system access: resolve against the
 // working directory (which is GITHUB_WORKSPACE in CI, where the reports live) and confirm the
-// canonical path stays inside it. The check is inlined at each use so a crafted argument that
-// escapes the base is refused before it ever reaches the file system.
-const BASE_DIR = path.resolve(process.cwd());
+// canonical path stays inside it. The check is kept inline at each use so a crafted argument
+// that escapes the base is refused before it ever reaches the file system. realpathSync
+// additionally blocks a symlink under the (container-written) reports dir from pointing
+// outside the base — BASE_DIR is itself realpath'd so the comparison holds on symlinked roots.
+const BASE_DIR = fs.realpathSync(path.resolve(process.cwd()));
 
 const safeExists = (p) => {
     const resolved = path.resolve(BASE_DIR, p);
     if (resolved !== BASE_DIR && !resolved.startsWith(BASE_DIR + path.sep)) {
         return false;
     }
-    return fs.existsSync(resolved);
+    if (!fs.existsSync(resolved)) {
+        return false;
+    }
+    const real = fs.realpathSync(resolved);
+    return real === BASE_DIR || real.startsWith(BASE_DIR + path.sep);
 };
 
 const safeRead = (p) => {
@@ -40,10 +46,21 @@ const safeRead = (p) => {
     if (resolved !== BASE_DIR && !resolved.startsWith(BASE_DIR + path.sep)) {
         throw new Error(`Refusing to access a path outside the workspace: ${p}`);
     }
-    return fs.readFileSync(resolved, 'utf8');
+    const real = fs.realpathSync(resolved);
+    if (real !== BASE_DIR && !real.startsWith(BASE_DIR + path.sep)) {
+        throw new Error(`Refusing to follow a symlink outside the workspace: ${p}`);
+    }
+    return fs.readFileSync(real, 'utf8');
 };
 
 const out = (line = '') => process.stdout.write(line + '\n');
+
+// Test/suite names are arbitrary strings; a literal `|` or a newline would break the Markdown
+// table, so neutralize both before writing a cell.
+const escapeCell = (str) =>
+    String(str)
+        .replaceAll('|', '\\|')
+        .replaceAll(/[\r\n]+/g, ' ');
 
 const fmtDuration = (seconds) => {
     if (!Number.isFinite(seconds) || seconds < 0) {
@@ -131,6 +148,10 @@ const applyRootTotals = (xml, totals) => {
     if (Number.isFinite(rootFailures)) {
         totals.failures = rootFailures;
     }
+    const rootSkipped = Number.parseInt(getAttr(rootMatch[0], 'skipped') || '', 10);
+    if (Number.isFinite(rootSkipped)) {
+        totals.skipped = rootSkipped;
+    }
     const rootTime = Number.parseFloat(getAttr(rootMatch[0], 'time') || '');
     return Number.isFinite(rootTime) && rootTime > 0 ? rootTime : null;
 };
@@ -167,7 +188,7 @@ function renderPhases(phase) {
     out('| Phase | Duration |');
     out('| --- | ---: |');
     const rows = [
-        ['Setup (node boot + federates)', phase.setupSeconds],
+        ['Setup (bitcoind + federate nodes)', phase.setupSeconds],
         ['&nbsp;&nbsp;↳ mine initial blocks', phase.mineSeconds],
         ['Tests', phase.testsSeconds],
         ['Teardown', phase.teardownSeconds],
@@ -193,7 +214,7 @@ function renderSlowestFiles(fileRows) {
     out('| --- | ---: | ---: | ---: | ---: |');
     for (const f of slowest.slice(0, TOP_SLOWEST_FILES)) {
         out(
-            `| \`${f.key}\` | ${f.tests} | ${f.failures} | ${f.skipped} | ${fmtDuration(f.time)} |`
+            `| \`${escapeCell(f.key)}\` | ${f.tests} | ${f.failures} | ${f.skipped} | ${fmtDuration(f.time)} |`
         );
     }
     out();
@@ -210,7 +231,7 @@ function renderSlowestTests(tests) {
     out('| --- | ---: |');
     for (const t of slowest.slice(0, TOP_SLOWEST_TESTS)) {
         const flag = t.failed ? '❌ ' : '';
-        out(`| ${flag}${t.name} | ${fmtDuration(t.time)} |`);
+        out(`| ${flag}${escapeCell(t.name)} | ${fmtDuration(t.time)} |`);
     }
     out();
 }
