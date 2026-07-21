@@ -1,5 +1,5 @@
 require('dotenv').config();
-const glob = require('glob');
+const { globSync } = require('glob');
 const colors = require('colors/safe');
 const LineWrapper = require('stream-line-wrapper');
 const expect = require('chai').expect;
@@ -367,8 +367,8 @@ const runTestThisTimes = process.env.RUN_EACH_TEST_FILE_THESE_TIMES || 1;
 
 // Register tests
 const testsGlobPattern = './tests/**/*.js';
-const sortedTests = glob
-    .sync(testsGlobPattern)
+const sortedTests = globSync(testsGlobPattern)
+    .map((test) => `./${test}`)
     .filter((test) => needsToBeTested(test))
     // The 'short' suite skips the extra/ folder inside each test group
     .filter((test) => testSuite !== 'short' || !test.includes('/extra/'))
