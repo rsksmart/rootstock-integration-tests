@@ -199,9 +199,14 @@ before(async () => {
             );
             if (initConfig.mineInitialBitcoin) {
                 phaseTiming.mark('mineStart');
-                const btcTxHelper = getBtcClient();
-                await btcTxHelper.mine(INITIAL_BTC_BLOCKS);
-                phaseTiming.mark('mineEnd');
+                try {
+                    const btcTxHelper = getBtcClient();
+                    await btcTxHelper.mine(INITIAL_BTC_BLOCKS);
+                } finally {
+                    // Record mineEnd even if mining throws, so the phase breakdown stays
+                    // meaningful on the failing runs where it is most useful.
+                    phaseTiming.mark('mineEnd');
+                }
             }
             process.stdout.write(
                 `${BITCOIND_OUTPUT} generated initial ${INITIAL_BTC_BLOCKS} blocks\n`
@@ -225,9 +230,14 @@ before(async () => {
         };
         if (initConfig.mineInitialBitcoin) {
             phaseTiming.mark('mineStart');
-            const btcTxHelper = getBtcClient();
-            await btcTxHelper.mine(INITIAL_BTC_BLOCKS);
-            phaseTiming.mark('mineEnd');
+            try {
+                const btcTxHelper = getBtcClient();
+                await btcTxHelper.mine(INITIAL_BTC_BLOCKS);
+            } finally {
+                // Record mineEnd even if mining throws, so the phase breakdown stays
+                // meaningful on the failing runs where it is most useful.
+                phaseTiming.mark('mineEnd');
+            }
         }
     }
 
