@@ -201,7 +201,7 @@ before(async () => {
             );
         } catch (ex) {
             process.stdout.write(`${BITCOIND_OUTPUT} ${ex.stack} \n`);
-            throw new Error(ex.toString());
+            throw new Error(ex.toString(), { cause: ex });
         }
     } else {
         const fieldsToValidate = ['host', 'port', 'rpcPort', 'rpcUser', 'rpcPassword'];
@@ -287,7 +287,7 @@ before(async () => {
         process.stdout.write('\n');
     } catch (ex) {
         process.stdout.write(`Error starting federate nodes ${ex.stack} \n`);
-        throw new Error(ex.toString());
+        throw new Error(ex.toString(), { cause: ex });
     }
 });
 
@@ -316,7 +316,7 @@ const startFederates = async (fedIndexStartsAt, configs, latestBlockHash) => {
         }
     } catch (ex) {
         process.stdout.write(`There was a problem starting a Federate. ${ex}\n`);
-        throw new Error(ex.toString());
+        throw new Error(ex.toString(), { cause: ex });
     }
 };
 
