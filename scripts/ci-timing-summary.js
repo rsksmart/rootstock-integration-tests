@@ -27,18 +27,30 @@ const TOP_SLOWEST_TESTS = 15;
 // that escapes the base is refused before it ever reaches the file system. realpathSync
 // additionally blocks a symlink under the (container-written) reports dir from pointing
 // outside the base — BASE_DIR is itself realpath'd so the comparison holds on symlinked roots.
-const BASE_DIR = fs.realpathSync(path.resolve(process.cwd()));
+// realpathSync can throw (permissions, broken symlink); fall back to the plain resolved cwd so
+// module load never crashes the summary step.
+let BASE_DIR;
+try {
+    BASE_DIR = fs.realpathSync(path.resolve(process.cwd()));
+} catch {
+    BASE_DIR = path.resolve(process.cwd());
+}
 
 const safeExists = (p) => {
-    const resolved = path.resolve(BASE_DIR, p);
-    if (resolved !== BASE_DIR && !resolved.startsWith(BASE_DIR + path.sep)) {
+    try {
+        const resolved = path.resolve(BASE_DIR, p);
+        if (resolved !== BASE_DIR && !resolved.startsWith(BASE_DIR + path.sep)) {
+            return false;
+        }
+        if (!fs.existsSync(resolved)) {
+            return false;
+        }
+        const real = fs.realpathSync(resolved);
+        return real === BASE_DIR || real.startsWith(BASE_DIR + path.sep);
+    } catch {
+        // Never let a file-system probe fail the job — treat as "not present".
         return false;
     }
-    if (!fs.existsSync(resolved)) {
-        return false;
-    }
-    const real = fs.realpathSync(resolved);
-    return real === BASE_DIR || real.startsWith(BASE_DIR + path.sep);
 };
 
 const safeRead = (p) => {
@@ -55,11 +67,13 @@ const safeRead = (p) => {
 
 const out = (line = '') => process.stdout.write(line + '\n');
 
-// Test/suite names are arbitrary strings; a literal `|` or a newline would break the Markdown
-// table, so neutralize both before writing a cell.
+// Test/suite names are arbitrary strings; a literal `|`, a backtick (which would break a cell
+// wrapped in an inline-code span), or a newline would break the Markdown table, so neutralize
+// them before writing a cell.
 const escapeCell = (str) =>
     String(str)
         .replaceAll('|', '\\|')
+        .replaceAll('`', "'")
         .replaceAll(/[\r\n]+/g, ' ');
 
 const fmtDuration = (seconds) => {
