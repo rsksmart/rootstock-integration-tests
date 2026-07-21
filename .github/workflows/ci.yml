@@ -189,11 +189,14 @@ jobs:
         run: node scripts/ci-timing-summary.js reports/junit.xml reports/phase-timing.json >> "$GITHUB_STEP_SUMMARY"
 
       # Surface failing tests as a PR check with per-test annotations instead of only in the
-      # ~40-min raw log. always() so failures are reported; fail-on-error/fail-on-empty false
-      # so a missing report or a fork PR's read-only token never turns the run red on top of
-      # the real result.
+      # ~40-min raw log. always() so failures are still reported. Skipped for fork PRs, whose
+      # read-only token can't create the check (they'd only produce a confusing failed-but-
+      # ignored step); fail-on-error/fail-on-empty stay false as a guard for empty reports.
       - name: Publish test report (PR annotations)
-        if: always()
+        if: >-
+          always() &&
+          (github.event_name != 'pull_request' ||
+           github.event.pull_request.head.repo.full_name == github.repository)
         uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v3.0.0
         with:
           name: RIT Test Results
