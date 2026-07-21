@@ -173,6 +173,14 @@ jobs:
           path: reports/junit.xml
           if-no-files-found: warn
 
+      # Render the JUnit report (and per-phase timing, when present) into the run summary.
+      # always() so the breakdown is produced on failing runs too; the script never exits
+      # non-zero, so it cannot turn a passing run red. Per-file durations here are the input
+      # the sharding work (P2-01/P2-02) uses to balance shards against the serial baseline.
+      - name: Test timing summary
+        if: always()
+        run: node scripts/ci-timing-summary.js reports/junit.xml reports/phase-timing.json >> "$GITHUB_STEP_SUMMARY"
+
       - name: Check Slack Token
         id: check-slack-token
         # always() so this still runs (and the failure-notification step can gate on its output)
