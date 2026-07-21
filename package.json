@@ -28,7 +28,7 @@
     "@rsksmart/bridge-transaction-parser": "github:rsksmart/bridge-transaction-parser#v1.2.0",
     "@rsksmart/btc-eth-unit-converter": "1.0.1",
     "@rsksmart/btc-rsk-derivation": "0.0.2",
-    "@rsksmart/btc-transaction-helper": "git+https://git@github.com/rsksmart/btc-transaction-helper.git#v4.1.0",
+    "@rsksmart/btc-transaction-helper": "git+https://git@github.com/rsksmart/btc-transaction-helper.git#v5.0.0-rc",
     "@rsksmart/pmt-builder": "3.0.1",
     "@rsksmart/powpeg-redeemscript-parser": "github:rsksmart/powpeg-redeemscript-parser#fbe3b981b3f768396833f5f832526a9751098089",
     "@rsksmart/rsk-precompiled-abis": "9.0.0-VETIVER",
