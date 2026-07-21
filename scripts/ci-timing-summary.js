@@ -21,34 +21,27 @@ const phaseArg = process.argv[3] || 'reports/phase-timing.json';
 const TOP_SLOWEST_FILES = 30;
 const TOP_SLOWEST_TESTS = 15;
 
-// Paths come from argv, so validate them before any file-system access: resolve and confirm
-// they stay within the current directory or the CI workspace. This blocks path traversal via
-// crafted arguments (a resolved path that escapes every allowed root is refused).
-const ALLOWED_ROOTS = [process.cwd()];
-if (process.env.GITHUB_WORKSPACE) {
-    ALLOWED_ROOTS.push(path.resolve(process.env.GITHUB_WORKSPACE));
-}
-
-const resolveWithinAllowed = (p) => {
-    const resolved = path.resolve(p);
-    const ok = ALLOWED_ROOTS.some(
-        (root) => resolved === root || resolved.startsWith(root + path.sep)
-    );
-    if (!ok) {
-        throw new Error(`Refusing to access a path outside the workspace: ${p}`);
-    }
-    return resolved;
-};
+// Paths come from argv, so guard them before any file-system access: resolve against the
+// working directory (which is GITHUB_WORKSPACE in CI, where the reports live) and confirm the
+// canonical path stays inside it. The check is inlined at each use so a crafted argument that
+// escapes the base is refused before it ever reaches the file system.
+const BASE_DIR = path.resolve(process.cwd());
 
 const safeExists = (p) => {
-    try {
-        return fs.existsSync(resolveWithinAllowed(p));
-    } catch {
+    const resolved = path.resolve(BASE_DIR, p);
+    if (resolved !== BASE_DIR && !resolved.startsWith(BASE_DIR + path.sep)) {
         return false;
     }
+    return fs.existsSync(resolved);
 };
 
-const safeRead = (p) => fs.readFileSync(resolveWithinAllowed(p), 'utf8');
+const safeRead = (p) => {
+    const resolved = path.resolve(BASE_DIR, p);
+    if (resolved !== BASE_DIR && !resolved.startsWith(BASE_DIR + path.sep)) {
+        throw new Error(`Refusing to access a path outside the workspace: ${p}`);
+    }
+    return fs.readFileSync(resolved, 'utf8');
+};
 
 const out = (line = '') => process.stdout.write(line + '\n');
 
