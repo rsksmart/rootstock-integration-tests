@@ -1,5 +1,6 @@
 const js = require('@eslint/js');
 const globals = require('globals');
+const prettierConfig = require('eslint-config-prettier');
 
 const JS_FILES = ['**/*.js']; // only .js files (not .mjs/.cjs)
 
@@ -50,4 +51,6 @@ module.exports = [
             },
         },
     },
+
+    prettierConfig,
 ];

@@ -39,19 +39,21 @@ describe('Calling coinbase information methods', () => {
             const coinbaseTx = block.transactions[0];
 
             // Check coinbase tx hash is equals merkleroot
-            expect(coinbaseTx.getHash().toString('hex')).equals(block.merkleRoot.toString('hex'));
+            expect(Buffer.from(coinbaseTx.getHash()).toString('hex')).equals(
+                Buffer.from(block.merkleRoot).toString('hex')
+            );
 
-            const witnessReservedValue = coinbaseTx.ins[0].witness[0].toString('hex');
+            const witnessReservedValue = Buffer.from(coinbaseTx.ins[0].witness[0]).toString('hex');
 
             // Remove witness from transaction
             const coinbaseTxWithoutWitness = bitcoinJs.Transaction.fromBuffer(
-                coinbaseTx.__toBuffer(undefined, undefined, false)
+                Buffer.from(coinbaseTx.__toBuffer(undefined, undefined, false))
             );
-            expect(coinbaseTxWithoutWitness.getHash().toString('hex')).equals(
-                coinbaseTx.getHash().toString('hex')
+            expect(Buffer.from(coinbaseTxWithoutWitness.getHash()).toString('hex')).equals(
+                Buffer.from(coinbaseTx.getHash()).toString('hex')
             );
 
-            const pmt = `0100000001${coinbaseTx.getHash().toString('hex')}0101`;
+            const pmt = `0100000001${Buffer.from(coinbaseTx.getHash()).toString('hex')}0101`;
 
             const bridge = await getBridge(rskTxHelper.getClient());
 

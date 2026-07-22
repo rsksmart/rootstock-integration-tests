@@ -1,5 +1,5 @@
 require('dotenv').config();
-const glob = require('glob');
+const { globSync } = require('glob');
 const colors = require('colors/safe');
 const LineWrapper = require('stream-line-wrapper');
 const expect = require('chai').expect;
@@ -201,7 +201,7 @@ before(async () => {
             );
         } catch (ex) {
             process.stdout.write(`${BITCOIND_OUTPUT} ${ex.stack} \n`);
-            throw new Error(ex.toString());
+            throw new Error(ex.toString(), { cause: ex });
         }
     } else {
         const fieldsToValidate = ['host', 'port', 'rpcPort', 'rpcUser', 'rpcPassword'];
@@ -287,7 +287,7 @@ before(async () => {
         process.stdout.write('\n');
     } catch (ex) {
         process.stdout.write(`Error starting federate nodes ${ex.stack} \n`);
-        throw new Error(ex.toString());
+        throw new Error(ex.toString(), { cause: ex });
     }
 });
 
@@ -316,7 +316,7 @@ const startFederates = async (fedIndexStartsAt, configs, latestBlockHash) => {
         }
     } catch (ex) {
         process.stdout.write(`There was a problem starting a Federate. ${ex}\n`);
-        throw new Error(ex.toString());
+        throw new Error(ex.toString(), { cause: ex });
     }
 };
 
@@ -367,8 +367,8 @@ const runTestThisTimes = process.env.RUN_EACH_TEST_FILE_THESE_TIMES || 1;
 
 // Register tests
 const testsGlobPattern = './tests/**/*.js';
-const sortedTests = glob
-    .sync(testsGlobPattern)
+const sortedTests = globSync(testsGlobPattern)
+    .map((test) => `./${test}`)
     .filter((test) => needsToBeTested(test))
     // The 'short' suite skips the extra/ folder inside each test group
     .filter((test) => testSuite !== 'short' || !test.includes('/extra/'))
