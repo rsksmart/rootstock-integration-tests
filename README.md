@@ -14,11 +14,11 @@ All private keys used in the library are for testing only and not used in any pr
 ### bitcoind
 
 - download
-  Current Github Actions job is running bitcoind 0.18.1.
-  - Go to https://bitcoin.org/en/release/v0.18.1 in this page there is the link to the download sources
-  https://bitcoincore.org/bin/bitcoin-core-0.18.1/
-  Select the *.tar.gz file according to your OS (for MacOS silicon [bitcoin-0.18.1-osx64.tar.gz](https://bitcoincore.org/bin/bitcoin-core-0.18.1/bitcoin-0.18.1-osx64.tar.gz))
-    to use curl instead use `curl -O https://bitcoin.org/bin/bitcoin-core-0.18.1/bitcoin-0.18.1-osx64.tar.gz`
+  Current Github Actions job is running bitcoind 31.1.
+  - Go to https://bitcoincore.org/en/releases/31.1/ for the official release notes and download links
+  https://bitcoincore.org/bin/bitcoin-core-31.1/
+  Select the *.tar.gz file according to your OS (for MacOS silicon [bitcoin-31.1-arm64-apple-darwin.tar.gz](https://bitcoincore.org/bin/bitcoin-core-31.1/bitcoin-31.1-arm64-apple-darwin.tar.gz))
+    To use curl instead use `curl -O https://bitcoincore.org/bin/bitcoin-core-31.1/bitcoin-31.1-arm64-apple-darwin.tar.gz`
   - Decompress and copy the path to the folder.
   - run in terminal `sudo cp <path to bitcoin-core folder>/bin/bitcoin* /usr/local/bin`
   - create a folder called bitcoindata in your workspace - this is the folder were the Bitcoin DB is going to be stored.
