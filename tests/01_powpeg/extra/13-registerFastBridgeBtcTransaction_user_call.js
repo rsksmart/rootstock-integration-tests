@@ -26,7 +26,7 @@ describe('@regression @flyover Calling registerFastBridgeBtcTransaction', functi
         const btcAddress = (await btcTxHelper.generateBtcAddress('legacy')).address;
         const btcAddressBytes = ensure0x(btcTxHelper.decodeBase58Address(btcAddress));
 
-        const callResult = await bridge.registerFastBridgeBtcTransaction(
+        const callResult = await bridge.registerFastBridgeBtcTransaction.staticCall(
             '0x',
             1,
             stringHex,
