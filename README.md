@@ -136,9 +136,8 @@ Tag vocabulary:
 | `@federation-change` | Federation change flows and powpeg redeem script. |
 | `@2wp` / `@pegin` / `@pegout` | Two-way-peg tests (peg-in / peg-out). |
 | `@flyover` | Flyover / fast-bridge tests. |
-| `@union-bridge` | Union Bridge functionality. |
-| `@fork-activation` | Tests exercising fork-activated behaviour. |
 | `@bridge-methods` | Bridge JSON-RPC / precompile / governance-voting method tests. |
+| `@precompiled` | Tests targeting RSK native/precompiled contracts (e.g. BlockHeader precompile). |
 
 Convenience scripts:
 
