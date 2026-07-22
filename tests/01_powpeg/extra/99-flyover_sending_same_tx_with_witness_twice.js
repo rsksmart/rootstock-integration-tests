@@ -1,4 +1,5 @@
 const expect = require('chai').expect;
+const { ethers } = require('ethers');
 const redeemScriptParser = require('@rsksmart/powpeg-redeemscript-parser');
 const btcEthUnitConverter = require('@rsksmart/btc-eth-unit-converter');
 const {
@@ -34,7 +35,7 @@ describe.skip('@regression @flyover Executing registerFastBridgeBtcTransaction p
                 Runners.hosts.federate.host
             );
             const initialLbcBalance = Number(
-                await rskTxHelper.getBalance(liquidityBridgeContract._address)
+                await rskTxHelper.getBalance(liquidityBridgeContract.target)
             );
             const FEDS_PUBKEYS_LIST = await getFedsPubKeys(bridge);
             const userBtcRefundAddress = (await btcTxHelper.generateBtcAddress('legacy')).address;
@@ -46,17 +47,15 @@ describe.skip('@regression @flyover Executing registerFastBridgeBtcTransaction p
             const liquidityProviderBtcAddressBytes = ensure0x(
                 btcTxHelper.decodeBase58Address(liquidityProviderBtcAddress)
             );
-            const preHash = rskTxHelper.getClient().utils.randomHex(32);
+            const preHash = ethers.hexlify(ethers.randomBytes(32));
 
             const EXPECTED_AMOUNT_IN_BTC = 0.04;
 
-            const derivationHash = await liquidityBridgeContract.methods
-                .getDerivationHash(
-                    preHash,
-                    userBtcRefundAddressBytes,
-                    liquidityProviderBtcAddressBytes
-                )
-                .call();
+            const derivationHash = await liquidityBridgeContract.getDerivationHash(
+                preHash,
+                userBtcRefundAddressBytes,
+                liquidityProviderBtcAddressBytes
+            );
 
             const fundingAmountInBtc = EXPECTED_AMOUNT_IN_BTC + 1;
             const powpegRedeemScript = redeemScriptParser.getPowpegRedeemScript(FEDS_PUBKEYS_LIST);
@@ -82,26 +81,19 @@ describe.skip('@regression @flyover Executing registerFastBridgeBtcTransaction p
 
             const coinbaseParams = data.coinbaseParams;
 
-            const registerBtcCoinbaseTransactionMethod =
-                bridge.methods.registerBtcCoinbaseTransaction(
+            await sendTransaction(
+                rskTxHelper,
+                bridge,
+                'registerBtcCoinbaseTransaction',
+                [
                     ensure0x(coinbaseParams.coinbaseTxWithoutWitness.toHex()),
                     ensure0x(coinbaseParams.blockHash),
                     ensure0x(coinbaseParams.pmt.hex),
                     ensure0x(coinbaseParams.witnessMerkleRoot.toString('hex')),
-                    ensure0x(coinbaseParams.witnessReservedValue)
-                );
-
-            await sendTransaction(rskTxHelper, registerBtcCoinbaseTransactionMethod, cowAddress);
-
-            const registerFastBridgeBtcTransactionMethod =
-                liquidityBridgeContract.methods.registerFastBridgeBtcTransaction(
-                    ensure0x(data.rawTx),
-                    ensure0x(data.pmt),
-                    data.height,
-                    userBtcRefundAddressBytes,
-                    liquidityProviderBtcAddressBytes,
-                    preHash
-                );
+                    ensure0x(coinbaseParams.witnessReservedValue),
+                ],
+                cowAddress
+            );
 
             let resultValueFromFirstTx;
 
@@ -118,27 +110,26 @@ describe.skip('@regression @flyover Executing registerFastBridgeBtcTransaction p
 
             await sendTxWithCheck(
                 rskTxHelper,
-                registerFastBridgeBtcTransactionMethod,
-                cowAddress,
-                checkFunction
-            );
-
-            let currentLbcBalance = Number(
-                await rskTxHelper.getBalance(liquidityBridgeContract._address)
-            );
-            const finalBalance = initialLbcBalance + resultValueFromFirstTx;
-
-            expect(currentLbcBalance).to.equal(finalBalance);
-
-            const registerFastBridgeBtcTransactionMethod2 =
-                liquidityBridgeContract.methods.registerFastBridgeBtcTransaction(
+                liquidityBridgeContract,
+                'registerFastBridgeBtcTransaction',
+                [
                     ensure0x(data.rawTx),
                     ensure0x(data.pmt),
                     data.height,
                     userBtcRefundAddressBytes,
                     liquidityProviderBtcAddressBytes,
-                    preHash
-                );
+                    preHash,
+                ],
+                cowAddress,
+                checkFunction
+            );
+
+            let currentLbcBalance = Number(
+                await rskTxHelper.getBalance(liquidityBridgeContract.target)
+            );
+            const finalBalance = initialLbcBalance + resultValueFromFirstTx;
+
+            expect(currentLbcBalance).to.equal(finalBalance);
 
             const checkFunction2 = (result) => {
                 const resultValueFromSecondTx = Number(result);
@@ -149,13 +140,22 @@ describe.skip('@regression @flyover Executing registerFastBridgeBtcTransaction p
 
             await sendTxWithCheck(
                 rskTxHelper,
-                registerFastBridgeBtcTransactionMethod2,
+                liquidityBridgeContract,
+                'registerFastBridgeBtcTransaction',
+                [
+                    ensure0x(data.rawTx),
+                    ensure0x(data.pmt),
+                    data.height,
+                    userBtcRefundAddressBytes,
+                    liquidityProviderBtcAddressBytes,
+                    preHash,
+                ],
                 cowAddress,
                 checkFunction2
             );
 
             const finalLbcBalance = Number(
-                await rskTxHelper.getBalance(liquidityBridgeContract._address)
+                await rskTxHelper.getBalance(liquidityBridgeContract.target)
             );
 
             expect(finalLbcBalance).to.equal(finalBalance);

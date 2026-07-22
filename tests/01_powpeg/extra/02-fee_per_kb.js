@@ -21,7 +21,7 @@ describe('@regression @bridge-methods Fee per kb change voting', function () {
     });
 
     it('should have a default fee per kb of millicoin', async () => {
-        const feePerKb = await bridge.methods.getFeePerKb().call();
+        const feePerKb = await bridge.getFeePerKb();
         expect(Number(feePerKb)).to.equal(GENESIS_FEE_PER_KB);
     });
 
@@ -29,12 +29,12 @@ describe('@regression @bridge-methods Fee per kb change voting', function () {
         const newFeePerKb = Number(btcToSatoshis(0.005));
 
         // A read-only call needs no account in the node wallet; `from` is just the simulated sender.
-        const result = await bridge.methods
-            .voteFeePerKbChange(newFeePerKb)
-            .call({ from: RANDOM_ADDR });
+        const result = await bridge.voteFeePerKbChange.staticCall(newFeePerKb, {
+            from: RANDOM_ADDR,
+        });
         expect(Number(result)).to.equal(FEE_PER_KB_RESPONSE_CODES.UNAUTHORIZED_CALLER);
 
-        const feePerKb = await bridge.methods.getFeePerKb().call();
+        const feePerKb = await bridge.getFeePerKb();
         expect(Number(feePerKb)).to.equal(GENESIS_FEE_PER_KB);
     });
 
@@ -47,7 +47,7 @@ describe('@regression @bridge-methods Fee per kb change voting', function () {
             FEE_PER_KB_RESPONSE_CODES.EXCESSIVE_FEE_VOTED
         );
 
-        const feePerKb = await bridge.methods.getFeePerKb().call();
+        const feePerKb = await bridge.getFeePerKb();
         expect(Number(feePerKb)).to.equal(GENESIS_FEE_PER_KB);
     });
 
