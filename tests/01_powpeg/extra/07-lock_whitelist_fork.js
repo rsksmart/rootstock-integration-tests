@@ -15,7 +15,7 @@ let rskTxHelper;
 let rskTxHelpers;
 let bridge;
 
-describe('@regression @bridge-methods @fork-activation Whitelist methods tests', () => {
+describe('@regression @bridge-methods Whitelist methods tests', () => {
     before(async () => {
         rskTxHelpers = getRskTransactionHelpers();
         rskTxHelper = rskTxHelpers[0];

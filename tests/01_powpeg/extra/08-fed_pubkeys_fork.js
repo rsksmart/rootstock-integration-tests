@@ -15,7 +15,7 @@ let rskTxHelper;
 let fedChangeAddress;
 let bridge;
 
-describe('@regression @bridge-methods @fork-activation Bridge federator methods tests', () => {
+describe('@regression @bridge-methods Bridge federator methods tests', () => {
     before(async () => {
         rskTxHelper = getRskTransactionHelper();
         fedChangeAddress = await rskTxHelper.importAccount(FEDERATION_CHANGE_PK);
