@@ -43,7 +43,6 @@ const outputConfig = config.output || {};
 const BITCOIND_OUTPUT = outputConfig.bitcoindPrefix || colors.green('bitcoind:');
 const INITIAL_BTC_BLOCKS = 400;
 
-const HOST = '127.0.0.1';
 const BTC_HOST = '127.0.0.1';
 
 const bookkeepingConfigurations = {
@@ -106,6 +105,7 @@ global.Runners = {
             reed800: createForkObject('reed800', 1),
             reed810: createForkObject('reed810', 1),
             vetiver900: createForkObject('vetiver900', 1),
+            tbd1000: createForkObject('tbd1000', 1),
         },
         additionalFederationAddresses: [],
     },

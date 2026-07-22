@@ -1,6 +1,6 @@
 {
   "name": "rootstock-integration-tests",
-  "version": "9.0.0-VETIVER",
+  "version": "10.0.0-TBD",
   "description": "",
   "main": "index.js",
   "scripts": {
