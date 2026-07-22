@@ -43,7 +43,6 @@ const outputConfig = config.output || {};
 const BITCOIND_OUTPUT = outputConfig.bitcoindPrefix || colors.green('bitcoind:');
 const INITIAL_BTC_BLOCKS = 400;
 
-const HOST = '127.0.0.1';
 const BTC_HOST = '127.0.0.1';
 
 const bookkeepingConfigurations = {
@@ -94,18 +93,19 @@ global.Runners = {
     common: {
         forks: {
             orchid: createForkObject('orchid', 1),
-            wasabi100: createForkObject('wasabi100', 1),
-            papyrus200: createForkObject('papyrus200', 1),
-            iris300: createForkObject('iris300', 1),
-            hop400: createForkObject('hop400', 1),
-            hop401: createForkObject('hop401', 1),
-            fingerroot500: createForkObject('fingerroot500', 1),
-            arrowhead600: createForkObject('arrowhead600', 1),
-            arrowhead631: createForkObject('arrowhead631', 1),
-            lovell700: createForkObject('lovell700', 1),
-            reed800: createForkObject('reed800', 1),
-            reed810: createForkObject('reed810', 1),
-            vetiver900: createForkObject('vetiver900', 1),
+            wasabi100: createForkObject('wasabi100', 2),
+            papyrus200: createForkObject('papyrus200', 3),
+            iris300: createForkObject('iris300', 4),
+            hop400: createForkObject('hop400', 5),
+            hop401: createForkObject('hop401', 6),
+            fingerroot500: createForkObject('fingerroot500', 7),
+            arrowhead600: createForkObject('arrowhead600', 8),
+            arrowhead631: createForkObject('arrowhead631', 9),
+            lovell700: createForkObject('lovell700', 10),
+            reed800: createForkObject('reed800', 11),
+            reed810: createForkObject('reed810', 12),
+            vetiver900: createForkObject('vetiver900', 13),
+            tbd1000: createForkObject('tbd1000', 14),
         },
         additionalFederationAddresses: [],
     },
