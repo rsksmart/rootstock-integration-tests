@@ -57,18 +57,17 @@ describe('@regression @bridge-methods Calling coinbase information methods', () 
 
             const bridge = await getBridge(rskTxHelper.getClient());
 
-            const registerBtcCoinbaseTransactionMethod =
-                bridge.methods.registerBtcCoinbaseTransaction(
+            const txReceipt = await rskUtils.sendTransaction(
+                rskTxHelper,
+                bridge,
+                'registerBtcCoinbaseTransaction',
+                [
                     ensure0x(coinbaseTxWithoutWitness.toHex()),
                     ensure0x(blockHash[0]),
                     ensure0x(pmt),
                     ensure0x(witnessReservedValue),
-                    ensure0x(witnessReservedValue)
-                );
-
-            const txReceipt = await rskUtils.sendTransaction(
-                rskTxHelper,
-                registerBtcCoinbaseTransactionMethod,
+                    ensure0x(witnessReservedValue),
+                ],
                 rskTxSenderAddress
             );
 
@@ -76,8 +75,8 @@ describe('@regression @bridge-methods Calling coinbase information methods', () 
 
             const hash = ensure0x(blockHash[0]);
 
-            const hasBtcBlockCoinbaseTransactionInformationMethod =
-                bridge.methods.hasBtcBlockCoinbaseTransactionInformation(hash).call;
+            const hasBtcBlockCoinbaseTransactionInformationMethod = () =>
+                bridge.hasBtcBlockCoinbaseTransactionInformation(hash);
 
             const check = (resultSoFar, currentAttempts) => {
                 console.log(

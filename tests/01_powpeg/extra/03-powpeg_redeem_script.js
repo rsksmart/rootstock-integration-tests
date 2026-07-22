@@ -21,12 +21,8 @@ describe('@regression @bridge-methods Calling getActivePowpegRedeemScript method
 
     it('should return the active powpeg redeem script', async () => {
         try {
-            const activePowpegRedeemScript = await bridge.methods
-                .getActivePowpegRedeemScript()
-                .call();
-            const activeFederationAddressFromBridge = await bridge.methods
-                .getFederationAddress()
-                .call();
+            const activePowpegRedeemScript = await bridge.getActivePowpegRedeemScript();
+            const activeFederationAddressFromBridge = await bridge.getFederationAddress();
 
             // Build the expected redeem script from the active federation public keys
             const activeFederationBtcPublicKeys = await getFedsPubKeys(bridge);

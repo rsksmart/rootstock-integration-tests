@@ -1,4 +1,5 @@
 const expect = require('chai').expect;
+const { ethers } = require('ethers');
 const { getRskTransactionHelpers } = require('../../../lib/rsk-tx-helper-provider');
 const { getBridge } = require('../../../lib/bridge-provider');
 const { getBtcClient } = require('../../../lib/btc-client-provider');
@@ -19,24 +20,22 @@ describe('@regression @flyover Calling registerFastBridgeBtcTransaction', functi
     });
 
     it('should return error when user calling registerFastBridgeBtcTransaction method', async () => {
-        const randomHex = rskTxHelper.getClient().utils.randomHex;
+        const randomHex = (size) => ethers.hexlify(ethers.randomBytes(size));
         const stringHex = randomHex(32);
         const randomAddress = randomHex(20);
         const btcAddress = (await btcTxHelper.generateBtcAddress('legacy')).address;
         const btcAddressBytes = ensure0x(btcTxHelper.decodeBase58Address(btcAddress));
 
-        const callResult = await bridge.methods
-            .registerFastBridgeBtcTransaction(
-                '0x',
-                1,
-                stringHex,
-                stringHex,
-                btcAddressBytes,
-                randomAddress,
-                btcAddressBytes,
-                false
-            )
-            .call();
+        const callResult = await bridge.registerFastBridgeBtcTransaction.staticCall(
+            '0x',
+            1,
+            stringHex,
+            stringHex,
+            btcAddressBytes,
+            randomAddress,
+            btcAddressBytes,
+            false
+        );
         expect(Number(callResult)).to.equal(UNPROCESSABLE_TX_NOT_CONTRACT_ERROR);
     });
 });
