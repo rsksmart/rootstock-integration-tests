@@ -17,7 +17,7 @@ let btcTxHelper;
 let bridge;
 
 // TODO: Fails with 'Internal AssertionError: expected -304 to equal 20000000000000000000' error. Pending to analyze.
-describe.skip('Calling registerFastBridgeBtcTransaction after iris', () => {
+describe.skip('@regression @flyover Calling registerFastBridgeBtcTransaction after iris', () => {
     before(async () => {
         rskTxHelpers = getRskTransactionHelpers();
         rskTxHelper = rskTxHelpers[0];

@@ -16,7 +16,7 @@ const { mineForPeginRegistration } = require('../../../lib/2wp-utils');
 // TODO: Refactor these tests
 // Some tests fail after running all tests with all forks active from scratch.
 // More analysis need to be done. Also, these tests use legacy functions. We need to refactor them.
-describe.skip('Executing registerFastBridgeBtcTransaction after hop - send funds below minimum', () => {
+describe.skip('@regression @flyover Executing registerFastBridgeBtcTransaction after hop - send funds below minimum', () => {
     let rskTxHelpers;
     let rskTxHelper;
     let btcTxHelper;

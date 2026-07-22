@@ -10,6 +10,8 @@
     "test-short-fail-fast": "TEST_SUITE=short mocha -b --timeout 1200000 --trace-warnings",
     "test-long": "npm run test",
     "test-long-fail-fast": "npm run test-fail-fast",
+    "test:smoke": "TEST_SUITE=short mocha --grep @smoke --timeout 1200000",
+    "test:regression": "TEST_SUITE=full mocha --grep @regression --timeout 1200000",
     "run-tests-multiple-times": "node multipleTestExecutionsRunner.js",
     "run-single-test-file": "node singleTestFileRunner.js",
     "run-with-docker": "node runWithDocker.js",

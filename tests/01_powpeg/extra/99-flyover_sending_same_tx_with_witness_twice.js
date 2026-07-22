@@ -15,7 +15,7 @@ const { getBridge } = require('../../../lib/bridge-provider');
 const { mineForPeginRegistration } = require('../../../lib/2wp-utils');
 
 // TODO: Fails with 'Internal AssertionError: expected 40000000000000000 to equal -304' error. Pending to analyze.
-describe.skip('Executing registerFastBridgeBtcTransaction post hop - sending same tx with witness twice', () => {
+describe.skip('@regression @flyover Executing registerFastBridgeBtcTransaction post hop - sending same tx with witness twice', () => {
     let rskTxHelpers;
     let rskTxHelper;
     let btcTxHelper;

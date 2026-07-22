@@ -9,7 +9,7 @@ const CustomError = require('../../../lib/CustomError');
 const removePrefix0x = require('../../../lib/utils').removePrefix0x;
 const { ERP_PUBKEYS, ERP_CSV_VALUE } = require('../../../lib/constants/federation-constants');
 
-describe('Calling getActivePowpegRedeemScript method', function () {
+describe('@regression @bridge-methods Calling getActivePowpegRedeemScript method', function () {
     let rskTxHelper;
     let bridge;
 
