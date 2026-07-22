@@ -106,6 +106,7 @@ global.Runners = {
             reed800: createForkObject('reed800', 1),
             reed810: createForkObject('reed810', 1),
             vetiver900: createForkObject('vetiver900', 1),
+            tbd1000: createForkObject('tbd1000', -1),
         },
         additionalFederationAddresses: [],
     },
