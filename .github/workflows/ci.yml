@@ -10,7 +10,7 @@ on:
       rskj-branch:
         description: 'Branch for RSKj'
         required: false
-        default: 'mtmu-integration'
+        default: 'master'
       powpeg-branch:
         description: 'Branch for PowPeg Node'
         required: false
