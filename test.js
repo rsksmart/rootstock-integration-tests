@@ -24,6 +24,11 @@ if (global.describe == null || global.it == null) {
     process.exit(1);
 }
 
+// Per-phase timing (setup/mine/tests/teardown) for the CI run summary. Requiring this
+// self-registers root hooks; the mine() calls below are bracketed with its marks. Diagnostic
+// only — it never affects the run.
+const phaseTiming = require('./lib/phase-timing');
+
 // Load the configuration, regtest by default
 const configFileName = process.env.CONFIG_FILE_PATH || './config/regtest-all-keyfiles';
 
@@ -193,8 +198,15 @@ before(async () => {
                 `${BITCOIND_OUTPUT} running on port ${Runners.btcRunner.ports.btc}, rpc port ${Runners.btcRunner.ports.rpc}, directory ${Runners.btcRunner.getDataDir()} (PID: ${Runners.btcRunner.getPid()})\n`
             );
             if (initConfig.mineInitialBitcoin) {
-                const btcTxHelper = getBtcClient();
-                await btcTxHelper.mine(INITIAL_BTC_BLOCKS);
+                phaseTiming.mark('mineStart');
+                try {
+                    const btcTxHelper = getBtcClient();
+                    await btcTxHelper.mine(INITIAL_BTC_BLOCKS);
+                } finally {
+                    // Record mineEnd even if mining throws, so the phase breakdown stays
+                    // meaningful on the failing runs where it is most useful.
+                    phaseTiming.mark('mineEnd');
+                }
             }
             process.stdout.write(
                 `${BITCOIND_OUTPUT} generated initial ${INITIAL_BTC_BLOCKS} blocks\n`
@@ -217,8 +229,15 @@ before(async () => {
             network: btcNetworks.regtest,
         };
         if (initConfig.mineInitialBitcoin) {
-            const btcTxHelper = getBtcClient();
-            await btcTxHelper.mine(INITIAL_BTC_BLOCKS);
+            phaseTiming.mark('mineStart');
+            try {
+                const btcTxHelper = getBtcClient();
+                await btcTxHelper.mine(INITIAL_BTC_BLOCKS);
+            } finally {
+                // Record mineEnd even if mining throws, so the phase breakdown stays
+                // meaningful on the failing runs where it is most useful.
+                phaseTiming.mark('mineEnd');
+            }
         }
     }
 

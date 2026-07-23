@@ -48,6 +48,13 @@ jobs:
     name: Rootstock Integration Tests
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # checks: write lets the test-reporter publish failures as a PR check with annotations.
+    # (Job-level perms replace the top-level default, so contents: read is re-declared here.)
+    # Note: PRs from forks always get a read-only token, so the annotation check is skipped
+    # for them — the step is set to not fail the job in that case.
+    permissions:
+      contents: read
+      checks: write
 
     steps:
       - name: Checkout
@@ -172,6 +179,31 @@ jobs:
           name: rit-junit-report
           path: reports/junit.xml
           if-no-files-found: warn
+
+      # Render the JUnit report (and per-phase timing, when present) into the run summary.
+      # always() so the breakdown is produced on failing runs too; the script never exits
+      # non-zero, so it cannot turn a passing run red. Per-file durations here are the input
+      # the sharding work (P2-01/P2-02) uses to balance shards against the serial baseline.
+      - name: Test timing summary
+        if: always()
+        run: node scripts/ci-timing-summary.js reports/junit.xml reports/phase-timing.json >> "$GITHUB_STEP_SUMMARY"
+
+      # Surface failing tests as a PR check with per-test annotations instead of only in the
+      # ~40-min raw log. always() so failures are still reported. Skipped for fork PRs, whose
+      # read-only token can't create the check (they'd only produce a confusing failed-but-
+      # ignored step); fail-on-error/fail-on-empty stay false as a guard for empty reports.
+      - name: Publish test report (PR annotations)
+        if: >-
+          always() &&
+          (github.event_name != 'pull_request' ||
+           github.event.pull_request.head.repo.full_name == github.repository)
+        uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v3.0.0
+        with:
+          name: RIT Test Results
+          path: reports/junit.xml
+          reporter: java-junit
+          fail-on-error: false
+          fail-on-empty: false
 
       - name: Check Slack Token
         id: check-slack-token
