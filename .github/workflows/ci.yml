@@ -157,7 +157,10 @@ jobs:
           INPUT_RSKJ_BRANCH: ${{ env.RSKJ_BRANCH }}
           INPUT_POWPEG_NODE_BRANCH: ${{ env.POWPEG_BRANCH }}
           INPUT_RIT_BRANCH: ${{ env.RIT_BRANCH }}
-          INPUT_RIT_LOG_LEVEL: info
+          # debug (was info): surfaces the logger.debug() calls throughout lib/ (e.g. waitForSync's
+          # per-node block height) in the job log - needed to see what's happening during the long,
+          # silent waits around federation-change migrations.
+          INPUT_RIT_LOG_LEVEL: debug
         run: |
           mkdir -p "${{ github.workspace }}/reports"
           docker run \
