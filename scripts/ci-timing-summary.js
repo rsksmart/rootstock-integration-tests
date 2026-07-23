@@ -245,7 +245,7 @@ function renderSlowestTests(tests) {
     out('| --- | ---: |');
     for (const t of slowest.slice(0, TOP_SLOWEST_TESTS)) {
         const flag = t.failed ? '❌ ' : '';
-        out(`| ${flag}${escapeCell(t.name)} | ${fmtDuration(t.time)} |`);
+        out(`| ${flag}\`${escapeCell(t.name)}\` | ${fmtDuration(t.time)} |`);
     }
     out();
 }
