@@ -39,6 +39,14 @@ inputs:
     description: "Optional comma-separated file/path prefixes to run only a subset of tests (sharding). Empty runs the whole suite. Matches the INCLUDE_CASES mechanism in test.js."
     required: false
     default: ''
+  mode:
+    description: "Execution mode (build-once split). 'all' (default) clones+builds rskj/powpeg AND runs the tests in one container — the original behaviour. 'build' only builds the fat jar and stages it. 'test' skips the build and runs the tests against a prebuilt jar (see powpeg-version)."
+    required: false
+    default: 'all'
+  powpeg-version:
+    description: "Required only for mode=test: the powpeg version the prebuilt jar was built with (as produced by a prior mode=build run), used to locate federate-node-<version>-all.jar."
+    required: false
+    default: ''
 
 outputs:
   status:
@@ -59,3 +67,5 @@ runs:
     INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
     INPUT_TEST_SUITE: ${{ inputs.test-suite }}
     INPUT_INCLUDE_CASES: ${{ inputs.include-cases }}
+    INPUT_MODE: ${{ inputs.mode }}
+    INPUT_POWPEG_VERSION: ${{ inputs.powpeg-version }}
