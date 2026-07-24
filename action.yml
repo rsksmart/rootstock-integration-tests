@@ -35,6 +35,10 @@ inputs:
     description: "Which test suite to run: 'short' (fast PR subset) or 'full' (short + extra tests)"
     required: false
     default: 'full'
+  include-cases:
+    description: "Optional comma-separated file/path prefixes to run only a subset of tests (sharding). Empty runs the whole suite. Matches the INCLUDE_CASES mechanism in test.js."
+    required: false
+    default: ''
 
 outputs:
   status:
@@ -54,3 +58,4 @@ runs:
     INPUT_RSKJ_REPO: ${{ inputs.rskj-repo }}
     INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
     INPUT_TEST_SUITE: ${{ inputs.test-suite }}
+    INPUT_INCLUDE_CASES: ${{ inputs.include-cases }}

@@ -14,6 +14,10 @@ REPO_OWNER="${INPUT_REPO_OWNER:-rsksmart}"  # Default to 'rsksmart' if not provi
 RSKJ_REPO="${INPUT_RSKJ_REPO:-rskj}"        # Name of the base rskj repo; default to 'rskj'
 GH_TOKEN="${INPUT_GITHUB_TOKEN}"            # Optional; required to clone a private base rskj repo
 TEST_SUITE="${INPUT_TEST_SUITE:-full}"      # Default to 'full' (long) suite if not provided
+# Optional comma-separated file/path prefixes to run only a subset of tests (sharding). Empty
+# means run the whole suite — the default, so rskj/powpeg-node callers (which never set this)
+# are unaffected. Consumed by test.js via the INCLUDE_CASES env var.
+INCLUDE_CASES="${INPUT_INCLUDE_CASES:-}"
 
 # Resolve whether a git ref exists in a GitHub repository. The inputs may be a
 # branch, a tag or a specific commit (see container-action/README.md), so we use
@@ -59,6 +63,7 @@ echo "LOG_LEVEL=$LOG_LEVEL"
 echo "REPO_OWNER=$REPO_OWNER"
 echo "RSKJ_REPO=$RSKJ_REPO"
 echo "TEST_SUITE=$TEST_SUITE"
+echo "INCLUDE_CASES=${INCLUDE_CASES:-<all>}"
 
 echo -e "\n\n--------- Starting the configuration of rskj ---------\n\n"
 cd /usr/src/
@@ -143,6 +148,12 @@ chmod +x ./configure_rit_locally.sh
 ./configure_rit_locally.sh "${POWPEG_VERSION}"
 
 export LOG_LEVEL="$LOG_LEVEL"
+
+# Export the shard selection (if any) so test.js runs only the requested subset. Left unset when
+# empty so the default whole-suite behaviour is untouched for callers that don't shard.
+if [[ -n "$INCLUDE_CASES" ]]; then
+  export INCLUDE_CASES
+fi
 
 # --- P0-01: preserve the JUnit report for CI artifact upload (on pass or fail) ---
 # The suite writes reports/junit.xml inside this container. GITHUB_WORKSPACE is the
