@@ -283,23 +283,32 @@ jobs:
           pattern: rit-junit-report-*
           path: shard-reports
 
-      - name: Consolidated timing summary (all shards)
+      # Merge the per-shard reports into ONE cumulative JUnit document for the whole run. Each
+      # shard reran the 00_sync bootstrap, so that suite appears once per shard in the merge.
+      - name: Merge shard JUnit reports (cumulative)
+        if: always()
+        continue-on-error: true
+        run: node scripts/ci-merge-junit.js shard-reports reports/junit.xml
+
+      - name: Upload cumulative JUnit report
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: rit-junit-report
+          path: reports/junit.xml
+          if-no-files-found: warn
+
+      # One cumulative timing table over the merged report (each shard also writes its own).
+      - name: Cumulative timing summary
         if: always()
         continue-on-error: true
         run: |
-          echo "# ⏱️ Consolidated test timing (all shards)" >> "$GITHUB_STEP_SUMMARY"
-          shopt -s nullglob
-          found=0
-          for report in shard-reports/*/junit.xml; do
-            found=1
-            shard_name=$(basename "$(dirname "$report")" | sed 's/^rit-junit-report-//')
-            echo "## 🧩 Shard: ${shard_name}" >> "$GITHUB_STEP_SUMMARY"
-            # The timing script never exits non-zero, but guard anyway so one bad report can't fail
-            # the consolidation (it is a reporting nicety, not a gate).
-            node scripts/ci-timing-summary.js "$report" >> "$GITHUB_STEP_SUMMARY" || true
-          done
-          if [ "$found" = "0" ]; then
-            echo "> No shard JUnit reports were downloaded." >> "$GITHUB_STEP_SUMMARY"
+          echo "# ⏱️ Cumulative test timing (all shards)" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f reports/junit.xml ]; then
+            node scripts/ci-timing-summary.js reports/junit.xml >> "$GITHUB_STEP_SUMMARY" || true
+          else
+            echo "> No cumulative JUnit report was produced." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Gate on build + shard results
