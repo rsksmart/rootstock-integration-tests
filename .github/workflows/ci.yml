@@ -111,10 +111,10 @@ jobs:
             matrix='{"include":[{"name":"short","cases":""}]}'
           else
             matrix='{"include":[
-              {"name":"federation","cases":"00_sync,01_powpeg/01-change-federation,01_powpeg/extra/04-change-federation-full"},
+              {"name":"federation-change","cases":"00_sync,01_powpeg/01-change-federation,01_powpeg/extra/04-change-federation-full"},
               {"name":"2wp","cases":"00_sync,01_powpeg/02-2wp,01_powpeg/extra/05-2wp-full"},
-              {"name":"bridge-queries","cases":"00_sync,01_powpeg/extra/03,01_powpeg/extra/06,01_powpeg/extra/08,01_powpeg/extra/09,01_powpeg/extra/12,01_powpeg/extra/13,01_powpeg/extra/14,01_powpeg/extra/15"},
-              {"name":"param-mutators","cases":"00_sync,01_powpeg/extra/01,01_powpeg/extra/02,01_powpeg/extra/07,01_powpeg/extra/10,01_powpeg/extra/11"}
+              {"name":"bridge-methods","cases":"00_sync,01_powpeg/extra/03,01_powpeg/extra/06,01_powpeg/extra/08,01_powpeg/extra/09,01_powpeg/extra/12,01_powpeg/extra/13,01_powpeg/extra/14,01_powpeg/extra/15"},
+              {"name":"bridge-state-changes","cases":"00_sync,01_powpeg/extra/01,01_powpeg/extra/02,01_powpeg/extra/07,01_powpeg/extra/10,01_powpeg/extra/11"}
             ]}'
           fi
           # Collapse to a single line so it is valid as a matrix expression.
