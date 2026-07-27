@@ -142,7 +142,29 @@ chmod +x ./configure.sh && chmod +x gradlew
 POWPEG_VERSION=$(bash configure_gradle_powpeg.sh)
 echo "POWPEG_VERSION=$POWPEG_VERSION"
 ./configure.sh
-./gradlew  --info --no-daemon --dependency-verification=lenient clean build -x test
+
+# The Gradle wrapper downloads its distribution on first use and resolves dependencies over the
+# network; both have produced transient 5xx failures (e.g. a 504 fetching gradle-8.6-bin.zip) that
+# sink an otherwise healthy build. Retry with backoff before giving up. This matters more under the
+# build-once split, where a single build feeds every test shard, and it equally protects the
+# single-container 'all' path that rskj/powpeg-node CI uses.
+run_gradle_build() {
+  local attempt=1 max_attempts=3 delay=30
+  while true; do
+    if ./gradlew --info --no-daemon --dependency-verification=lenient clean build -x test; then
+      return 0
+    fi
+    if [ "$attempt" -ge "$max_attempts" ]; then
+      echo "Gradle build failed after ${attempt} attempt(s)." >&2
+      return 1
+    fi
+    echo "Gradle build attempt ${attempt} failed; retrying in ${delay}s..." >&2
+    sleep "$delay"
+    attempt=$((attempt + 1))
+    delay=$((delay * 2))
+  done
+}
+run_gradle_build
 
 fi  # end build phase
 

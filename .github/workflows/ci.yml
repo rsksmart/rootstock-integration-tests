@@ -121,6 +121,13 @@ jobs:
           matrix=$(echo "$matrix" | tr -d '\n' | tr -s ' ')
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
+      # Shard membership is a hardcoded list, so a newly added test file could otherwise land in no
+      # shard and silently never run. Fail here instead (also catches stale/typo'd patterns).
+      - name: Verify shard coverage
+        env:
+          MATRIX: ${{ steps.set-matrix.outputs.matrix }}
+        run: node scripts/ci-check-shard-coverage.js "$MATRIX"
+
       # Build-once (P2-02 / P1-01): run the container in build mode to clone + build rskj + powpeg
       # into the fat jar exactly once. The entrypoint stages the jar into ${workspace}/jar and
       # emits powpeg_version; each shard downloads the jar instead of re-paying the ~5 min build.
@@ -147,6 +154,8 @@ jobs:
           if-no-files-found: error
           # Short retention: this is an intra-run handoff to the shards, not a lasting artifact.
           retention-days: 1
+          # Let a re-run replace the previous attempt's artifact instead of failing on a name clash.
+          overwrite: true
 
   # ---------------------------------------------------------------------------------------------
   # One job per shard. fail-fast:false so a failing shard doesn't cancel the others; the
@@ -210,6 +219,8 @@ jobs:
             --env INPUT_MODE="test"  \
             --env INPUT_POWPEG_VERSION="${{ needs.prepare.outputs.powpeg_version }}"  \
             --env INPUT_RIT_BRANCH="${{ needs.prepare.outputs.rit_branch }}"  \
+            --env INPUT_RSKJ_BRANCH="${{ needs.prepare.outputs.rskj_branch }}"  \
+            --env INPUT_POWPEG_NODE_BRANCH="${{ needs.prepare.outputs.powpeg_branch }}"  \
             --env INPUT_RIT_LOG_LEVEL="${{ env.INPUT_RIT_LOG_LEVEL }}" \
             --env INPUT_TEST_SUITE="${{ needs.prepare.outputs.test_suite }}" \
             --env INPUT_INCLUDE_CASES="${{ matrix.cases }}" \
@@ -225,6 +236,8 @@ jobs:
           name: rit-junit-report-${{ matrix.name }}
           path: reports/junit.xml
           if-no-files-found: warn
+          # Let a re-run of a failed shard replace its earlier report instead of failing on a clash.
+          overwrite: true
 
       # Render this shard's JUnit report (and per-phase timing, when present) into the run summary.
       # always() so the breakdown is produced on failing runs too; the script never exits non-zero,
@@ -298,6 +311,8 @@ jobs:
           name: rit-junit-report
           path: reports/junit.xml
           if-no-files-found: warn
+          # Re-runs recompute the cumulative report; replace rather than clash on the name.
+          overwrite: true
 
       # One cumulative timing table over the merged report (each shard also writes its own).
       - name: Cumulative timing summary
