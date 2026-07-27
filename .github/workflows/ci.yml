@@ -217,8 +217,9 @@ jobs:
           driver-opts: network=host
           platforms: linux/amd64
 
-      # Replays the layers cached by build-jar on the full suite; on the short suite this is the
-      # first build of the image (and seeds the cache for later runs).
+      # Consume the layer cache only. It is written by build-jar (full suite) and by the publish
+      # job on main, both with mode=max, so there is nothing useful for this job to export — and
+      # four shards writing the same cache concurrently would only cause contention.
       - name: Build and export locally Docker
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
@@ -226,7 +227,6 @@ jobs:
           load: true
           tags: ${{ env.TEST_TAG }}
           cache-from: type=gha
-          cache-to: ${{ matrix.mode == 'all' && 'type=gha,mode=max' || '' }}
 
       # Shards (mode=test) consume the jar built once by build-jar. The short suite runs mode=all,
       # which builds inside the container, so there is no artifact to fetch.
@@ -578,5 +578,5 @@ jobs:
           tags: ${{ env.LATEST_TAG }}
           labels: ${{ steps.meta.outputs.labels }}
           push: true
-          # Replays the layers already built (and fully cached with mode=max) by the prepare job.
+          # Replays the layers already built (and fully cached with mode=max) by the build-jar job.
           cache-from: type=gha
