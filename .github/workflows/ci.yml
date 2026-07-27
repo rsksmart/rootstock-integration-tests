@@ -106,26 +106,33 @@ jobs:
       - name: Compute shard matrix
         id: set-matrix
         run: |
+          # Full-suite shard definitions (the P2-01 state groups). Always emitted — even on a short
+          # run — so the coverage check below can validate them on every event.
+          full_matrix='{"include":[
+            {"name":"federation-change","cases":"00_sync,01_powpeg/01-change-federation,01_powpeg/extra/04-change-federation-full"},
+            {"name":"2wp","cases":"00_sync,01_powpeg/02-2wp,01_powpeg/extra/05-2wp-full"},
+            {"name":"bridge-methods","cases":"00_sync,01_powpeg/extra/03,01_powpeg/extra/06,01_powpeg/extra/08,01_powpeg/extra/09,01_powpeg/extra/12,01_powpeg/extra/13,01_powpeg/extra/14,01_powpeg/extra/15"},
+            {"name":"bridge-state-changes","cases":"00_sync,01_powpeg/extra/01,01_powpeg/extra/02,01_powpeg/extra/07,01_powpeg/extra/10,01_powpeg/extra/11"}
+          ]}'
+          # Collapse to a single line so it is valid as a matrix expression.
+          full_matrix=$(echo "$full_matrix" | tr -d '\n' | tr -s ' ')
+          echo "full_matrix=$full_matrix" >> "$GITHUB_OUTPUT"
+
           if [ "$TEST_SUITE" = "short" ]; then
             # The short suite skips extra/ entirely (only 3 files run); no fan-out benefit.
             matrix='{"include":[{"name":"short","cases":""}]}'
           else
-            matrix='{"include":[
-              {"name":"federation-change","cases":"00_sync,01_powpeg/01-change-federation,01_powpeg/extra/04-change-federation-full"},
-              {"name":"2wp","cases":"00_sync,01_powpeg/02-2wp,01_powpeg/extra/05-2wp-full"},
-              {"name":"bridge-methods","cases":"00_sync,01_powpeg/extra/03,01_powpeg/extra/06,01_powpeg/extra/08,01_powpeg/extra/09,01_powpeg/extra/12,01_powpeg/extra/13,01_powpeg/extra/14,01_powpeg/extra/15"},
-              {"name":"bridge-state-changes","cases":"00_sync,01_powpeg/extra/01,01_powpeg/extra/02,01_powpeg/extra/07,01_powpeg/extra/10,01_powpeg/extra/11"}
-            ]}'
+            matrix="$full_matrix"
           fi
-          # Collapse to a single line so it is valid as a matrix expression.
-          matrix=$(echo "$matrix" | tr -d '\n' | tr -s ' ')
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
       # Shard membership is a hardcoded list, so a newly added test file could otherwise land in no
       # shard and silently never run. Fail here instead (also catches stale/typo'd patterns).
+      # Always checked against the FULL shard definitions, so a short-suite PR that adds a test
+      # still fails here rather than only after it merges and main runs the full suite.
       - name: Verify shard coverage
         env:
-          MATRIX: ${{ steps.set-matrix.outputs.matrix }}
+          MATRIX: ${{ steps.set-matrix.outputs.full_matrix }}
         run: node scripts/ci-check-shard-coverage.js "$MATRIX"
 
       # Build-once (P2-02 / P1-01): run the container in build mode to clone + build rskj + powpeg
