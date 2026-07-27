@@ -22,6 +22,52 @@ const path = require('node:path');
 const inputDir = process.argv[2] || 'shard-reports';
 const outFile = process.argv[3] || 'reports/junit.xml';
 
+// Paths come from argv, so guard them before any file-system access: resolve against the working
+// directory (which is GITHUB_WORKSPACE in CI, where the reports live) and confirm the canonical
+// path stays inside it. The check is kept inline at each use so a crafted argument that escapes
+// the base is refused before it ever reaches the file system. realpathSync can throw (permissions,
+// broken symlink); fall back to the plain resolved cwd so module load never crashes the step.
+let BASE_DIR;
+try {
+    BASE_DIR = fs.realpathSync(path.resolve(process.cwd()));
+} catch {
+    BASE_DIR = path.resolve(process.cwd());
+}
+
+const safeReadDir = (dir) => {
+    try {
+        const resolved = path.resolve(BASE_DIR, dir);
+        if (resolved !== BASE_DIR && !resolved.startsWith(BASE_DIR + path.sep)) {
+            return [];
+        }
+        return fs.readdirSync(resolved, { withFileTypes: true });
+    } catch {
+        // Never let a directory probe fail the job — treat as "no reports here".
+        return [];
+    }
+};
+
+const safeReadFile = (file) => {
+    try {
+        const resolved = path.resolve(BASE_DIR, file);
+        if (resolved !== BASE_DIR && !resolved.startsWith(BASE_DIR + path.sep)) {
+            return null;
+        }
+        return fs.readFileSync(resolved, 'utf8');
+    } catch {
+        return null;
+    }
+};
+
+const safeWriteFile = (file, contents) => {
+    const resolved = path.resolve(BASE_DIR, file);
+    if (resolved !== BASE_DIR && !resolved.startsWith(BASE_DIR + path.sep)) {
+        throw new Error(`Refusing to write outside the workspace: ${file}`);
+    }
+    fs.mkdirSync(path.dirname(resolved), { recursive: true });
+    fs.writeFileSync(resolved, contents, 'utf8');
+};
+
 // mocha-junit-reporter emits a flat list of <testsuite> under one <testsuites> root; match each
 // <testsuite> block (self-closing or with children) with attribute-level regex — no nesting.
 const SUITE_RE = /<testsuite\b[^>]*?(?:\/>|>[\s\S]*?<\/testsuite>)/g;
@@ -33,13 +79,7 @@ const getAttr = (fragment, name) => {
 
 const findReports = (dir) => {
     const out = [];
-    let entries;
-    try {
-        entries = fs.readdirSync(dir, { withFileTypes: true });
-    } catch {
-        return out; // missing dir -> no reports
-    }
-    for (const entry of entries) {
+    for (const entry of safeReadDir(dir)) {
         const full = path.join(dir, entry.name);
         if (entry.isDirectory()) {
             out.push(...findReports(full));
@@ -56,11 +96,9 @@ function main() {
     const totals = { tests: 0, failures: 0, errors: 0, skipped: 0, time: 0 };
 
     for (const file of files) {
-        let xml;
-        try {
-            xml = fs.readFileSync(file, 'utf8');
-        } catch {
-            continue; // skip unreadable report
+        const xml = safeReadFile(file);
+        if (xml === null) {
+            continue; // skip unreadable/out-of-workspace report
         }
         for (const match of xml.matchAll(SUITE_RE)) {
             const fragment = match[0];
@@ -79,8 +117,7 @@ function main() {
         `skipped="${totals.skipped}" time="${totals.time.toFixed(3)}">`;
     const doc = `<?xml version="1.0" encoding="UTF-8"?>\n${root}\n${suites.join('\n')}\n</testsuites>\n`;
 
-    fs.mkdirSync(path.dirname(path.resolve(outFile)), { recursive: true });
-    fs.writeFileSync(outFile, doc, 'utf8');
+    safeWriteFile(outFile, doc);
 
     process.stderr.write(
         `Merged ${files.length} report file(s) -> ${suites.length} testsuite(s), ` +
@@ -89,4 +126,11 @@ function main() {
     );
 }
 
-main();
+try {
+    main();
+} catch (err) {
+    // A refused path (outside the workspace) is a misuse worth failing on, but report it as a
+    // clean message rather than an uncaught stack trace.
+    process.stderr.write(`ci-merge-junit: ${err.message}\n`);
+    process.exit(1);
+}

@@ -60,7 +60,7 @@ ref_status() {
 
 # Only resolve rskj/powpeg refs when we are going to build (all/build modes). Test mode consumes a
 # prebuilt jar and never clones, so skip these API calls there.
-if [ "$MODE" != "test" ]; then
+if [[ "$MODE" != "test" ]]; then
   RSKJ_REF_STATUS=$(ref_status "$REPO_OWNER" "$RSKJ_REPO" "$RSKJ_BRANCH")
   POWPEG_REF_STATUS=$(ref_status "$REPO_OWNER" "powpeg-node" "$POWPEG_NODE_BRANCH")
 fi
@@ -78,7 +78,7 @@ echo "MODE=$MODE"
 
 # Build phase (clone + build rskj + powpeg into the fat jar). Runs in 'all' and 'build' modes;
 # skipped in 'test' mode, which consumes a prebuilt jar instead.
-if [ "$MODE" != "test" ]; then
+if [[ "$MODE" != "test" ]]; then
 
 echo -e "\n\n--------- Starting the configuration of rskj ---------\n\n"
 cd /usr/src/
@@ -154,7 +154,7 @@ run_gradle_build() {
     if ./gradlew --info --no-daemon --dependency-verification=lenient clean build -x test; then
       return 0
     fi
-    if [ "$attempt" -ge "$max_attempts" ]; then
+    if [[ "$attempt" -ge "$max_attempts" ]]; then
       echo "Gradle build failed after ${attempt} attempt(s)." >&2
       return 1
     fi
@@ -170,16 +170,16 @@ fi  # end build phase
 
 # --- Build-once split (P2-02) -----------------------------------------------------------------
 # 'build' mode: stage the fat jar + its version for the shard (test) jobs, then stop — no tests.
-if [ "$MODE" = "build" ]; then
+if [[ "$MODE" == "build" ]]; then
   JAR="/usr/src/powpeg/build/libs/federate-node-${POWPEG_VERSION}-all.jar"
-  if [ ! -f "$JAR" ]; then
+  if [[ ! -f "$JAR" ]]; then
     echo "Error: expected powpeg jar not found at $JAR after the build." >&2
     exit 1
   fi
   mkdir -p "${GITHUB_WORKSPACE}/jar"
   cp "$JAR" "${GITHUB_WORKSPACE}/jar/"
   # Expose the version so the shard jobs can locate the same jar filename.
-  if [ -n "${GITHUB_OUTPUT:-}" ]; then
+  if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
     echo "powpeg_version=${POWPEG_VERSION}" >> "$GITHUB_OUTPUT"
   fi
   echo "Build-only mode: staged $(basename "$JAR") to ${GITHUB_WORKSPACE}/jar; exiting before tests."
@@ -188,14 +188,14 @@ fi
 
 # 'test' mode: no build happened. Take the version from the build job and drop the prebuilt jar
 # (supplied via the mounted ${GITHUB_WORKSPACE}/jar) where configure_rit_locally.sh expects it.
-if [ "$MODE" = "test" ]; then
+if [[ "$MODE" == "test" ]]; then
   POWPEG_VERSION="${POWPEG_VERSION_INPUT}"
-  if [ -z "$POWPEG_VERSION" ]; then
+  if [[ -z "$POWPEG_VERSION" ]]; then
     echo "Error: test mode requires INPUT_POWPEG_VERSION (produced by the build job)." >&2
     exit 1
   fi
   PREBUILT_JAR="${GITHUB_WORKSPACE}/jar/federate-node-${POWPEG_VERSION}-all.jar"
-  if [ ! -f "$PREBUILT_JAR" ]; then
+  if [[ ! -f "$PREBUILT_JAR" ]]; then
     echo "Error: prebuilt jar not found at $PREBUILT_JAR (expected the build artifact to be mounted)." >&2
     exit 1
   fi

@@ -50,13 +50,12 @@ const listTestFiles = (dir, base = dir) => {
 const matchesPattern = (relativePath, pattern) =>
     relativePath.startsWith(pattern) || path.basename(relativePath).startsWith(pattern);
 
-function main() {
-    const raw = process.argv[2];
+// Parse and validate the matrix argument, exiting with a usage error when it is unusable.
+const parseMatrix = (raw) => {
     if (!raw) {
         writeErr('Usage: ci-check-shard-coverage.js <matrix json>');
         process.exit(2);
     }
-
     let matrix;
     try {
         matrix = JSON.parse(raw);
@@ -64,12 +63,25 @@ function main() {
         writeErr(`Could not parse the matrix JSON: ${err.message}`);
         process.exit(2);
     }
-
     const shards = matrix.include || [];
     if (shards.length === 0) {
         writeErr('The matrix has no shards.');
         process.exit(2);
     }
+    return shards;
+};
+
+// A file may be absent from every shard only if it does not run in the serial suite either.
+const isExpectedToRun = (file) => {
+    if (KNOWN_EXCLUSIONS.has(file)) {
+        return false;
+    }
+    const source = fs.readFileSync(path.join(TESTS_DIR, file), 'utf8');
+    return !source.includes('describe.skip(');
+};
+
+function main() {
+    const shards = parseMatrix(process.argv[2]);
 
     // An empty `cases` means "run everything" — nothing can be dropped.
     if (shards.some((s) => !s.cases)) {
@@ -80,22 +92,9 @@ function main() {
     const patterns = shards.flatMap((s) => s.cases.split(',').filter(Boolean));
     const files = listTestFiles(TESTS_DIR).sort();
 
-    const uncovered = [];
-    for (const file of files) {
-        if (patterns.some((p) => matchesPattern(file, p))) {
-            continue;
-        }
-        // Not in a shard — only acceptable if it does not run in the serial suite either.
-        const source = fs.readFileSync(path.join(TESTS_DIR, file), 'utf8');
-        if (source.includes('describe.skip(')) {
-            continue;
-        }
-        if (KNOWN_EXCLUSIONS.has(file)) {
-            continue;
-        }
-        uncovered.push(file);
-    }
-
+    const uncovered = files.filter(
+        (file) => !patterns.some((p) => matchesPattern(file, p)) && isExpectedToRun(file)
+    );
     // A pattern that matches nothing is usually a typo or a renamed/deleted file.
     const deadPatterns = patterns.filter((p) => !files.some((f) => matchesPattern(f, p)));
 
