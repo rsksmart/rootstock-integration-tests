@@ -46,8 +46,7 @@ env:
 jobs:
   test-container-action:
     name: Rootstock Integration Tests
-    runs-on:
-      group: 8g
+    runs-on: rit-runner
     timeout-minutes: 60
     # checks: write lets the test-reporter publish failures as a PR check with annotations.
     # (Job-level perms replace the top-level default, so contents: read is re-declared here.)
