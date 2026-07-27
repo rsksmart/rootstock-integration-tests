@@ -50,39 +50,19 @@ jobs:
   # suite (extra/ skipped) stays a single shard — no fan-out overhead for the fast PR subset.
   # ---------------------------------------------------------------------------------------------
   prepare:
-    name: Prepare (build jar once + shard matrix)
+    name: Prepare (resolve suite + shard matrix)
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 10
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       rskj_branch: ${{ steps.vars.outputs.rskj_branch }}
       powpeg_branch: ${{ steps.vars.outputs.powpeg_branch }}
       rit_branch: ${{ steps.vars.outputs.rit_branch }}
       test_suite: ${{ steps.vars.outputs.test_suite }}
-      powpeg_version: ${{ steps.build-jar.outputs.powpeg_version }}
     steps:
       - name: Checkout
         id: checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - name: Setup Docker BuildX
-        id: setup-buildx
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
-        with:
-          install: true
-          driver-opts: network=host
-          platforms: linux/amd64
-
-      # Build + load the image here (cache-to mode=max). We docker-run it below to build the jar,
-      # and each shard replays the same cached layers instead of rebuilding the image N times.
-      - name: Build and export locally Docker
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
-        with:
-          context: container-action/
-          load: true
-          tags: ${{ env.TEST_TAG }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Set Branch Variables
         uses: ./.github/actions/set-branch-variables
@@ -108,19 +88,24 @@ jobs:
         run: |
           # Full-suite shard definitions (the P2-01 state groups). Always emitted — even on a short
           # run — so the coverage check below can validate them on every event.
+          # `mode` selects how the container runs: "test" consumes the prebuilt jar from the
+          # build-jar job; "all" is the original single-container clone+build+test.
           full_matrix='{"include":[
-            {"name":"federation-change","cases":"00_sync,01_powpeg/01-change-federation,01_powpeg/extra/04-change-federation-full"},
-            {"name":"2wp","cases":"00_sync,01_powpeg/02-2wp,01_powpeg/extra/05-2wp-full"},
-            {"name":"bridge-methods","cases":"00_sync,01_powpeg/extra/03,01_powpeg/extra/06,01_powpeg/extra/08,01_powpeg/extra/09,01_powpeg/extra/12,01_powpeg/extra/13,01_powpeg/extra/14,01_powpeg/extra/15"},
-            {"name":"bridge-state-changes","cases":"00_sync,01_powpeg/extra/01,01_powpeg/extra/02,01_powpeg/extra/07,01_powpeg/extra/10,01_powpeg/extra/11"}
+            {"name":"federation-change","mode":"test","cases":"00_sync,01_powpeg/01-change-federation,01_powpeg/extra/04-change-federation-full"},
+            {"name":"2wp","mode":"test","cases":"00_sync,01_powpeg/02-2wp,01_powpeg/extra/05-2wp-full"},
+            {"name":"bridge-methods","mode":"test","cases":"00_sync,01_powpeg/extra/03,01_powpeg/extra/06,01_powpeg/extra/08,01_powpeg/extra/09,01_powpeg/extra/12,01_powpeg/extra/13,01_powpeg/extra/14,01_powpeg/extra/15"},
+            {"name":"bridge-state-changes","mode":"test","cases":"00_sync,01_powpeg/extra/01,01_powpeg/extra/02,01_powpeg/extra/07,01_powpeg/extra/10,01_powpeg/extra/11"}
           ]}'
           # Collapse to a single line so it is valid as a matrix expression.
           full_matrix=$(echo "$full_matrix" | tr -d '\n' | tr -s ' ')
           echo "full_matrix=$full_matrix" >> "$GITHUB_OUTPUT"
 
           if [ "$TEST_SUITE" = "short" ]; then
-            # The short suite skips extra/ entirely (only 3 files run); no fan-out benefit.
-            matrix='{"include":[{"name":"short","cases":""}]}'
+            # The short suite skips extra/ entirely (only 3 files run), so there is nothing to fan
+            # out. Splitting it into build-then-test only adds a second runner, an artifact
+            # round-trip and ~1-2 min for no parallelism, so run it as one 'all'-mode container —
+            # the same path rskj/powpeg-node use, which keeps that path exercised on every PR.
+            matrix='{"include":[{"name":"short","mode":"all","cases":""}]}'
           else
             matrix="$full_matrix"
           fi
@@ -135,9 +120,41 @@ jobs:
           MATRIX: ${{ steps.set-matrix.outputs.full_matrix }}
         run: node scripts/ci-check-shard-coverage.js "$MATRIX"
 
-      # Build-once (P2-02 / P1-01): run the container in build mode to clone + build rskj + powpeg
-      # into the fat jar exactly once. The entrypoint stages the jar into ${workspace}/jar and
-      # emits powpeg_version; each shard downloads the jar instead of re-paying the ~5 min build.
+  # ---------------------------------------------------------------------------------------------
+  # Build-once (P2-02 / P1-01): clone + build rskj + powpeg into the fat jar exactly once, so the
+  # shards do not each re-pay it. Full suite only — the short suite runs a single 'all'-mode
+  # container that builds and tests together, so there is nothing to hand off.
+  # ---------------------------------------------------------------------------------------------
+  build-jar:
+    name: Build powpeg jar (once)
+    needs: prepare
+    if: needs.prepare.outputs.test_suite != 'short'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    outputs:
+      powpeg_version: ${{ steps.build-jar.outputs.powpeg_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup Docker BuildX
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        with:
+          install: true
+          driver-opts: network=host
+          platforms: linux/amd64
+
+      # Build + load the image here (cache-to mode=max) so each shard replays the same cached
+      # layers instead of rebuilding the image N times.
+      - name: Build and export locally Docker
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: container-action/
+          load: true
+          tags: ${{ env.TEST_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Build powpeg jar (build-once)
         id: build-jar
         run: |
@@ -146,8 +163,8 @@ jobs:
             --env GITHUB_OUTPUT="/github-output" \
             --env GITHUB_WORKSPACE="/github/workspace" \
             --env INPUT_MODE="build" \
-            --env INPUT_RSKJ_BRANCH="${{ env.RSKJ_BRANCH }}" \
-            --env INPUT_POWPEG_NODE_BRANCH="${{ env.POWPEG_BRANCH }}" \
+            --env INPUT_RSKJ_BRANCH="${{ needs.prepare.outputs.rskj_branch }}" \
+            --env INPUT_POWPEG_NODE_BRANCH="${{ needs.prepare.outputs.powpeg_branch }}" \
             --env INPUT_RIT_LOG_LEVEL="info" \
             -v "$GITHUB_OUTPUT:/github-output" \
             -v "${{ github.workspace }}/jar:/github/workspace/jar" \
@@ -170,7 +187,11 @@ jobs:
   # ---------------------------------------------------------------------------------------------
   test-container-action:
     name: RIT (${{ matrix.name }})
-    needs: prepare
+    needs: [prepare, build-jar]
+    # build-jar is skipped on the short suite, which must not skip the tests with it.
+    if: >-
+      always() && needs.prepare.result == 'success' &&
+      (needs.build-jar.result == 'success' || needs.build-jar.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     # checks: write lets the test-reporter publish failures as a PR check with annotations.
@@ -196,7 +217,8 @@ jobs:
           driver-opts: network=host
           platforms: linux/amd64
 
-      # Pure cache replay of the image built in prepare (cache-to mode=max there).
+      # Replays the layers cached by build-jar on the full suite; on the short suite this is the
+      # first build of the image (and seeds the cache for later runs).
       - name: Build and export locally Docker
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
@@ -204,27 +226,32 @@ jobs:
           load: true
           tags: ${{ env.TEST_TAG }}
           cache-from: type=gha
+          cache-to: ${{ matrix.mode == 'all' && 'type=gha,mode=max' || '' }}
 
-      # Consume the jar built once in prepare instead of rebuilding rskj/powpeg per shard.
+      # Shards (mode=test) consume the jar built once by build-jar. The short suite runs mode=all,
+      # which builds inside the container, so there is no artifact to fetch.
       - name: Download powpeg jar
+        if: matrix.mode == 'test'
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: rit-powpeg-jar
           path: jar
 
-      - name: Run Rootstock Integration Tests (test mode)
+      - name: Run Rootstock Integration Tests (${{ matrix.mode }} mode)
         id: test-container
         env:
           INPUT_RIT_LOG_LEVEL: info
         run: |
-          mkdir -p "${{ github.workspace }}/reports"
-          # test mode: no rskj/powpeg clone/build — the prebuilt jar is mounted in and located via
-          # INPUT_POWPEG_VERSION. Only RIT is cloned + run (its shard slice via INCLUDE_CASES).
+          mkdir -p "${{ github.workspace }}/reports" "${{ github.workspace }}/jar"
+          # mode=test: no rskj/powpeg clone/build — the prebuilt jar is mounted in and located via
+          # INPUT_POWPEG_VERSION, and only RIT is cloned + run (its slice via INCLUDE_CASES).
+          # mode=all: the original single-container clone + build + test; the jar mount is unused
+          # and INPUT_POWPEG_VERSION is ignored by the entrypoint.
           docker run \
             --env GITHUB_OUTPUT="/github-output"  \
             --env GITHUB_WORKSPACE="/github/workspace"  \
-            --env INPUT_MODE="test"  \
-            --env INPUT_POWPEG_VERSION="${{ needs.prepare.outputs.powpeg_version }}"  \
+            --env INPUT_MODE="${{ matrix.mode }}"  \
+            --env INPUT_POWPEG_VERSION="${{ needs.build-jar.outputs.powpeg_version }}"  \
             --env INPUT_RIT_BRANCH="${{ needs.prepare.outputs.rit_branch }}"  \
             --env INPUT_RSKJ_BRANCH="${{ needs.prepare.outputs.rskj_branch }}"  \
             --env INPUT_POWPEG_NODE_BRANCH="${{ needs.prepare.outputs.powpeg_branch }}"  \
@@ -277,7 +304,7 @@ jobs:
   # ---------------------------------------------------------------------------------------------
   aggregate:
     name: Aggregate & gate
-    needs: [prepare, test-container-action]
+    needs: [prepare, build-jar, test-container-action]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -335,10 +362,16 @@ jobs:
 
       - name: Gate on build + shard results
         run: |
-          echo "prepare (build + matrix): ${{ needs.prepare.result }}"
-          echo "test shards (aggregate):  ${{ needs.test-container-action.result }}"
+          echo "prepare (suite + matrix): ${{ needs.prepare.result }}"
+          echo "build-jar (full only):    ${{ needs.build-jar.result }}"
+          echo "tests (aggregate):        ${{ needs.test-container-action.result }}"
           if [ "${{ needs.prepare.result }}" != "success" ]; then
-            echo "::error::The build/prepare job did not succeed."
+            echo "::error::The prepare job did not succeed."
+            exit 1
+          fi
+          # build-jar is legitimately skipped on the short suite, which runs a single all-mode job.
+          if [ "${{ needs.build-jar.result }}" != "success" ] && [ "${{ needs.build-jar.result }}" != "skipped" ]; then
+            echo "::error::The powpeg jar build did not succeed."
             exit 1
           fi
           if [ "${{ needs.test-container-action.result }}" != "success" ]; then
