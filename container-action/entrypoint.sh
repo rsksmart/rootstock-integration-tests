@@ -25,6 +25,13 @@ INCLUDE_CASES="${INPUT_INCLUDE_CASES:-}"
 MODE="${INPUT_MODE:-all}"
 POWPEG_VERSION_INPUT="${INPUT_POWPEG_VERSION:-}"
 
+# Reject an unknown mode up front. Without this a typo (e.g. "bulid") silently falls through to
+# the default clone+build+test path, quietly doing the wrong thing instead of failing.
+if [[ "$MODE" != "all" && "$MODE" != "build" && "$MODE" != "test" ]]; then
+  echo "Error: INPUT_MODE must be one of 'all', 'build' or 'test' (got '$MODE')." >&2
+  exit 1
+fi
+
 # Resolve whether a git ref exists in a GitHub repository. The inputs may be a
 # branch, a tag or a specific commit (see container-action/README.md), so we use
 # the ref-aware REST "commits/{ref}" endpoint, which resolves all three, instead

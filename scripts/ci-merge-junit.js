@@ -8,8 +8,11 @@
  *   input-dir   directory searched recursively for *.xml shard reports (default: shard-reports)
  *   output-file cumulative report to write                            (default: reports/junit.xml)
  *
- * Designed to never fail the job: unreadable/unparsable inputs are skipped, and an empty input set
- * still produces a valid (empty) <testsuites> document rather than a non-zero exit.
+ * Tolerant of bad input: unreadable/unparsable reports are skipped, and an empty input set still
+ * produces a valid (empty) <testsuites> document rather than an error. It does exit non-zero if
+ * the output itself cannot be written (unwritable path, or a path refused for escaping the
+ * workspace) — that is a real failure, not a degraded report. The workflow step that runs this is
+ * `continue-on-error`, so the merge can never turn a passing run red.
  *
  * NOTE: every shard reruns the shared bootstrap (00_sync) on its own chain, so the bootstrap
  * testsuite appears once per shard in the merged report — the cumulative counts are faithful to
@@ -40,7 +43,12 @@ const safeReadDir = (dir) => {
         if (resolved !== BASE_DIR && !resolved.startsWith(BASE_DIR + path.sep)) {
             return [];
         }
-        return fs.readdirSync(resolved, { withFileTypes: true });
+        // realpath too, so a symlink under the (artifact-written) reports dir cannot point outside.
+        const real = fs.realpathSync(resolved);
+        if (real !== BASE_DIR && !real.startsWith(BASE_DIR + path.sep)) {
+            return [];
+        }
+        return fs.readdirSync(real, { withFileTypes: true });
     } catch {
         // Never let a directory probe fail the job — treat as "no reports here".
         return [];
@@ -53,7 +61,11 @@ const safeReadFile = (file) => {
         if (resolved !== BASE_DIR && !resolved.startsWith(BASE_DIR + path.sep)) {
             return null;
         }
-        return fs.readFileSync(resolved, 'utf8');
+        const real = fs.realpathSync(resolved);
+        if (real !== BASE_DIR && !real.startsWith(BASE_DIR + path.sep)) {
+            return null;
+        }
+        return fs.readFileSync(real, 'utf8');
     } catch {
         return null;
     }
@@ -64,8 +76,15 @@ const safeWriteFile = (file, contents) => {
     if (resolved !== BASE_DIR && !resolved.startsWith(BASE_DIR + path.sep)) {
         throw new Error(`Refusing to write outside the workspace: ${file}`);
     }
-    fs.mkdirSync(path.dirname(resolved), { recursive: true });
-    fs.writeFileSync(resolved, contents, 'utf8');
+    // Create the directory first, then re-check its canonical path: a symlinked output dir
+    // (e.g. reports -> /tmp) would otherwise pass the prefix check above and escape the workspace.
+    const dir = path.dirname(resolved);
+    fs.mkdirSync(dir, { recursive: true });
+    const realDir = fs.realpathSync(dir);
+    if (realDir !== BASE_DIR && !realDir.startsWith(BASE_DIR + path.sep)) {
+        throw new Error(`Refusing to follow a symlink outside the workspace: ${file}`);
+    }
+    fs.writeFileSync(path.join(realDir, path.basename(resolved)), contents, 'utf8');
 };
 
 // mocha-junit-reporter emits a flat list of <testsuite> under one <testsuites> root; match each

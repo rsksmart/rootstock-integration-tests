@@ -63,10 +63,20 @@ const parseMatrix = (raw) => {
         writeErr(`Could not parse the matrix JSON: ${err.message}`);
         process.exit(2);
     }
-    const shards = matrix.include || [];
-    if (shards.length === 0) {
-        writeErr('The matrix has no shards.');
+    const shards = matrix.include;
+    if (!Array.isArray(shards) || shards.length === 0) {
+        writeErr('The matrix must contain a non-empty "include" array.');
         process.exit(2);
+    }
+    // Fail closed: a missing or non-string `cases` must not be mistaken for the "runs everything"
+    // sentinel below, which would silently switch this guard off on a malformed matrix.
+    for (const shard of shards) {
+        if (typeof shard.cases !== 'string') {
+            writeErr(
+                `Shard "${shard.name || '(unnamed)'}" is missing a string "cases" field; refusing to skip the coverage check.`
+            );
+            process.exit(2);
+        }
     }
     return shards;
 };
@@ -83,8 +93,8 @@ const isExpectedToRun = (file) => {
 function main() {
     const shards = parseMatrix(process.argv[2]);
 
-    // An empty `cases` means "run everything" — nothing can be dropped.
-    if (shards.some((s) => !s.cases)) {
+    // An explicitly empty `cases` means "run everything" — nothing can be dropped.
+    if (shards.some((s) => s.cases === '')) {
         writeOut('A shard runs the whole suite (empty cases); coverage check not applicable.');
         return;
     }
