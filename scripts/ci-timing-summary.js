@@ -21,6 +21,12 @@ const phaseArg = process.argv[3] || 'reports/phase-timing.json';
 const TOP_SLOWEST_FILES = 30;
 const TOP_SLOWEST_TESTS = 15;
 
+// Behaviour-area tags (P0-02) are authored as a leading block on the top-level describe title,
+// e.g. "@smoke @regression @2wp @pegin @pegout BTC <=> RSK 2WP …", so they surface at the start
+// of the testcase classname (and, under some reporter configs, name). Matches @word / @kebab-case.
+const TAG_TOKEN_RE = /^@[\w-]+/;
+const UNTAGGED = '(untagged)';
+
 // Paths come from argv, so guard them before any file-system access: resolve against the
 // working directory (which is GITHUB_WORKSPACE in CI, where the reports live) and confirm the
 // canonical path stays inside it. The check is kept inline at each use so a crafted argument
@@ -125,7 +131,52 @@ const addTestcase = (caseFragment, suiteName, entry, tests, totals) => {
         classname: decode(getAttr(caseFragment, 'classname')) || suiteName,
         time,
         failed,
+        skipped,
     });
+};
+
+// Read the leading run of @tag tokens from one field, stopping at the first non-tag word. Only
+// the leading block is treated as tags — an @handle that appears mid-title (e.g. an it() saying
+// "…from @rsksmart/rsk-precompiled-abis") is prose, not a behaviour-area tag, and is ignored.
+const leadingTags = (field) => {
+    const tags = [];
+    for (const token of String(field || '').trim().split(/\s+/)) {
+        const match = token.match(TAG_TOKEN_RE);
+        if (!match) break;
+        tags.push(match[0]);
+    }
+    return tags;
+};
+
+// Extract the distinct @tags a testcase carries. Tags live in the top-level describe title,
+// which mocha-junit-reporter folds into the classname; we also read the leading tags of name so
+// the grouping still works regardless of the reporter's classname/name arrangement.
+const extractTags = (test) => [
+    ...new Set([...leadingTags(test.classname), ...leadingTags(test.name)]),
+];
+
+// Group durations by behaviour-area tag. A test with N tags counts under each of them; tests
+// with no tags fall into a single (untagged) bucket. Coverage grows as P0-02 tagging spreads —
+// the table improves with no code change.
+const groupByTag = (tests) => {
+    const tags = new Map();
+    const bump = (key, test) => {
+        const entry = tags.get(key) || { key, tests: 0, failures: 0, skipped: 0, time: 0 };
+        entry.tests += 1;
+        entry.time += test.time;
+        if (test.failed) entry.failures += 1;
+        if (test.skipped) entry.skipped += 1;
+        tags.set(key, entry);
+    };
+    for (const test of tests) {
+        const found = extractTags(test);
+        if (found.length === 0) {
+            bump(UNTAGGED, test);
+        } else {
+            for (const tag of found) bump(tag, test);
+        }
+    }
+    return [...tags.values()];
 };
 
 // Aggregate one <testsuite> block into the files map and the tests/totals accumulators.
@@ -192,6 +243,7 @@ function parseJunit(xml) {
         totalSkipped: totals.skipped,
         totalTime: rootTime != null ? rootTime : summedTime,
         fileRows,
+        tagRows: groupByTag(tests),
         tests,
     };
 }
@@ -217,9 +269,34 @@ function renderPhases(phase) {
     out();
 }
 
+// Time spent per behaviour area, derived from P0-02 @tags. This is the primary shard-planning
+// signal (P2-01/P2-02): it maps durations onto the sharding units in a way the file grouping
+// cannot, because every test is require()d from a single entry file.
+function renderTimeByTag(tagRows) {
+    const sorted = [...tagRows].sort((a, b) => b.time - a.time);
+    if (sorted.length === 0) {
+        return;
+    }
+    out('### Time by tag / area');
+    out();
+    out('| Tag / area | Tests | Failed | Skipped | Time |');
+    out('| --- | ---: | ---: | ---: | ---: |');
+    for (const t of sorted) {
+        out(
+            `| \`${escapeCell(t.key)}\` | ${t.tests} | ${t.failures} | ${t.skipped} | ${fmtDuration(t.time)} |`
+        );
+    }
+    out('');
+    out('_A test with multiple tags is counted under each; a test counts once toward the totals._');
+    out();
+}
+
 function renderSlowestFiles(fileRows) {
     const slowest = [...fileRows].sort((a, b) => b.time - a.time);
-    if (slowest.length === 0) {
+    // Every test is require()d from a single entry file, so mocha-junit-reporter stamps the same
+    // `file` on every testcase and this collapses to one meaningless row. Suppress it in that
+    // case — the "Time by tag / area" table is the real per-area breakdown.
+    if (slowest.length <= 1) {
         return;
     }
     out(`### Slowest test files (top ${Math.min(TOP_SLOWEST_FILES, slowest.length)})`);
@@ -288,6 +365,7 @@ function main() {
     );
     out();
 
+    renderTimeByTag(report.tagRows);
     renderSlowestFiles(report.fileRows);
     renderSlowestTests(report.tests);
 
