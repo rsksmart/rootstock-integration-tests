@@ -23,29 +23,25 @@ describe('@regression @bridge-methods Bridge federator methods tests', () => {
     });
 
     it('method getFederatorPublicKey should NOT work', () => {
-        return assertContractCallFails(bridge.methods.getFederatorPublicKey(0));
+        return assertContractCallFails(bridge, 'getFederatorPublicKey', [0]);
     });
 
     it('method getFederatorPublicKeyOfType should work', () => {
         return assertContractCallReturnsWithCallback(
-            bridge.methods.getFederatorPublicKeyOfType(0, KEY_TYPE_BTC),
+            bridge,
+            'getFederatorPublicKeyOfType',
+            [0, KEY_TYPE_BTC],
             assertIsPublicKey
         );
     });
 
     it('method addFederatorPublicKey should NOT work', () => {
-        return assertContractCallFails(bridge.methods.addFederatorPublicKey(RANDOM_PUBLIC_KEY), {
+        return assertContractCallFails(bridge, 'addFederatorPublicKey', [RANDOM_PUBLIC_KEY], {
             from: fedChangeAddress,
         });
     });
 
     it('method addFederatorPublicKeyMultikey should work', () => {
-        const addFederatorPublicKeyMultikeyMethod = bridge.methods.addFederatorPublicKeyMultikey(
-            RANDOM_PUBLIC_KEY,
-            RANDOM_PUBLIC_KEY,
-            RANDOM_PUBLIC_KEY
-        );
-
         const checkCallback = (result) => expect(Number(result)).to.equal(-1);
 
         const callParams = {
@@ -53,7 +49,9 @@ describe('@regression @bridge-methods Bridge federator methods tests', () => {
         };
 
         return assertContractCallReturnsWithCallback(
-            addFederatorPublicKeyMultikeyMethod,
+            bridge,
+            'addFederatorPublicKeyMultikey',
+            [RANDOM_PUBLIC_KEY, RANDOM_PUBLIC_KEY, RANDOM_PUBLIC_KEY],
             checkCallback,
             callParams
         );

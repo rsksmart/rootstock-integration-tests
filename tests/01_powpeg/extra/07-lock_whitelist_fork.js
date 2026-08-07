@@ -43,10 +43,10 @@ describe('@regression @bridge-methods Whitelist methods tests', () => {
         const secondAddressEntry = WHITELIST_ADDRESSES_ENTRIES[1];
         const address = secondAddressEntry[0];
         const maxTransferValue = secondAddressEntry[1];
-        const getLockWhitelistEntryByAddressMethod =
-            bridge.methods.getLockWhitelistEntryByAddress(address);
         return contractMethodAssertions.assertContractCallReturns(
-            getLockWhitelistEntryByAddressMethod,
+            bridge,
+            'getLockWhitelistEntryByAddress',
+            [address],
             maxTransferValue.toString()
         );
     });
@@ -62,10 +62,9 @@ describe('@regression @bridge-methods Whitelist methods tests', () => {
         const firstWhitelistAddressEntry = WHITELIST_ADDRESSES_ENTRIES[0];
         const address = firstWhitelistAddressEntry[0];
         const maxTransferValue = firstWhitelistAddressEntry[1];
-        const addLockWhitelistAddressMethod = bridge.methods.addLockWhitelistAddress(
+        return contractMethodAssertions.assertContractCallFails(bridge, 'addLockWhitelistAddress', [
             address,
-            maxTransferValue
-        );
-        return contractMethodAssertions.assertContractCallFails(addLockWhitelistAddressMethod);
+            maxTransferValue,
+        ]);
     });
 });

@@ -17,9 +17,7 @@ describe('@regression @bridge-methods Vote for locking cap to the max 21 million
     it('should increase locking cap to the max 21 million btc', async () => {
         const rskTxHelper = rskTxHelpers[0];
 
-        const authAddress = await rskTxHelper
-            .getClient()
-            .eth.personal.importRawKey(lockingCapAuthorizerPrivateKey, '');
+        const authAddress = await rskTxHelper.importAccount(lockingCapAuthorizerPrivateKey);
         await rskUtils.sendFromCow(rskTxHelper, authAddress, btcToWeis(1));
 
         const bridge = await getBridge(rskTxHelper.getClient());
@@ -28,7 +26,7 @@ describe('@regression @bridge-methods Vote for locking cap to the max 21 million
 
         const targetLockingCapInSatoshis = Number(btcToSatoshis(MAX_BTC));
 
-        let currentLockingCapValueInSatoshis = Number(await bridge.methods.getLockingCap().call());
+        let currentLockingCapValueInSatoshis = Number(await bridge.getLockingCap());
 
         let nextIncrement = 0;
 
@@ -38,11 +36,15 @@ describe('@regression @bridge-methods Vote for locking cap to the max 21 million
             // Ensuring that the next increment is not greater than the target locking cap.
             nextIncrement = Math.min(nextIncrement, targetLockingCapInSatoshis);
 
-            const increaseLockingCapMethod = bridge.methods.increaseLockingCap(nextIncrement);
+            await rskUtils.sendTransaction(
+                rskTxHelper,
+                bridge,
+                'increaseLockingCap',
+                [nextIncrement],
+                authAddress
+            );
 
-            await rskUtils.sendTransaction(rskTxHelper, increaseLockingCapMethod, authAddress);
-
-            currentLockingCapValueInSatoshis = Number(await bridge.methods.getLockingCap().call());
+            currentLockingCapValueInSatoshis = Number(await bridge.getLockingCap());
 
             // Ensuring that the locking cap is being increased on every iteration.
             expect(currentLockingCapValueInSatoshis).to.be.equal(
@@ -51,7 +53,7 @@ describe('@regression @bridge-methods Vote for locking cap to the max 21 million
             );
         }
 
-        const finalLockingCapValueInSatoshis = Number(await bridge.methods.getLockingCap().call());
+        const finalLockingCapValueInSatoshis = Number(await bridge.getLockingCap());
 
         expect(finalLockingCapValueInSatoshis).to.be.equal(targetLockingCapInSatoshis);
     });
