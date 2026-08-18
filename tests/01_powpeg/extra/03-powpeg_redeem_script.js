@@ -8,6 +8,8 @@ const { getFedsPubKeys } = require('../../../lib/rsk-utils');
 const CustomError = require('../../../lib/CustomError');
 const removePrefix0x = require('../../../lib/utils').removePrefix0x;
 const { ERP_PUBKEYS, ERP_CSV_VALUE } = require('../../../lib/constants/federation-constants');
+const { getP2shP2wshAddressFromRedeemScript } = require('../../../lib/btc-utils');
+const { getBtcClient } = require('../../../lib/btc-client-provider');
 
 describe('@regression @bridge-methods Calling getActivePowpegRedeemScript method', function () {
     let rskTxHelper;
@@ -31,12 +33,14 @@ describe('@regression @bridge-methods Calling getActivePowpegRedeemScript method
             // Build the expected redeem script from the active federation public keys
             const activeFederationBtcPublicKeys = await getFedsPubKeys(bridge);
             const expectedRedeemScript = redeemScriptParser
-                .getP2shErpRedeemScript(activeFederationBtcPublicKeys, ERP_PUBKEYS, ERP_CSV_VALUE)
+                .buildPowpegRedeemScript(activeFederationBtcPublicKeys, ERP_PUBKEYS, ERP_CSV_VALUE)
                 .toString('hex');
 
-            const addressFromRedeemScript = redeemScriptParser.getP2shP2wshAddressFromRedeemScript(
-                'REGTEST',
-                Buffer.from(removePrefix0x(activePowpegRedeemScript), 'hex')
+            const btcTxHelper = getBtcClient();
+            const network = btcTxHelper.btcConfig.network;
+            const addressFromRedeemScript = getP2shP2wshAddressFromRedeemScript(
+                Buffer.from(removePrefix0x(activePowpegRedeemScript), 'hex'),
+                network
             );
 
             expect(removePrefix0x(activePowpegRedeemScript)).to.eq(expectedRedeemScript);
