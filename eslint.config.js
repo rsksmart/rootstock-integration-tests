@@ -21,6 +21,7 @@ module.exports = [
                 ...globals.node,
                 ...globals.es2021,
                 ...globals.mocha,
+                Runners: 'writable',
             },
         },
         rules: {
