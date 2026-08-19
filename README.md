@@ -40,7 +40,7 @@ After cloning this project and `cd` to it, you can make a copy to the `.env-exam
 You will need to provide values for most these variables:
 
 ```
-POWPEG_NODE_JAR_PATH=/Users/<your_user>/repos/powpeg-node/build/libs/federate-node-SNAPSHOT-<version>all.jar
+POWPEG_NODE_JAR_PATH=/Users/<your_user>/repos/powpeg-node/build/libs/federate-node-SNAPSHOT-<version>-all.jar
 CONFIG_FILE_PATH=./config/regtest-all-keyfiles
 LOG_HOME=/Users/<your_user>/config/logs-config
 BITCOIND_BIN_PATH=/Users/<your_user>/bitcoind/bin/bitcoind
