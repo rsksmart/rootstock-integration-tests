@@ -140,7 +140,9 @@ const addTestcase = (caseFragment, suiteName, entry, tests, totals) => {
 // "…from @rsksmart/rsk-precompiled-abis") is prose, not a behaviour-area tag, and is ignored.
 const leadingTags = (field) => {
     const tags = [];
-    for (const token of String(field || '').trim().split(/\s+/)) {
+    for (const token of String(field || '')
+        .trim()
+        .split(/\s+/)) {
         const match = token.match(TAG_TOKEN_RE);
         if (!match) break;
         tags.push(match[0]);
