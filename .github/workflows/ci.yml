@@ -37,25 +37,173 @@ concurrency:
 env:
   TEST_TAG:  ${{ github.event.repository.name }}/rit:test
   LATEST_TAG: ghcr.io/rsksmart/${{ github.event.repository.name }}/rit
-  # TEST_SUITE is exported by the set-branch-variables composite action: PRs get the short suite,
-  # auto-escalated to full when the PR touches full-suite-affecting paths (tests/**/extra/,
-  # lib/tests/, lib/assertions/, test.js, config/) and overridable with a `test-suite:<suite>`
-  # tag in the PR description (like in rskj/powpeg-node); pushes to main and manual runs
-  # default to the full (long) suite.
+  # TEST_SUITE is resolved by the set-branch-variables composite action in the prepare job: PRs
+  # get the short suite, auto-escalated to full when the PR touches full-suite-affecting paths
+  # (tests/**/extra/, lib/tests/, lib/assertions/, test.js, config/) and overridable with a
+  # `test-suite:<suite>` tag in the PR description; pushes to main and manual runs default to full.
 
 jobs:
+  # ---------------------------------------------------------------------------------------------
+  # P2-02 sharding: build the image + resolve branch vars once, then emit the shard matrix.
+  # The full suite fans out into the P2-01 state-groups (each shard boots its own bitcoind +
+  # federate cluster, runs the 00_sync bootstrap, then its group via INCLUDE_CASES). The short
+  # suite (extra/ skipped) stays a single shard — no fan-out overhead for the fast PR subset.
+  # ---------------------------------------------------------------------------------------------
+  prepare:
+    name: Prepare (resolve suite + shard matrix)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      rskj_branch: ${{ steps.vars.outputs.rskj_branch }}
+      powpeg_branch: ${{ steps.vars.outputs.powpeg_branch }}
+      rit_branch: ${{ steps.vars.outputs.rit_branch }}
+      test_suite: ${{ steps.vars.outputs.test_suite }}
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set Branch Variables
+        uses: ./.github/actions/set-branch-variables
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # set-branch-variables writes to GITHUB_ENV (job-scoped); re-export as job outputs so the
+      # shard and aggregate jobs can consume them.
+      - name: Export branch variables
+        id: vars
+        run: |
+          {
+            echo "rskj_branch=$RSKJ_BRANCH"
+            echo "powpeg_branch=$POWPEG_BRANCH"
+            echo "rit_branch=$RIT_BRANCH"
+            echo "test_suite=$TEST_SUITE"
+          } >> "$GITHUB_OUTPUT"
+
+      # Shard membership follows the P2-01 state-dependency map. Every shard's INCLUDE_CASES
+      # begins with 00_sync so the mandatory bootstrap runs on its own cluster before its group.
+      - name: Compute shard matrix
+        id: set-matrix
+        run: |
+          # Full-suite shard definitions (the P2-01 state groups). Always emitted — even on a short
+          # run — so the coverage check below can validate them on every event.
+          # `mode` selects how the container runs: "test" consumes the prebuilt jar from the
+          # build-jar job; "all" is the original single-container clone+build+test.
+          full_matrix='{"include":[
+            {"name":"federation-change","mode":"test","cases":"00_sync,01_powpeg/01-change-federation,01_powpeg/extra/04-change-federation-full"},
+            {"name":"2wp","mode":"test","cases":"00_sync,01_powpeg/02-2wp,01_powpeg/extra/05-2wp-full"},
+            {"name":"bridge-methods","mode":"test","cases":"00_sync,01_powpeg/extra/03,01_powpeg/extra/06,01_powpeg/extra/08,01_powpeg/extra/09,01_powpeg/extra/12,01_powpeg/extra/13,01_powpeg/extra/14,01_powpeg/extra/15"},
+            {"name":"bridge-state-changes","mode":"test","cases":"00_sync,01_powpeg/extra/01,01_powpeg/extra/02,01_powpeg/extra/07,01_powpeg/extra/10,01_powpeg/extra/11"}
+          ]}'
+          # Collapse to a single line so it is valid as a matrix expression.
+          full_matrix=$(echo "$full_matrix" | tr -d '\n' | tr -s ' ')
+          echo "full_matrix=$full_matrix" >> "$GITHUB_OUTPUT"
+
+          if [ "$TEST_SUITE" = "short" ]; then
+            # The short suite skips extra/ entirely (only 3 files run), so there is nothing to fan
+            # out. Splitting it into build-then-test only adds a second runner, an artifact
+            # round-trip and ~1-2 min for no parallelism, so run it as one 'all'-mode container —
+            # the same path rskj/powpeg-node use, which keeps that path exercised on every PR.
+            matrix='{"include":[{"name":"short","mode":"all","cases":""}]}'
+          else
+            matrix="$full_matrix"
+          fi
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+      # Shard membership is a hardcoded list, so a newly added test file could otherwise land in no
+      # shard and silently never run. Fail here instead (also catches stale/typo'd patterns).
+      # Always checked against the FULL shard definitions, so a short-suite PR that adds a test
+      # still fails here rather than only after it merges and main runs the full suite.
+      - name: Verify shard coverage
+        env:
+          MATRIX: ${{ steps.set-matrix.outputs.full_matrix }}
+        run: node scripts/ci-check-shard-coverage.js "$MATRIX"
+
+  # ---------------------------------------------------------------------------------------------
+  # Build-once (P2-02 / P1-01): clone + build rskj + powpeg into the fat jar exactly once, so the
+  # shards do not each re-pay it. Full suite only — the short suite runs a single 'all'-mode
+  # container that builds and tests together, so there is nothing to hand off.
+  # ---------------------------------------------------------------------------------------------
+  build-jar:
+    name: Build powpeg jar (once)
+    needs: prepare
+    if: needs.prepare.outputs.test_suite != 'short'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    outputs:
+      powpeg_version: ${{ steps.build-jar.outputs.powpeg_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup Docker BuildX
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        with:
+          install: true
+          driver-opts: network=host
+          platforms: linux/amd64
+
+      # Build + load the image here (cache-to mode=max) so each shard replays the same cached
+      # layers instead of rebuilding the image N times.
+      - name: Build and export locally Docker
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: container-action/
+          load: true
+          tags: ${{ env.TEST_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build powpeg jar (build-once)
+        id: build-jar
+        run: |
+          mkdir -p "${{ github.workspace }}/jar"
+          docker run \
+            --env GITHUB_OUTPUT="/github-output" \
+            --env GITHUB_WORKSPACE="/github/workspace" \
+            --env INPUT_MODE="build" \
+            --env INPUT_RSKJ_BRANCH="${{ needs.prepare.outputs.rskj_branch }}" \
+            --env INPUT_POWPEG_NODE_BRANCH="${{ needs.prepare.outputs.powpeg_branch }}" \
+            --env INPUT_RIT_LOG_LEVEL="info" \
+            -v "$GITHUB_OUTPUT:/github-output" \
+            -v "${{ github.workspace }}/jar:/github/workspace/jar" \
+            --rm ${{ env.TEST_TAG }}
+
+      - name: Upload powpeg jar
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: rit-powpeg-jar
+          path: jar/federate-node-*-all.jar
+          if-no-files-found: error
+          # Short retention: this is an intra-run handoff to the shards, not a lasting artifact.
+          retention-days: 1
+          # Let a re-run replace the previous attempt's artifact instead of failing on a name clash.
+          overwrite: true
+
+  # ---------------------------------------------------------------------------------------------
+  # One job per shard. fail-fast:false so a failing shard doesn't cancel the others; the
+  # aggregate job below turns the set of shard results into one required status.
+  # ---------------------------------------------------------------------------------------------
   test-container-action:
-    name: Rootstock Integration Tests
+    name: RIT (${{ matrix.name }})
+    needs: [prepare, build-jar]
+    # build-jar is skipped on the short suite, which must not skip the tests with it.
+    if: >-
+      always() && needs.prepare.result == 'success' &&
+      (needs.build-jar.result == 'success' || needs.build-jar.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     # checks: write lets the test-reporter publish failures as a PR check with annotations.
-    # (Job-level perms replace the top-level default, so contents: read is re-declared here.)
-    # Note: PRs from forks always get a read-only token, so the annotation check is skipped
-    # for them — the step is set to not fail the job in that case.
+    # Note: PRs from forks always get a read-only token, so the annotation check is skipped for
+    # them — the step is set to not fail the job in that case.
     permissions:
       contents: read
       checks: write
-
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
     steps:
       - name: Checkout
         id: checkout
@@ -69,26 +217,171 @@ jobs:
           driver-opts: network=host
           platforms: linux/amd64
 
+      # Consume the layer cache only. It is written by build-jar (full suite) and by the publish
+      # job on main, both with mode=max, so there is nothing useful for this job to export — and
+      # four shards writing the same cache concurrently would only cause contention.
       - name: Build and export locally Docker
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: container-action/
           load: true
           tags: ${{ env.TEST_TAG }}
-          # mode=max caches every layer so the publish job's rebuild is a pure cache replay.
           cache-from: type=gha
-          cache-to: type=gha,mode=max
 
-      # Call the composite action to set branch variables
-      - name: Set Branch Variables
-        uses: ./.github/actions/set-branch-variables
+      # Shards (mode=test) consume the jar built once by build-jar. The short suite runs mode=all,
+      # which builds inside the container, so there is no artifact to fetch.
+      - name: Download powpeg jar
+        if: matrix.mode == 'test'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          name: rit-powpeg-jar
+          path: jar
+
+      - name: Run Rootstock Integration Tests (${{ matrix.mode }} mode)
+        id: test-container
+        env:
+          INPUT_RIT_LOG_LEVEL: info
+        run: |
+          mkdir -p "${{ github.workspace }}/reports" "${{ github.workspace }}/jar"
+          # mode=test: no rskj/powpeg clone/build — the prebuilt jar is mounted in and located via
+          # INPUT_POWPEG_VERSION, and only RIT is cloned + run (its slice via INCLUDE_CASES).
+          # mode=all: the original single-container clone + build + test; the jar mount is unused
+          # and INPUT_POWPEG_VERSION is ignored by the entrypoint.
+          docker run \
+            --env GITHUB_OUTPUT="/github-output"  \
+            --env GITHUB_WORKSPACE="/github/workspace"  \
+            --env INPUT_MODE="${{ matrix.mode }}"  \
+            --env INPUT_POWPEG_VERSION="${{ needs.build-jar.outputs.powpeg_version }}"  \
+            --env INPUT_RIT_BRANCH="${{ needs.prepare.outputs.rit_branch }}"  \
+            --env INPUT_RSKJ_BRANCH="${{ needs.prepare.outputs.rskj_branch }}"  \
+            --env INPUT_POWPEG_NODE_BRANCH="${{ needs.prepare.outputs.powpeg_branch }}"  \
+            --env INPUT_RIT_LOG_LEVEL="${{ env.INPUT_RIT_LOG_LEVEL }}" \
+            --env INPUT_TEST_SUITE="${{ needs.prepare.outputs.test_suite }}" \
+            --env INPUT_INCLUDE_CASES="${{ matrix.cases }}" \
+            -v "$GITHUB_OUTPUT:/github-output"  \
+            -v "${{ github.workspace }}/jar:/github/workspace/jar"  \
+            -v "${{ github.workspace }}/reports:/github/workspace/reports"  \
+            --rm ${{ env.TEST_TAG }}
+
+      - name: Upload JUnit report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: rit-junit-report-${{ matrix.name }}
+          path: reports/junit.xml
+          if-no-files-found: warn
+          # Let a re-run of a failed shard replace its earlier report instead of failing on a clash.
+          overwrite: true
+
+      # Render this shard's JUnit report (and per-phase timing, when present) into the run summary.
+      # always() so the breakdown is produced on failing runs too; the script never exits non-zero,
+      # so it cannot turn a passing run red.
+      - name: Test timing summary
+        if: always()
+        run: |
+          echo "## 🧩 Shard: ${{ matrix.name }}" >> "$GITHUB_STEP_SUMMARY"
+          node scripts/ci-timing-summary.js reports/junit.xml reports/phase-timing.json >> "$GITHUB_STEP_SUMMARY"
+
+      # Surface failing tests as a PR check with per-test annotations instead of only in the raw
+      # log. always() so failures are still reported. Skipped for fork PRs, whose read-only token
+      # can't create the check; fail-on-error/fail-on-empty stay false as a guard for empty reports.
+      - name: Publish test report (PR annotations)
+        if: >-
+          always() &&
+          (github.event_name != 'pull_request' ||
+           github.event.pull_request.head.repo.full_name == github.repository)
+        uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v3.0.0
+        with:
+          name: RIT Test Results (${{ matrix.name }})
+          path: reports/junit.xml
+          reporter: java-junit
+          fail-on-error: false
+          fail-on-empty: false
+
+  # ---------------------------------------------------------------------------------------------
+  # Single required status for the whole run: green only if every shard passed. Also owns the
+  # (one) Slack notification, so a sharded run still produces exactly one message.
+  # ---------------------------------------------------------------------------------------------
+  aggregate:
+    name: Aggregate & gate
+    needs: [prepare, build-jar, test-container-action]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # actions: read lets download-artifact collect every shard's report for the consolidated view.
+    permissions:
+      contents: read
+      actions: read
+    env:
+      RSKJ_BRANCH: ${{ needs.prepare.outputs.rskj_branch }}
+      POWPEG_BRANCH: ${{ needs.prepare.outputs.powpeg_branch }}
+      RIT_BRANCH: ${{ needs.prepare.outputs.rit_branch }}
+    steps:
+      # Checkout so the timing script is available, then pull every shard's JUnit report and render
+      # ONE consolidated timing table for the whole run (each shard also writes its own summary).
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Download all shard JUnit reports
+        if: always()
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: rit-junit-report-*
+          path: shard-reports
+
+      # Merge the per-shard reports into ONE cumulative JUnit document for the whole run. Each
+      # shard reran the 00_sync bootstrap, so that suite appears once per shard in the merge.
+      - name: Merge shard JUnit reports (cumulative)
+        if: always()
+        continue-on-error: true
+        run: node scripts/ci-merge-junit.js shard-reports reports/junit.xml
+
+      - name: Upload cumulative JUnit report
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: rit-junit-report
+          path: reports/junit.xml
+          if-no-files-found: warn
+          # Re-runs recompute the cumulative report; replace rather than clash on the name.
+          overwrite: true
+
+      # One cumulative timing table over the merged report (each shard also writes its own).
+      - name: Cumulative timing summary
+        if: always()
+        continue-on-error: true
+        run: |
+          echo "# ⏱️ Cumulative test timing (all shards)" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f reports/junit.xml ]; then
+            node scripts/ci-timing-summary.js reports/junit.xml >> "$GITHUB_STEP_SUMMARY" || true
+          else
+            echo "> No cumulative JUnit report was produced." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Gate on build + shard results
+        run: |
+          echo "prepare (suite + matrix): ${{ needs.prepare.result }}"
+          echo "build-jar (full only):    ${{ needs.build-jar.result }}"
+          echo "tests (aggregate):        ${{ needs.test-container-action.result }}"
+          if [ "${{ needs.prepare.result }}" != "success" ]; then
+            echo "::error::The prepare job did not succeed."
+            exit 1
+          fi
+          # build-jar is legitimately skipped on the short suite, which runs a single all-mode job.
+          if [ "${{ needs.build-jar.result }}" != "success" ] && [ "${{ needs.build-jar.result }}" != "skipped" ]; then
+            echo "::error::The powpeg jar build did not succeed."
+            exit 1
+          fi
+          if [ "${{ needs.test-container-action.result }}" != "success" ]; then
+            echo "::error::One or more test shards did not pass."
+            exit 1
+          fi
+          echo "Build and all shards passed."
 
       - name: Set Build URL
         id: set-build-url
-        # always() so the failure notification still gets a valid BUILD_URL when an earlier
-        # step (e.g. the Docker build) fails.
         if: always()
         run: |
           BUILD_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
@@ -96,8 +389,6 @@ jobs:
 
       - name: Set Notification Context
         id: set-notification-context
-        # always() so the failure notification still gets its title/URL/label when an earlier
-        # step fails; this step only reads the github context, never earlier steps' results.
         if: always()
         env:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
@@ -151,67 +442,9 @@ jobs:
           write_env NOTIFICATION_URL "$NOTIFICATION_URL"
           write_env NOTIFICATION_ACTION_LABEL "$NOTIFICATION_ACTION_LABEL"
 
-      - name: Run Rootstock Integration Tests
-        id: test-container
-        env:
-          INPUT_RSKJ_BRANCH: ${{ env.RSKJ_BRANCH }}
-          INPUT_POWPEG_NODE_BRANCH: ${{ env.POWPEG_BRANCH }}
-          INPUT_RIT_BRANCH: ${{ env.RIT_BRANCH }}
-          INPUT_RIT_LOG_LEVEL: info
-        run: |
-          mkdir -p "${{ github.workspace }}/reports"
-          docker run \
-            --env GITHUB_OUTPUT="/github-output"  \
-            --env GITHUB_WORKSPACE="/github/workspace"  \
-            --env INPUT_RSKJ_BRANCH="${{ env.RSKJ_BRANCH }}"  \
-            --env INPUT_POWPEG_NODE_BRANCH="${{ env.POWPEG_BRANCH }}"  \
-            --env INPUT_RIT_BRANCH="${{ env.RIT_BRANCH }}"  \
-            --env INPUT_RIT_LOG_LEVEL="${{ env.INPUT_RIT_LOG_LEVEL }}" \
-            --env INPUT_TEST_SUITE="${{ env.TEST_SUITE }}" \
-            -v "$GITHUB_OUTPUT:/github-output"  \
-            -v "${{ github.workspace }}/reports:/github/workspace/reports"  \
-            --rm ${{ env.TEST_TAG }}
-
-      - name: Upload JUnit report
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: rit-junit-report
-          path: reports/junit.xml
-          if-no-files-found: warn
-
-      # Render the JUnit report (and per-phase timing, when present) into the run summary.
-      # always() so the breakdown is produced on failing runs too; the script never exits
-      # non-zero, so it cannot turn a passing run red. Per-file durations here are the input
-      # the sharding work (P2-01/P2-02) uses to balance shards against the serial baseline.
-      - name: Test timing summary
-        if: always()
-        run: node scripts/ci-timing-summary.js reports/junit.xml reports/phase-timing.json >> "$GITHUB_STEP_SUMMARY"
-
-      # Surface failing tests as a PR check with per-test annotations instead of only in the
-      # ~40-min raw log. always() so failures are still reported. Skipped for fork PRs, whose
-      # read-only token can't create the check (they'd only produce a confusing failed-but-
-      # ignored step); fail-on-error/fail-on-empty stay false as a guard for empty reports.
-      - name: Publish test report (PR annotations)
-        if: >-
-          always() &&
-          (github.event_name != 'pull_request' ||
-           github.event.pull_request.head.repo.full_name == github.repository)
-        uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v3.0.0
-        with:
-          name: RIT Test Results
-          path: reports/junit.xml
-          reporter: java-junit
-          fail-on-error: false
-          fail-on-empty: false
-
       - name: Check Slack Token
         id: check-slack-token
-        # always() so this still runs (and the failure-notification step can gate on its output)
-        # even if a step above failed.
         if: always()
-        # Kept in its own step-scoped env (not job-level) so the token itself is never exposed
-        # to other steps; only a boolean flag is exposed as an output.
         env:
           SLACK_NOTIFICATION_TOKEN: ${{ secrets.GHA_SLACK_NOTIFICATION_TOKEN }}
         run: |
@@ -222,7 +455,9 @@ jobs:
           fi
 
       - name: Send Slack Notification on Success
-        if: success() && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.owner.login == 'rsksmart')) && steps.check-slack-token.outputs.has_token == 'true'
+        # always() so the earlier gate step's exit 1 (on shard failure) doesn't skip this via the
+        # implicit success() — the result gate below decides which notification actually fires.
+        if: always() && needs.test-container-action.result == 'success' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.owner.login == 'rsksmart')) && steps.check-slack-token.outputs.has_token == 'true'
         # Notifications are best-effort: a Slack API failure must not flip the CI result.
         continue-on-error: true
         uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
@@ -258,9 +493,11 @@ jobs:
                     url: "${{ env.BUILD_URL }}"
 
       - name: Send Slack Notification on Failure
-        if: failure() && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.owner.login == 'rsksmart')) && steps.check-slack-token.outputs.has_token == 'true'
-        # Notifications are best-effort: a Slack API failure must not add noise on top of
-        # the real CI failure.
+        # always() so this still fires after the gate step's exit 1 on shard failure (the implicit
+        # success() would otherwise skip it — exactly when the failure notice is needed).
+        if: always() && needs.test-container-action.result != 'success' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.owner.login == 'rsksmart')) && steps.check-slack-token.outputs.has_token == 'true'
+        # Notifications are best-effort: a Slack API failure must not add noise on top of the real
+        # CI failure.
         continue-on-error: true
         uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
@@ -296,12 +533,12 @@ jobs:
                       text: View Actions Run
                     url: "${{ env.BUILD_URL }}"
 
-  # Publishes the prebuilt image to GHCR only from main, after tests pass. Note that consumers of
-  # the action itself (uses: rsksmart/rootstock-integration-tests@main) rebuild from the Dockerfile
-  # at run time; the GHCR image is for running the suite directly with docker run.
+  # Publishes the prebuilt image to GHCR only from main, after the aggregate gate passes. Note that
+  # consumers of the action itself (uses: rsksmart/rootstock-integration-tests@main) rebuild from
+  # the Dockerfile at run time; the GHCR image is for running the suite directly with docker run.
   publish-container-action-image:
     name: Publish Image (main only)
-    needs: test-container-action
+    needs: aggregate
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -341,5 +578,5 @@ jobs:
           tags: ${{ env.LATEST_TAG }}
           labels: ${{ steps.meta.outputs.labels }}
           push: true
-          # Replays the layers already built (and fully cached with mode=max) by the test job.
+          # Replays the layers already built (and fully cached with mode=max) by the build-jar job.
           cache-from: type=gha

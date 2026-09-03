@@ -180,6 +180,46 @@ Patterns match either the bare filename or the path relative to `tests/`, so a g
 
 Since file numbering is folder-local, a number-only pattern like `01-` can match files in several folders. Use the descriptive part of the filename or a path-qualified pattern to disambiguate.
 
+## CI shards: adding a new test file
+
+In CI the full suite does not run serially. It fans out into parallel **shards**, each of which boots its own bitcoind + federate cluster, runs the shared bootstrap, and then executes its own group of test files via the `INCLUDE_CASES` mechanism described above. Shard membership is declared in the `Compute shard matrix` step of [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+The grouping is not arbitrary — it follows what each file requires from, and leaves behind in, the shared chain state:
+
+| Shard | Contains | Why these belong together |
+| --- | --- | --- |
+| `federation-change` | `01-change-federation`, `extra/04-change-federation-full` | The federation lineage is one-way and cumulative (genesis → second → third). `04` needs the federation that `01` produces, so they must stay in this order, in the same shard. |
+| `2wp` | `02-2wp`, `extra/05-2wp-full` | Peg-in/peg-out. Federation-agnostic (they resolve the active federation at runtime) and assert balances relatively, so they need no federation change first. |
+| `bridge-methods` | `extra/03, 06, 08, 09, 12, 13, 14, 15` | Bridge queries and self-contained mutations — read-only calls, header submission, coinbase registration, precompile checks. |
+| `bridge-state-changes` | `extra/01, 02, 07, 10, 11` | Tests that change **global bridge state** for everything after them: locking cap (permanently raised to 21M), fee-per-kb, whitelist, UTXO churn, and union-bridge configuration. Kept apart so they cannot contaminate the shards above. |
+
+Every shard's `INCLUDE_CASES` starts with `00_sync`, because each shard runs on a fresh chain and that file establishes the mandatory bootstrap state (it mines RSK to height 515 and asserts exactly that, so it must be the first miner on a fresh chain).
+
+### When you add a test file
+
+**Add it to a shard in `ci.yml`.** CI will not let you forget: the `Verify shard coverage` step in the `prepare` job fails the build when a runnable test file is not assigned to any shard (and when a shard pattern no longer matches any file, e.g. after a rename):
+
+```
+::error::Test file not assigned to any CI shard: tests/01_powpeg/03-my-new-test.js
+        — add it to a shard in .github/workflows/ci.yml
+```
+
+To pick the right shard, ask what the test does to shared state:
+
+- Needs a **specific federation generation** (not genesis) → `federation-change`, after the file that produces that state.
+- Exercises **peg-in / peg-out** → `2wp`.
+- **Permanently changes a global bridge parameter** (locking cap, fee-per-kb, whitelist, union-bridge config) or churns federation UTXOs → `bridge-state-changes`.
+- **Queries the bridge**, or mutates only state it owns → `bridge-methods`.
+
+If a test is `describe.skip`-ed it does not need a shard; the coverage check ignores skipped files.
+
+Two things to keep in mind:
+
+- Shard patterns are **prefix matches**, so a new file that shares a numeric prefix with an existing pattern (e.g. another `extra/03-*`) is silently absorbed into that shard. The coverage check sees it as covered, so choose the shard deliberately rather than relying on the check.
+- Adding an `it` to a file that is already in a shard needs no CI change.
+
+Shards are also the reason to keep a file self-contained where you can: the fewer prerequisites a file has, the freer it is to move between shards later.
+
 ## Running the tests on an existing running bitcoind and/or federate node(s)
 
 Coming soon...

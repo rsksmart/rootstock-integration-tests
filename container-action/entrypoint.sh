@@ -14,6 +14,23 @@ REPO_OWNER="${INPUT_REPO_OWNER:-rsksmart}"  # Default to 'rsksmart' if not provi
 RSKJ_REPO="${INPUT_RSKJ_REPO:-rskj}"        # Name of the base rskj repo; default to 'rskj'
 GH_TOKEN="${INPUT_GITHUB_TOKEN}"            # Optional; required to clone a private base rskj repo
 TEST_SUITE="${INPUT_TEST_SUITE:-full}"      # Default to 'full' (long) suite if not provided
+# Optional comma-separated file/path prefixes to run only a subset of tests (sharding). Empty
+# means run the whole suite — the default, so rskj/powpeg-node callers (which never set this)
+# are unaffected. Consumed by test.js via the INCLUDE_CASES env var.
+INCLUDE_CASES="${INPUT_INCLUDE_CASES:-}"
+# Build-once split (P2-02). 'all' (default) = clone+build rskj/powpeg AND run the tests in one
+# container — the original behaviour, so rskj/powpeg-node callers (which never set this) are
+# unaffected. 'build' = only build the fat jar and stage it for reuse. 'test' = skip the build and
+# run the tests against a prebuilt jar supplied via INPUT_POWPEG_VERSION + a mounted jar.
+MODE="${INPUT_MODE:-all}"
+POWPEG_VERSION_INPUT="${INPUT_POWPEG_VERSION:-}"
+
+# Reject an unknown mode up front. Without this a typo (e.g. "bulid") silently falls through to
+# the default clone+build+test path, quietly doing the wrong thing instead of failing.
+if [[ "$MODE" != "all" && "$MODE" != "build" && "$MODE" != "test" ]]; then
+  echo "Error: INPUT_MODE must be one of 'all', 'build' or 'test' (got '$MODE')." >&2
+  exit 1
+fi
 
 # Resolve whether a git ref exists in a GitHub repository. The inputs may be a
 # branch, a tag or a specific commit (see container-action/README.md), so we use
@@ -48,8 +65,12 @@ ref_status() {
   fi
 }
 
-RSKJ_REF_STATUS=$(ref_status "$REPO_OWNER" "$RSKJ_REPO" "$RSKJ_BRANCH")
-POWPEG_REF_STATUS=$(ref_status "$REPO_OWNER" "powpeg-node" "$POWPEG_NODE_BRANCH")
+# Only resolve rskj/powpeg refs when we are going to build (all/build modes). Test mode consumes a
+# prebuilt jar and never clones, so skip these API calls there.
+if [[ "$MODE" != "test" ]]; then
+  RSKJ_REF_STATUS=$(ref_status "$REPO_OWNER" "$RSKJ_REPO" "$RSKJ_BRANCH")
+  POWPEG_REF_STATUS=$(ref_status "$REPO_OWNER" "powpeg-node" "$POWPEG_NODE_BRANCH")
+fi
 
 echo -e "\n\n--------- Input parameters received ---------\n\n"
 echo "RSKJ_BRANCH=$RSKJ_BRANCH"
@@ -59,6 +80,12 @@ echo "LOG_LEVEL=$LOG_LEVEL"
 echo "REPO_OWNER=$REPO_OWNER"
 echo "RSKJ_REPO=$RSKJ_REPO"
 echo "TEST_SUITE=$TEST_SUITE"
+echo "INCLUDE_CASES=${INCLUDE_CASES:-<all>}"
+echo "MODE=$MODE"
+
+# Build phase (clone + build rskj + powpeg into the fat jar). Runs in 'all' and 'build' modes;
+# skipped in 'test' mode, which consumes a prebuilt jar instead.
+if [[ "$MODE" != "test" ]]; then
 
 echo -e "\n\n--------- Starting the configuration of rskj ---------\n\n"
 cd /usr/src/
@@ -122,7 +149,67 @@ chmod +x ./configure.sh && chmod +x gradlew
 POWPEG_VERSION=$(bash configure_gradle_powpeg.sh)
 echo "POWPEG_VERSION=$POWPEG_VERSION"
 ./configure.sh
-./gradlew  --info --no-daemon --dependency-verification=lenient clean build -x test
+
+# The Gradle wrapper downloads its distribution on first use and resolves dependencies over the
+# network; both have produced transient 5xx failures (e.g. a 504 fetching gradle-8.6-bin.zip) that
+# sink an otherwise healthy build. Retry with backoff before giving up. This matters more under the
+# build-once split, where a single build feeds every test shard, and it equally protects the
+# single-container 'all' path that rskj/powpeg-node CI uses.
+run_gradle_build() {
+  local attempt=1 max_attempts=3 delay=30
+  while true; do
+    if ./gradlew --info --no-daemon --dependency-verification=lenient clean build -x test; then
+      return 0
+    fi
+    if [[ "$attempt" -ge "$max_attempts" ]]; then
+      echo "Gradle build failed after ${attempt} attempt(s)." >&2
+      return 1
+    fi
+    echo "Gradle build attempt ${attempt} failed; retrying in ${delay}s..." >&2
+    sleep "$delay"
+    attempt=$((attempt + 1))
+    delay=$((delay * 2))
+  done
+}
+run_gradle_build
+
+fi  # end build phase
+
+# --- Build-once split (P2-02) -----------------------------------------------------------------
+# 'build' mode: stage the fat jar + its version for the shard (test) jobs, then stop — no tests.
+if [[ "$MODE" == "build" ]]; then
+  JAR="/usr/src/powpeg/build/libs/federate-node-${POWPEG_VERSION}-all.jar"
+  if [[ ! -f "$JAR" ]]; then
+    echo "Error: expected powpeg jar not found at $JAR after the build." >&2
+    exit 1
+  fi
+  mkdir -p "${GITHUB_WORKSPACE}/jar"
+  cp "$JAR" "${GITHUB_WORKSPACE}/jar/"
+  # Expose the version so the shard jobs can locate the same jar filename.
+  if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+    echo "powpeg_version=${POWPEG_VERSION}" >> "$GITHUB_OUTPUT"
+  fi
+  echo "Build-only mode: staged $(basename "$JAR") to ${GITHUB_WORKSPACE}/jar; exiting before tests."
+  exit 0
+fi
+
+# 'test' mode: no build happened. Take the version from the build job and drop the prebuilt jar
+# (supplied via the mounted ${GITHUB_WORKSPACE}/jar) where configure_rit_locally.sh expects it.
+if [[ "$MODE" == "test" ]]; then
+  POWPEG_VERSION="${POWPEG_VERSION_INPUT}"
+  if [[ -z "$POWPEG_VERSION" ]]; then
+    echo "Error: test mode requires INPUT_POWPEG_VERSION (produced by the build job)." >&2
+    exit 1
+  fi
+  PREBUILT_JAR="${GITHUB_WORKSPACE}/jar/federate-node-${POWPEG_VERSION}-all.jar"
+  if [[ ! -f "$PREBUILT_JAR" ]]; then
+    echo "Error: prebuilt jar not found at $PREBUILT_JAR (expected the build artifact to be mounted)." >&2
+    exit 1
+  fi
+  mkdir -p /usr/src/powpeg/build/libs
+  cp "$PREBUILT_JAR" "/usr/src/powpeg/build/libs/federate-node-${POWPEG_VERSION}-all.jar"
+  echo "Test mode: using prebuilt jar federate-node-${POWPEG_VERSION}-all.jar"
+fi
 
 echo -e "\n\n--------- Starting the configuration of RIT ---------\n\n"
 
@@ -143,6 +230,12 @@ chmod +x ./configure_rit_locally.sh
 ./configure_rit_locally.sh "${POWPEG_VERSION}"
 
 export LOG_LEVEL="$LOG_LEVEL"
+
+# Export the shard selection (if any) so test.js runs only the requested subset. Left unset when
+# empty so the default whole-suite behaviour is untouched for callers that don't shard.
+if [[ -n "$INCLUDE_CASES" ]]; then
+  export INCLUDE_CASES
+fi
 
 # --- P0-01: preserve the JUnit report for CI artifact upload (on pass or fail) ---
 # The suite writes reports/junit.xml inside this container. GITHUB_WORKSPACE is the
