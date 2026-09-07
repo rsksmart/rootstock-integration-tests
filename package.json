@@ -52,7 +52,7 @@
     "mocha-junit-reporter": "2.2.1",
     "mocha-multi-reporters": "1.5.1",
     "pegin-address-verificator": "git+https://git@github.com/rsksmart/pegin-address-verifier#v0.4.0",
-    "rsk-transaction-helper": "git+https://github.com/rsksmart/rootstock-transaction-helper#v3.1.0",
+    "rsk-transaction-helper": "git+https://github.com/rsksmart/rootstock-transaction-helper#v6.0.0",
     "solc": "0.8.36",
     "stream-line-wrapper": "0.1.1",
     "tiny-secp256k1": "2.2.4",
