@@ -25,7 +25,7 @@
   "author": "",
   "license": "GPL3",
   "dependencies": {
-    "@noble/secp256k1": "3.1.0",
+    "@noble/secp256k1": "3.2.0",
     "@rsksmart/bridge-state-data-parser": "2.3.0",
     "@rsksmart/bridge-transaction-parser": "3.0.0",
     "@rsksmart/btc-eth-unit-converter": "1.0.1",
@@ -41,10 +41,10 @@
     "colors": "1.4.0",
     "dev-null": "0.1.1",
     "dotenv": "17.4.2",
-    "ecpair": "3.0.1",
+    "ecpair": "3.0.2",
     "ethers": "6.17.0",
     "find": "0.3.0",
-    "fs-extra": "11.3.6",
+    "fs-extra": "11.4.0",
     "glob": "13.0.6",
     "lodash": "4.18.1",
     "log4js": "6.9.1",
@@ -61,9 +61,9 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "eslint": "10.7.0",
+    "eslint": "10.10.0",
     "eslint-config-prettier": "10.1.8",
-    "globals": "17.7.0",
+    "globals": "17.12.0",
     "prettier": "3.9.6",
     "shelljs": "0.10.0"
   },
