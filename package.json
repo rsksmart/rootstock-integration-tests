@@ -25,7 +25,7 @@
   "author": "",
   "license": "GPL3",
   "dependencies": {
-    "@noble/secp256k1": "3.1.0",
+    "@noble/secp256k1": "3.2.0",
     "@rsksmart/bridge-state-data-parser": "2.3.0",
     "@rsksmart/bridge-transaction-parser": "3.0.0",
     "@rsksmart/btc-eth-unit-converter": "1.0.1",
