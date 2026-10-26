@@ -19,3 +19,6 @@ logs/
 federate-node.jar
 zlogs/
 .eslintcache
+
+# Key files and other artifacts the manual scenarios materialise at run time
+manual-tests/generated/
