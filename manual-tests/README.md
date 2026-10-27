@@ -42,8 +42,13 @@ before/after hooks (`bootstrapFile`); the runner wires both up.
 
 ## Scenarios
 
-- **`harness-check`** — checks this harness itself. Starts no nodes, finishes in seconds. Run it
-  after touching `run.js`, and copy it as the template for a new scenario.
+- **`harness-check`** — checks this harness itself. Starts no nodes, finishes in seconds. Copy it
+  as the template for a new scenario.
+
+  Its checks live in `lib/harness-checks.js` and the runner makes them before every invocation of
+  any scenario, so a scenario folder with no manifest, or one with no numbered spec files, is
+  refused with a message instead of being silently ignored. This scenario is how to exercise them
+  on their own.
 - **`federation-growth`** — grows the powpeg from the 3 member regtest genesis federation up to
   20 members, one real Bridge federation change at a time, each with its own SVP, activation,
   migration and retirement. About an hour, ending with 11 nodes running.

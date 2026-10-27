@@ -15,20 +15,26 @@ const fs = require('node:fs');
 const path = require('node:path');
 const childProcess = require('node:child_process');
 
-const MANUAL_TESTS_DIR = __dirname;
-const REPO_ROOT = path.resolve(MANUAL_TESTS_DIR, '..');
-const SCENARIO_MANIFEST_FILE = 'scenario.js';
+const {
+    MANUAL_TESTS_DIR,
+    SCENARIO_MANIFEST_FILE,
+    SPEC_FILE_PATTERN,
+    findHarnessProblems,
+} = require('./lib/harness-checks');
 
-// Files whose name starts with a number are the scenario's specs, in the order they are numbered,
-// matching the convention under `tests/`. Everything else in the folder is support code.
-const SPEC_FILE_PATTERN = /^\d+-.*\.js$/;
+const REPO_ROOT = path.resolve(MANUAL_TESTS_DIR, '..');
+
+// A scenario name becomes a directory name, so it is checked against this before it is joined
+// onto a path, on top of having to be one of the scenarios that exist. The listing below is the
+// real gate; this makes the shape of what is accepted explicit instead of implied.
+const SCENARIO_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*$/i;
 
 // A scenario can run for hours, so the default is far longer than the main suite's 20 minutes.
 // A scenario can lower or raise it through its manifest.
 const DEFAULT_TIMEOUT_IN_MILLISECONDS = 4 * 60 * 60 * 1000;
 
-const listScenarioNames = () =>
-    fs
+const listScenarioNames = () => {
+    return fs
         .readdirSync(MANUAL_TESTS_DIR, { withFileTypes: true })
         .filter((entry) => entry.isDirectory())
         .filter((entry) =>
@@ -36,6 +42,7 @@ const listScenarioNames = () =>
         )
         .map((entry) => entry.name)
         .sort();
+};
 
 const loadScenario = (scenarioName) => {
     const scenarioDir = path.join(MANUAL_TESTS_DIR, scenarioName);
@@ -64,11 +71,37 @@ const printAvailableScenarios = () => {
     process.stdout.write('\nRun one with: npm run test-manual <scenario>\n');
 };
 
+/**
+ * Refuses to go on if the harness itself is broken, which is cheap enough to do every time and
+ * catches a scenario the runner would otherwise silently ignore.
+ */
+const assertHarnessIsSound = () => {
+    const problems = findHarnessProblems();
+    if (problems.length === 0) {
+        return;
+    }
+    process.stderr.write('The manual test harness is not sound:\n');
+    for (const problem of problems) {
+        process.stderr.write(`  - ${problem}\n`);
+    }
+    process.exit(1);
+};
+
 const run = () => {
+    assertHarnessIsSound();
+
     const requestedScenarioName = process.argv[2];
 
     if (!requestedScenarioName) {
         process.stdout.write('No scenario given.\n\n');
+        printAvailableScenarios();
+        process.exit(1);
+    }
+
+    if (!SCENARIO_NAME_PATTERN.test(requestedScenarioName)) {
+        process.stderr.write(
+            `'${requestedScenarioName}' is not a usable scenario name. Names are letters, digits and dashes.\n\n`
+        );
         printAvailableScenarios();
         process.exit(1);
     }

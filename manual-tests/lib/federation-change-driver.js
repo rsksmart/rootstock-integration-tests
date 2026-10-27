@@ -1,19 +1,13 @@
 /**
- * Drives a federation change from end to end, with no assertions of its own.
- *
- * `lib/tests/change-federation.js` already walks this path, but it is a test: it asserts at every
- * step, exercises authorization failures, pegins and flyover, and is written for one change from a
- * named federation config to another. A scenario that does seventeen changes in a row needs the
- * mechanics without any of that, told what size to grow to and left to report back what happened.
- *
- * The happy path it follows is the one documented for regtest:
+ * Drives a federation change end to end, with no assertions of its own:
  *   create pending federation -> add members -> commit -> SVP -> activation -> migration -> retire
  *
- * Rather than hardcoding the exact sequence of mine and updateCollections calls for each stage,
- * the stages below share one pump: call updateCollections, give confirmations to whatever is
- * waiting for them on either chain, and repeat until the stage's exit condition holds or the
- * cycle budget runs out. That survives the small timing differences between runs, which a fixed
- * sequence does not.
+ * `lib/tests/change-federation.js` walks the same path, but as a test, asserting at every step and
+ * written for one named federation. A scenario doing seventeen changes needs the mechanics alone.
+ *
+ * The stages share one pump rather than a fixed sequence of mine and updateCollections calls: call
+ * updateCollections, hand out confirmations on either chain, repeat until the stage is done or the
+ * budget runs out. A fixed sequence does not survive the timing differences between runs.
  */
 const rskUtils = require('../../lib/rsk-utils');
 const { getBridge } = require('../../lib/bridge-provider');
@@ -59,15 +53,16 @@ const NO_FEDERATION_SIZE = -1;
 
 let authorizerAddresses = null;
 
-const log = (message) => logger.info(`[federation-change] ${message}`);
+const log = (message) => {
+    logger.info(`[federation-change] ${message}`);
+};
 
 /**
  * Imports and funds the regtest federation change authorizers.
  *
- * Called before every change rather than once per run: an account the node unlocked earlier
- * lapses after a while, and a walk up to 20 members runs for hours. The first attempt cached
- * these and every change past the thirteenth died with
- * `Could not find account for address: 0x5252403b...`.
+ * Called before every change, not once per run: an account the node unlocked earlier lapses after
+ * a while, and these walks run for hours. Caching them ends in
+ * `Could not find account for address: 0x...` partway through.
  * @param {object} rskTxHelper
  * @returns {Promise<Array<string>>} the authorizer addresses
  */
@@ -176,11 +171,10 @@ const ensureEnoughNodesRunning = async (federationSize) => {
             `started ${newlyStarted.length} more node(s) for a ${federationSize} member federation, ${requiredNodesCount} running now`
         );
 
-        // Settle before funding, not after. A node joining this late has the whole chain to catch
-        // up on, and funding sends a transaction, which waits for every node to be in sync using
-        // rskUtils.waitForSync and its sixteen minute per node budget. Letting the bounded settle
-        // absorb the catch-up first took eight minutes off each node addition, and leaves a
-        // failure naming the node that lagged instead of a silent wait.
+        // Settle before funding: funding sends a transaction, and that waits for every node to
+        // sync through rskUtils.waitForSync, which is far slower than the bounded settle and
+        // says nothing about which node is lagging. A node joining this late has a whole chain
+        // to catch up on, so the order is worth a lot of time.
         await settleNetwork();
 
         // Without an rsk balance a new node cannot pay for its own `addSignature` calls, so it
@@ -243,8 +237,8 @@ const proposeFederation = async (context, federationSize) => {
 };
 
 /**
- * Drives the SVP process to its end: the fund transaction, the spend transaction, and the
- * proposed federation leaving storage once both are registered back in the Bridge.
+ * Drives the SVP to its end: fund transaction, spend transaction, and the proposed federation
+ * leaving storage once both are registered back in the Bridge.
  * @param {object} context
  * @param {number} commitBlockNumber
  * @returns {Promise<{completed: boolean, failureEvent: object|null}>}
@@ -353,10 +347,8 @@ const createContext = async () => {
 };
 
 /**
- * Grows the active federation to `targetSize` members and reports what happened.
- *
- * It never throws because a federation change did not go through: a change that fails is a result
- * this scenario is interested in, so the caller gets it back and decides what it means.
+ * Grows the active federation to `targetSize` members and reports what happened. Never throws
+ * because a change did not go through: that is a result the caller decides what to make of.
  * @param {number} targetSize
  * @returns {Promise<{targetSize: number, activated: boolean, activeFederationSize: number,
  *   activeFederationAddress: string, failureEvent: object|null, retired: boolean}>}

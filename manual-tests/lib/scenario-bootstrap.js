@@ -1,12 +1,10 @@
 /**
- * Root level setup and teardown for a manual scenario that needs a running network.
+ * Root level setup and teardown for a manual scenario that needs a running network: bitcoind, the
+ * federator nodes, and tearing it all down afterwards, as `test.js` does for the regular suite.
  *
- * A scenario names this file in its manifest's `bootstrapFile`, and the runner hands it to mocha
- * with `--file`, so the hooks below run once around the whole scenario. It does the same job
- * `test.js` does for the regular suite - start bitcoind, start the federator nodes, tear it all
- * down afterwards - with one difference that matters here: it can start more federator nodes
- * later, while the scenario is running, which is what lets a federation grow without restarting
- * anything.
+ * The difference that matters: it can start more federator nodes while the scenario is running,
+ * which is what lets a federation grow without restarting anything. A scenario names this file in
+ * its manifest's `bootstrapFile` and the runner hands it to mocha with `--file`.
  */
 const fs = require('node:fs');
 const net = require('node:net');
@@ -35,10 +33,8 @@ const logger = getLogger();
 const BTC_HOST = '127.0.0.1';
 const INITIAL_BTC_BLOCKS = 400;
 
-// A handful of rsk blocks mined once the initial nodes are up, to get the network moving and,
-// more to the point, to prove the nodes actually relay blocks to each other before a scenario
-// starts depending on it. A node that is not syncing has to be caught here, in seconds, not deep
-// inside a federation change where the symptom is a connection timeout an hour later.
+// Mined once the nodes are up, to prove they relay blocks to each other before anything depends
+// on it. A node that is not syncing has to be caught here, not an hour into a federation change.
 const INITIAL_RSK_BLOCKS = 15;
 
 const SYNC_POLL_INTERVAL_IN_MILLISECONDS = 1000;
@@ -49,14 +45,10 @@ const SCENARIO_LOCK_FILE = 'scenario.lock';
 const SETTLE_SYNC_TIMEOUT_IN_MILLISECONDS = 45000;
 const SETTLE_ATTEMPTS = 5;
 
-// The Bridge only creates the SVP fund transaction of a federation change if the active federation
-// can pay for it, and every change afterwards also needs something to migrate.
-//
-// The amount matters more than the count. Each SVP fund transaction moves 500000 satoshis and
-// pays fees on top, and a migration consolidates everything into a single utxo, so a scenario
-// that does seventeen changes in a row drains a thin federation long before the end. The first
-// attempt funded it with ten pegins of the 0.005 btc minimum and ran out around the ninth change,
-// with the Bridge logging `Not enough BTC in the wallet to complete sending 500000 in svp fund
+// The Bridge only creates a change's SVP fund transaction if the active federation can pay for
+// it. The amount matters more than the count: each one moves 500000 satoshis plus fees, and a
+// migration consolidates everything into a single utxo, so a thin federation drains over a long
+// walk and the Bridge logs `Not enough BTC in the wallet to complete sending 500000 in svp fund
 // transaction`.
 const INITIAL_PEGINS_COUNT = 10;
 const PEGIN_VALUE_IN_BTC = 0.1;
@@ -90,11 +82,13 @@ const FORK_NAMES = [
     'cardamom1000',
 ];
 
-const createForkObject = (name) => ({
-    name,
-    activationHeight: 1,
-    isAlreadyActive: async () => true,
-});
+const createForkObject = (name) => {
+    return {
+        name,
+        activationHeight: 1,
+        isAlreadyActive: async () => true,
+    };
+};
 
 const getScenarioConfig = () => {
     const configFilePath = process.env.CONFIG_FILE_PATH;
@@ -113,11 +107,8 @@ const getScenarioConfig = () => {
 const startedNodes = [];
 
 /**
- * Starts one more federator node from the scenario's pool.
- *
- * Nothing is stopped and nothing is reconfigured: every node in the pool was already peered with
- * every other one when the configuration was built, so a node started here is immediately known
- * to the ones that are already running.
+ * Starts one more federator node from the scenario's pool. Nothing is stopped or reconfigured:
+ * the whole pool was peered when the configuration was built, so this node is already known.
  * @param {object} nodeConfig a member of the pool, as the config builder produced it
  * @returns {Promise<object>} the node configuration that was started
  */
@@ -155,20 +146,19 @@ const startFederatorNode = async (nodeConfig) => {
  * The federator nodes that are running right now.
  * @returns {Array<object>}
  */
-const getStartedNodes = () => [...startedNodes];
+const getStartedNodes = () => {
+    return [...startedNodes];
+};
 
 let acquiredLockFilePath = null;
 
 /**
- * Takes a lock on the scenario's generated directory, so two runs of the same scenario cannot
- * use it at once.
+ * Takes a lock on the scenario's generated directory, so two runs cannot use it at once.
  *
- * The port check alone is not enough: for the first half minute a run is only bitcoind on its own
- * ports, with every node port still free, so a second run sails past the check and then clears
- * the data directory out from under the first one's bitcoind. The lock covers that window.
- *
- * A lock whose process is gone is stale and gets taken over, so a run killed halfway does not
- * leave the scenario unusable.
+ * The port check alone is not enough: for the first half minute a run is only bitcoind, with
+ * every node port still free, so a second run would sail past it and clear the data directory out
+ * from under the first one. A lock whose process is gone is taken over, so a run killed halfway
+ * does not leave the scenario unusable.
  * @param {string} scenarioDir the scenario's directory under manual-tests/generated
  */
 const acquireScenarioLock = (scenarioDir) => {
@@ -253,8 +243,8 @@ const resetBitcoinDataDir = (bitcoinDataDir) => {
  * @param {number} port
  * @returns {Promise<boolean>}
  */
-const isPortBusy = (port) =>
-    new Promise((resolve) => {
+const isPortBusy = (port) => {
+    return new Promise((resolve) => {
         const socket = new net.Socket();
         const onFree = () => {
             socket.destroy();
@@ -268,6 +258,7 @@ const isPortBusy = (port) =>
             resolve(true);
         });
     });
+};
 
 /**
  * Refuses to start if anything already holds the ports this scenario's nodes need.
@@ -316,11 +307,9 @@ const callNodeRpc = async (rpcPort, method) => {
 };
 
 /**
- * Waits until a node answers json-rpc.
- *
- * `federateStarter.startFederate` returns as soon as the ports accept connections, which happens
- * before the node has finished starting. Mining against a network whose nodes are still coming up
- * is how a block ends up on one node and nowhere else.
+ * Waits until a node answers json-rpc. `startFederate` returns as soon as the ports accept
+ * connections, which is well before the node is up, and mining against a half started network is
+ * how a block ends up on one node and nowhere else.
  * @param {object} nodeConfig
  */
 const waitForNodeToBeReady = async (nodeConfig) => {
@@ -337,12 +326,9 @@ const waitForNodeToBeReady = async (nodeConfig) => {
 };
 
 /**
- * Gives the nodes a moment to find each other, and reports what they see.
- *
- * This is a hint, not a gate. Two nodes with a working connection between them routinely
- * disagree about it: the one that dialled reports a peer while the one that accepted reports
- * none, and a node added later reports fewer peers than it has. What actually matters is whether
- * a block reaches everyone, and `settleNetwork` checks that directly.
+ * Gives the nodes a moment to find each other and reports what they see. A hint, not a gate: two
+ * connected nodes routinely disagree on `net_peerCount`. What matters is whether a block reaches
+ * everyone, which `settleNetwork` checks directly.
  */
 const waitForPeerConnections = async () => {
     if (startedNodes.length < 2) {
@@ -371,12 +357,9 @@ const waitForPeerConnections = async () => {
 };
 
 /**
- * Waits until every running node reports at least `targetBlockNumber`, and says plainly which one
- * did not if it runs out of time.
- *
- * `rskUtils.waitForSync` would do this too, but it retries for about sixteen minutes per node
- * before giving up, which turns a node that is simply not syncing into a very long wait with a
- * confusing error at the end.
+ * Waits until every running node reports at least `targetBlockNumber`, naming the ones that did
+ * not. `rskUtils.waitForSync` does this too, but retries for about sixteen minutes per node,
+ * which turns a node that is simply not syncing into a very long wait and a confusing error.
  * @param {number} targetBlockNumber
  * @param {number} timeoutInMilliseconds
  */
@@ -480,11 +463,10 @@ const fundActiveFederation = async () => {
 /**
  * Gives the given federator nodes the rsk balance they need to work.
  *
- * A federator pays gas out of its own rsk account every time it sends `addSignature`, and only
- * the three genesis federators are funded in the regtest genesis block. Every node this scenario
- * adds beyond them starts with nothing, so it silently never signs: the pegout sits in the
- * Bridge's waiting-for-signatures queue forever and the change times out with no error anywhere.
- * That is what stopped the first full walk at 6 members, the first size that needs a fourth node.
+ * A federator pays gas from its own rsk account on every `addSignature`, and only the three
+ * genesis federators are funded in the regtest genesis block. A node without a balance silently
+ * never signs: the pegout sits in the Bridge's queue forever and the change times out with no
+ * error anywhere.
  * @param {Array<object>} nodeConfigs
  */
 const fundFederatorNodes = async (nodeConfigs) => {

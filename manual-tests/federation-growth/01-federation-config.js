@@ -18,10 +18,11 @@ const GENESIS_FEDERATION_SIZE = 3;
 // can be running at the same time.
 const REGULAR_SUITE_PORT_RANGE = { from: 30000, to: 30099 };
 
-const getPeerEntries = (member) =>
-    Object.keys(member.customConfig)
+const getPeerEntries = (member) => {
+    return Object.keys(member.customConfig)
         .filter((key) => /^peer\.active\.\d+\.nodeId$/.test(key))
         .map((key) => member.customConfig[key]);
+};
 
 describe('Federation growth scenario configuration', function () {
     let config;
