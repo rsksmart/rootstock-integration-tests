@@ -42,7 +42,10 @@ const NODE_READY_TIMEOUT_IN_MILLISECONDS = 120000;
 const PEER_CONNECTION_TIMEOUT_IN_MILLISECONDS = 30000;
 const PORT_CHECK_TIMEOUT_IN_MILLISECONDS = 500;
 const SCENARIO_LOCK_FILE = 'scenario.lock';
-const SETTLE_SYNC_TIMEOUT_IN_MILLISECONDS = 45000;
+// How long a node may go without gaining a single block before it counts as stuck. It is not
+// a budget for the whole catch-up: a node downloading thousands of blocks keeps earning more
+// time as long as it keeps moving.
+const SYNC_STALL_TIMEOUT_IN_MILLISECONDS = 45000;
 const SETTLE_ATTEMPTS = 5;
 
 // The Bridge only creates a change's SVP fund transaction if the active federation can pay for
@@ -358,15 +361,20 @@ const waitForPeerConnections = async () => {
 
 /**
  * Waits until every running node reports at least `targetBlockNumber`, naming the ones that did
- * not. `rskUtils.waitForSync` does this too, but retries for about sixteen minutes per node,
- * which turns a node that is simply not syncing into a very long wait and a confusing error.
+ * not.
+ *
+ * It gives up on a node that stops moving, not on one that is merely slow. A node added partway
+ * through a scenario has thousands of blocks to download and will take as long as it takes; one
+ * that is not syncing at all gains nothing and is caught within the stall window. A fixed budget
+ * cannot tell those two apart, and sized for the first it hides the second.
  * @param {number} targetBlockNumber
- * @param {number} timeoutInMilliseconds
+ * @param {number} stallTimeoutInMilliseconds how long to allow with no progress at all
  */
-const waitForNodesToSync = async (targetBlockNumber, timeoutInMilliseconds) => {
+const waitForNodesToSync = async (targetBlockNumber, stallTimeoutInMilliseconds) => {
     const rskTxHelpers = getRskTransactionHelpers();
-    const deadline = Date.now() + timeoutInMilliseconds;
     let blockNumbers = [];
+    let furthestBehindSeen = -1;
+    let deadline = Date.now() + stallTimeoutInMilliseconds;
 
     while (Date.now() < deadline) {
         blockNumbers = await Promise.all(
@@ -378,6 +386,15 @@ const waitForNodesToSync = async (targetBlockNumber, timeoutInMilliseconds) => {
             );
             return;
         }
+
+        // The node furthest behind is the one being waited on, so its progress is what buys more
+        // time. Measuring the others would let a healthy node mask a stuck one.
+        const lowestBlockNumber = Math.min(...blockNumbers);
+        if (lowestBlockNumber > furthestBehindSeen) {
+            furthestBehindSeen = lowestBlockNumber;
+            deadline = Date.now() + stallTimeoutInMilliseconds;
+        }
+
         await wait(SYNC_POLL_INTERVAL_IN_MILLISECONDS);
     }
 
@@ -387,7 +404,8 @@ const waitForNodesToSync = async (targetBlockNumber, timeoutInMilliseconds) => {
         .map(({ id, blockNumber }) => `${id} at block ${blockNumber}`);
 
     throw new Error(
-        `Nodes did not sync to block ${targetBlockNumber} within ${timeoutInMilliseconds} ms: ${laggards.join(', ')}`
+        `Nodes stopped syncing towards block ${targetBlockNumber}, with no progress for ` +
+            `${stallTimeoutInMilliseconds} ms: ${laggards.join(', ')}`
     );
 };
 
@@ -517,7 +535,7 @@ const settleNetwork = async () => {
         await rskTxHelpers[0].mine(INITIAL_RSK_BLOCKS);
 
         try {
-            await waitForNodesToSync(targetBlockNumber, SETTLE_SYNC_TIMEOUT_IN_MILLISECONDS);
+            await waitForNodesToSync(targetBlockNumber, SYNC_STALL_TIMEOUT_IN_MILLISECONDS);
             return;
         } catch (error) {
             lastError = error;
