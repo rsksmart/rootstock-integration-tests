@@ -109,7 +109,6 @@ const getRequiredSignaturesCount = (federatorsCount) => {
 module.exports = {
     MAX_FEDERATORS_COUNT,
     GENESIS_FEDERATION_PUBLIC_KEYS,
-    FEDERATORS,
     getFederators,
     getRequiredSignaturesCount,
 };

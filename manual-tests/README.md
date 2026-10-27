@@ -7,7 +7,7 @@ They live here, outside `tests/`, for one reason: `test.js` registers `./tests/*
 anything in this folder is invisible to it. Neither `npm run test-short` nor `npm run test-long`
 can pick these up, with no filters or tags to maintain.
 
-Regtest only, for now.
+Regtest only.
 
 ## Running one
 
@@ -21,7 +21,7 @@ lists the scenarios. To run one:
 npm run test-manual <scenario>
 ```
 
-A scenario can take a long time and can run a lot of nodes. Nothing here is wired into CI.
+A scenario can take a long time and can run a lot of nodes.
 
 Only one run of a given scenario at a time: a run takes a lock on its own folder under
 `manual-tests/generated/`, and refuses to start if another one holds it. A lock left behind by a

@@ -417,7 +417,4 @@ const changeFederationTo = async (targetSize) => {
 
 module.exports = {
     changeFederationTo,
-    ensureEnoughNodesRunning,
-    setUpAuthorizers,
-    createContext,
 };
