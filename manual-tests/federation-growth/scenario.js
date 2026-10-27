@@ -9,12 +9,11 @@
  */
 module.exports = {
     description:
-        'Grows the powpeg from 3 to 20 members through real Bridge federation changes. Takes hours.',
+        'Grows the powpeg from 3 to 20 members through real Bridge federation changes. About an hour and a half on a developer laptop.',
     configFile: './config.js',
     bootstrapFile: '../lib/scenario-bootstrap.js',
-    // Each federation change needs around 315 rsk blocks before the next one can start: 150 to
-    // activate, 15 to open the migration window and 150 to retire the old federation, all
-    // hardcoded in rskj's FederationRegTestConstants. Times seventeen changes, plus the SVP of
-    // each one, this runs for hours.
-    timeoutInMilliseconds: 8 * 60 * 60 * 1000,
+    // Per test, not for the whole walk. The slowest single change measured twelve minutes, the
+    // 16 member one, which spends most of that waiting out an SVP that will never finish. An
+    // hour leaves room for a slower machine while still bounding a change that hangs.
+    timeoutInMilliseconds: 60 * 60 * 1000,
 };

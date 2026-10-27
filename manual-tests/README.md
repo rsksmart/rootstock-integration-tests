@@ -51,7 +51,8 @@ before/after hooks (`bootstrapFile`); the runner wires both up.
   on their own.
 - **`federation-growth`** — grows the powpeg from the 3 member regtest genesis federation up to
   20 members, one real Bridge federation change at a time, each with its own SVP, activation,
-  migration and retirement. About an hour, ending with 11 nodes running.
+  migration and retirement. About an hour and a half on a developer laptop, ending with 11
+  nodes running.
 
   Every size from 3 to 20 activates except 16, which is expected to fail: bitcoinj-thin writes a
   16 key multisig's member count as `OP_PUSHBYTES_1 0x10` instead of `OP_16`, one byte too many,
