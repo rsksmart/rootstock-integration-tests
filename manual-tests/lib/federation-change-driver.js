@@ -225,6 +225,16 @@ const proposeFederation = async (context, federationSize) => {
     // not go through" into "the Bridge built a different script than it should have".
     const proposedFederationInfo = await getProposedFederationInfo(bridge);
 
+    // A commit that leaves no proposed federation behind has not taken, whatever the vote
+    // receipts said. Without this the walk carries on waiting out an SVP for a federation that
+    // was never created, and only fails a hundred and fifty blocks later for the wrong reason.
+    if (proposedFederationInfo.size === NO_FEDERATION_SIZE) {
+        throw new Error(
+            `The commit of a ${federationSize} member federation left no proposed federation in the Bridge, ` +
+                `so it did not take. The Bridge most likely refused to build it`
+        );
+    }
+
     log(
         `committed a ${federationSize} member federation at block ${commitBlockNumber}, proposed address ${proposedFederationInfo.address}`
     );
