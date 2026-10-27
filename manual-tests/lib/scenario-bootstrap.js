@@ -49,12 +49,13 @@ const SYNC_STALL_TIMEOUT_IN_MILLISECONDS = 45000;
 const SETTLE_ATTEMPTS = 5;
 
 // The Bridge only creates a change's SVP fund transaction if the active federation can pay for
-// it. The amount matters more than the count: each one moves 500000 satoshis plus fees, and a
-// migration consolidates everything into a single utxo, so a thin federation drains over a long
-// walk and the Bridge logs `Not enough BTC in the wallet to complete sending 500000 in svp fund
-// transaction`.
-const INITIAL_PEGINS_COUNT = 10;
-const PEGIN_VALUE_IN_BTC = 0.1;
+// it, and the first migration consolidates whatever it holds into a single utxo anyway, so only
+// the total matters. One pegin of this is plenty for a whole walk: each SVP fund transaction
+// moves 500000 satoshis plus fees, and anything left over comes back as change.
+const PEGIN_VALUE_IN_BTC = 1;
+
+// Enough on top of the pegin to cover the sender's own bitcoin fees.
+const SENDER_FEE_MARGIN_IN_BTC = 0.1;
 
 // Below this, a scenario tops the federation up rather than discovering mid change that it
 // cannot pay for the next SVP.
@@ -438,38 +439,34 @@ const fundActiveFederation = async () => {
         rskTxHelper,
         btcTxHelper,
         'legacy',
-        PEGIN_VALUE_IN_BTC * (INITIAL_PEGINS_COUNT + 2)
+        PEGIN_VALUE_IN_BTC + SENDER_FEE_MARGIN_IN_BTC
     );
 
     logger.info(
-        `[scenario-bootstrap] sending ${INITIAL_PEGINS_COUNT} pegins of ${PEGIN_VALUE_IN_BTC} btc to the active federation`
+        `[scenario-bootstrap] sending a pegin of ${PEGIN_VALUE_IN_BTC} btc to the active federation`
     );
 
     const balanceBeforeInSatoshis = await getActiveFederationBalanceInSatoshis();
 
-    let lastPeginBtcTxHash;
-    for (let peginNumber = 0; peginNumber < INITIAL_PEGINS_COUNT; peginNumber++) {
-        lastPeginBtcTxHash = await sendPeginToActiveFederation(
-            rskTxHelper,
-            btcTxHelper,
-            senderRecipientInfo.btcSenderAddressInfo,
-            PEGIN_VALUE_IN_BTC
-        );
-    }
-    await ensurePeginIsRegistered(rskTxHelper, lastPeginBtcTxHash);
+    const peginBtcTxHash = await sendPeginToActiveFederation(
+        rskTxHelper,
+        btcTxHelper,
+        senderRecipientInfo.btcSenderAddressInfo,
+        PEGIN_VALUE_IN_BTC
+    );
+    await ensurePeginIsRegistered(rskTxHelper, peginBtcTxHash);
 
-    // Only the last pegin is waited on, so check what actually arrived rather than settling for
-    // "something did". A partially registered funding would otherwise pass here and resurface
-    // much later as the Bridge being unable to pay for an SVP fund transaction.
+    // Check what actually arrived rather than settling for "something did". A pegin that did not
+    // register would otherwise pass here and resurface much later as the Bridge being unable to
+    // pay for an SVP fund transaction.
     const balanceInSatoshis = await getActiveFederationBalanceInSatoshis();
-    const expectedIncreaseInSatoshis = btcToSatoshis(INITIAL_PEGINS_COUNT * PEGIN_VALUE_IN_BTC);
+    const expectedIncreaseInSatoshis = btcToSatoshis(PEGIN_VALUE_IN_BTC);
     const actualIncreaseInSatoshis = balanceInSatoshis - balanceBeforeInSatoshis;
 
     if (actualIncreaseInSatoshis < expectedIncreaseInSatoshis) {
         throw new Error(
             `The active federation only gained ${satoshisToBtc(actualIncreaseInSatoshis)} btc from ` +
-                `${INITIAL_PEGINS_COUNT} pegins of ${PEGIN_VALUE_IN_BTC} btc, expected ` +
-                `${satoshisToBtc(expectedIncreaseInSatoshis)} btc. Some of them did not register`
+                `a pegin of ${PEGIN_VALUE_IN_BTC} btc. It did not register`
         );
     }
 

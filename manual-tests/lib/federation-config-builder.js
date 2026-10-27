@@ -202,8 +202,5 @@ module.exports = {
     DEFAULT_BASE_PORT,
     RPC_TIMEOUT_IN_MILLISECONDS,
     KEY_FILE_MODE,
-    getPortsFor,
-    buildFederatorNodeConfig,
-    buildFederatorNodePool,
     buildScenarioConfig,
 };

@@ -69,7 +69,11 @@ const printAvailableScenarios = () => {
         const { description } = loadScenario(scenarioName);
         process.stdout.write(`  ${scenarioName}${description ? ` - ${description}` : ''}\n`);
     }
-    process.stdout.write('\nRun one with: npm run test-manual <scenario>\n');
+    const [firstScenarioName] = scenarioNames;
+    process.stdout.write(
+        `\nRun one with: npm run test-manual <scenario>\n` +
+            `          e.g: npm run test-manual ${firstScenarioName}\n`
+    );
 };
 
 /**
