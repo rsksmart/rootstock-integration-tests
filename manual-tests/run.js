@@ -128,6 +128,14 @@ const run = () => {
 
     const timeoutInMilliseconds = scenario.timeoutInMilliseconds || DEFAULT_TIMEOUT_IN_MILLISECONDS;
 
+    // The tests of a scenario share one live network and run in order, so a test that fails
+    // usually leaves the ones after it running against a state nobody meant to create. Stopping
+    // there is the useful default when a scenario can run for an hour.
+    //
+    // Only the exact string 'false' turns this off, so a value that was meant to disable it but
+    // does not say so leaves the run stopping early, which is the harmless way to be wrong.
+    const shouldStopAtFirstFailure = process.env.MANUAL_TEST_BAIL !== 'false';
+
     const scenarioEnvironment = {
         ...process.env,
         MANUAL_TEST_SCENARIO: scenario.name,
@@ -143,7 +151,9 @@ const run = () => {
         process.stdout.write(`${scenario.description}\n`);
     }
     process.stdout.write(
-        `Timeout: ${timeoutInMilliseconds} ms. Specs: ${scenario.specFiles.map((specFile) => path.basename(specFile)).join(', ')}\n\n`
+        `Timeout: ${timeoutInMilliseconds} ms. ` +
+            `Stops at the first failure: ${shouldStopAtFirstFailure ? 'yes' : 'no'}. ` +
+            `Specs: ${scenario.specFiles.map((specFile) => path.basename(specFile)).join(', ')}\n\n`
     );
 
     // The spec reporter only: the repository's `.mocharc.json` also writes `reports/junit.xml`,
@@ -153,6 +163,7 @@ const run = () => {
         String(timeoutInMilliseconds),
         '--reporter',
         'spec',
+        ...(shouldStopAtFirstFailure ? ['--bail'] : []),
         ...(scenario.bootstrapFile
             ? ['--file', path.resolve(scenario.dir, scenario.bootstrapFile)]
             : []),

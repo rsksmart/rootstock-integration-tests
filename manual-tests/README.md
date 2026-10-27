@@ -27,6 +27,33 @@ Only one run of a given scenario at a time: a run takes a lock on its own folder
 `manual-tests/generated/`, and refuses to start if another one holds it. A lock left behind by a
 process that is gone is taken over automatically.
 
+### When a test fails
+
+A run stops there and does not run the tests after it. `MANUAL_TEST_BAIL` decides this:
+
+| `MANUAL_TEST_BAIL` | What a failing test does |
+| --- | --- |
+| not set | Stops the run. This is the default. |
+| `false` | Does not stop the run; every remaining test still runs. |
+| any other value (e.g. `true`) | Stops the run, the same as not setting it. |
+
+```bash
+# keep going after a failure
+MANUAL_TEST_BAIL=false npm run test-manual <scenario>
+```
+
+Every run prints which of the two it is doing before the first test, so a run that ends early is
+never a mystery.
+
+Stopping is the better default because the tests of a scenario share one live network and run in
+order. Once one fails, the ones after it are running against a state nobody meant to create, and
+getting through them can take the best part of an hour.
+
+Stopping early also loses nothing a rerun would have kept. Every run starts from scratch: the
+bitcoin data directory is cleared and the federator nodes come up with `database.reset`, so a
+scenario always begins on an empty chain with the genesis federation, whatever the run before it
+did. A rerun does not carry on from the test that failed.
+
 ## Adding a scenario
 
 Create a folder next to the existing ones with:

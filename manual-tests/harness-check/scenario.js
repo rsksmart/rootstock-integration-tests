@@ -7,7 +7,7 @@
  *
  * Manifest fields, all optional except `description`:
  *   description            one line, shown when listing the scenarios
- *   timeoutInMilliseconds  mocha timeout, defaults to 4 hours
+ *   timeoutInMilliseconds  mocha timeout, defaults to an hour
  *   configFile             node configuration, relative to the scenario folder, exported to the
  *                          spec files as CONFIG_FILE_PATH the same way `test.js` reads it
  *   bootstrapFile          loaded by mocha before the specs, for root level before/after hooks
