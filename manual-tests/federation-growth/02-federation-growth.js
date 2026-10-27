@@ -45,7 +45,9 @@ if (FIRST_TARGET_SIZE > LAST_TARGET_SIZE || LAST_TARGET_SIZE > MAX_FEDERATORS_CO
  */
 const SIZES_EXPECTED_TO_FAIL = [16];
 
-const isExpectedToFail = (federationSize) => SIZES_EXPECTED_TO_FAIL.includes(federationSize);
+const isExpectedToFail = (federationSize) => {
+    return SIZES_EXPECTED_TO_FAIL.includes(federationSize);
+};
 
 /**
  * The address a powpeg of this size should have, derived from the same public keys the Bridge is
@@ -60,8 +62,9 @@ const getExpectedRedeemScript = (federationSize) => {
     return redeemScriptParser.buildPowpegRedeemScript(publicKeys, ERP_PUBKEYS, ERP_CSV_VALUE);
 };
 
-const getExpectedFederationAddress = (federationSize, network) =>
-    getP2shP2wshAddressFromRedeemScript(getExpectedRedeemScript(federationSize), network);
+const getExpectedFederationAddress = (federationSize, network) => {
+    return getP2shP2wshAddressFromRedeemScript(getExpectedRedeemScript(federationSize), network);
+};
 
 /**
  * How a powpeg of this size writes its member count, both ways.
@@ -73,10 +76,12 @@ const getExpectedFederationAddress = (federationSize, network) =>
  * @param {number} federationSize
  * @returns {{minimal: string, nonMinimal: string}} hex, without any prefix
  */
-const getMemberCountEncodings = (federationSize) => ({
-    minimal: (0x50 + federationSize).toString(16),
-    nonMinimal: `01${federationSize.toString(16).padStart(2, '0')}`,
-});
+const getMemberCountEncodings = (federationSize) => {
+    return {
+        minimal: (0x50 + federationSize).toString(16),
+        nonMinimal: `01${federationSize.toString(16).padStart(2, '0')}`,
+    };
+};
 
 /**
  * Checks a size the Bridge cannot build correctly.

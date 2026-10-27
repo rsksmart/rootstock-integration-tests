@@ -1,24 +1,10 @@
 /**
- * Builds the node configuration a manual scenario runs on.
+ * Builds the node configuration a manual scenario runs on, deriving everything from the federator
+ * keys in ./federator-keys: public keys, node ids, ports, peering and file paths.
  *
- * The regular regtest configs spell out every node by hand: four federations, three members each,
- * every port, node id, peer entry and file path written out, which is around 700 lines for twelve
- * nodes that never change. A scenario that walks a federation from 3 up to 20 members cannot be
- * written that way, so this builder derives all of it instead.
- *
- * What is fixed: the federator private keys (see ./federator-keys) and the base port. Everything
- * else - public keys, node ids, ports, peering, key file paths, logback paths - is derived.
- *
- * Two decisions worth knowing about:
- *
- * - **Every node is given the whole pool as peers, not just the nodes that are running.** A
- *   scenario starts a few nodes and adds more later, and a running node never re-reads its peer
- *   list. Meshing all 20 up front means a node that joins later is already known to everyone;
- *   until it starts, it is just a peer that is not answering, which rskj retries on its own.
- *
- * - **One shared .conf file, per-node values as -D overrides.** `lib/federate-runner.js` turns
- *   every `customConfig` entry into a `-D`, and rskj layers system properties above the file in
- *   `-Drsk.conf.file`, so nothing has to be templated or generated per node.
+ * Every node gets the whole pool as peers, not just the nodes running, because a node never
+ * re-reads its peer list and scenarios add nodes as they go. All nodes share one .conf and differ
+ * only in -D overrides, which federate-runner passes through and rskj layers above the file.
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -40,26 +26,17 @@ const DEFAULT_GENERATED_DIR = path.join(MANUAL_TESTS_DIR, 'generated');
 
 const PORTS_PER_NODE = 2;
 
-// The only mode the powpeg node accepts for a signing key, and the one it has to be relaxed to
-// for the builder to be able to rewrite it.
+// The only mode the powpeg node accepts for a signing key.
 const KEY_FILE_MODE = 0o400;
-const KEY_FILE_WRITABLE_MODE = 0o600;
 
-// The powpeg node's reference.conf sets `rpc.timeout = 5000`, and a single `evm_mine` on a
-// machine running ten federator JVMs does not always come back inside five seconds. When it does
-// not, the node answers with a JsonRpcTimeoutError, which surfaces here as a federation change
-// failing for no reason of its own: one such timeout landed in the middle of mining towards an
-// activation height and failed the 17 member change of an otherwise clean run, with 37 timeouts
-// logged across that run, all of them in its second half where the node count was highest.
-//
-// Generous rather than disabled (zero turns it off): a call that is genuinely stuck should still
-// end in an error, just not one caused by the machine being busy.
+// The powpeg node defaults to `rpc.timeout = 5000`, which a single `evm_mine` can exceed on a
+// machine running ten federator JVMs. The node then answers JsonRpcTimeoutError and the change
+// fails for no reason of its own. Generous rather than disabled, since zero turns it off.
 const RPC_TIMEOUT_IN_MILLISECONDS = 120000;
 
 /**
- * The p2p and rpc ports of a federator. They are derived from its position in the pool, so a
- * federator keeps the same ports whether it is started at the beginning of a scenario or halfway
- * through, which is what lets the peer mesh be built once, up front.
+ * The p2p and rpc ports of a federator, derived from its position in the pool so they are the
+ * same whenever it starts. That is what lets the peer mesh be built once, up front.
  * @param {object} federator
  * @param {number} basePort
  * @returns {{port: number, rpcPort: number}}
@@ -72,10 +49,9 @@ const getPortsFor = (federator, basePort) => {
 /**
  * Writes a federator's signing key where the node can read it, and returns the path.
  *
- * The powpeg node refuses to start on a key file that is anything other than read only for its
- * owner: `KeyFileChecker#checkFilePermissions` accepts exactly one permission, OWNER_READ. Since
- * a file already at that mode cannot be rewritten, it is made writable first and locked down
- * again afterwards, which keeps the builder safe to run twice.
+ * `KeyFileChecker#checkFilePermissions` accepts exactly one permission, OWNER_READ, and a file at
+ * that mode cannot be rewritten. Removing it and creating the replacement with the mode in one
+ * step keeps this safe to run twice.
  * @param {object} federator
  * @param {string} keysDir
  * @returns {string} the key file path
@@ -84,11 +60,13 @@ const writeKeyFile = (federator, keysDir) => {
     fs.mkdirSync(keysDir, { recursive: true });
     const keyFilePath = path.join(keysDir, `${federator.name}.key`);
 
-    if (fs.existsSync(keyFilePath)) {
-        fs.chmodSync(keyFilePath, KEY_FILE_WRITABLE_MODE);
-    }
-    fs.writeFileSync(keyFilePath, `${federator.privateKey}\n`, 'utf8');
-    fs.chmodSync(keyFilePath, KEY_FILE_MODE);
+    // `force` means no error when there is nothing to remove, so this is the same on a first run
+    // and on a rerun.
+    fs.rmSync(keyFilePath, { force: true });
+    fs.writeFileSync(keyFilePath, `${federator.privateKey}\n`, {
+        encoding: 'utf8',
+        mode: KEY_FILE_MODE,
+    });
 
     return keyFilePath;
 };

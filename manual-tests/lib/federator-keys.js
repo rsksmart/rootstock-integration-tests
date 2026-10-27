@@ -1,23 +1,12 @@
 /**
- * The fixed pool of federator keys the manual scenarios draw from.
+ * The fixed pool of federator keys the manual scenarios draw from, and the only thing hardcoded
+ * in the node configuration.
  *
- * One private key per federator is all that is needed: the BTC, RSK and MST signing keys are the
- * same key (as they are in the regular regtest configs), the node's `peer.privateKey` is that key
- * too, and the node id is just its uncompressed public key without the format prefix. So the only
- * thing hardcoded here is the list below; everything else is derived.
+ * One private key per federator covers everything: BTC, RSK and MST are the same key, as they are
+ * in the regular regtest configs, `peer.privateKey` is that key too, and the node id is its
+ * uncompressed public key without the format prefix.
  *
- * The first three keys are not a free choice: rskj's regtest genesis federation is hardcoded in
- * `BridgeRegTestConstants.DEFAULT_FEDERATION_PUBLIC_KEYS`, and the Bridge will only recognise a
- * genesis federator whose public key is one of those three. They are the same keys the regular
- * regtest configs use under `config/node-keys/genesis-federation/`.
- *
- * Keys 4 to 12 are the ones the regular regtest configs already carry for the second, third and
- * fourth federations. Keys 13 to 20 were generated for these scenarios as
- * sha256('rootstock-integration-tests/manual-tests/federation-growth/federator-<n>'), so anybody
- * can regenerate and check them.
- *
- * These are throwaway regtest keys and nothing else. They are public in this repository on
- * purpose, the same way the existing node keys are.
+ * Throwaway regtest keys, public on purpose, like the existing ones under `config/node-keys/`.
  */
 const ECPairFactory = require('ecpair').default;
 const ecc = require('tiny-secp256k1');
@@ -28,7 +17,8 @@ const ECPair = ECPairFactory(ecc);
 const MAX_FEDERATORS_COUNT = 20;
 
 const FEDERATOR_PRIVATE_KEYS = [
-    // 1 to 3: rskj's regtest genesis federation. Do not reorder or replace these.
+    // 1 to 3: rskj's regtest genesis federation, hardcoded in BridgeRegTestConstants. The Bridge
+    // only recognises these three, so do not reorder or replace them.
     '45c5b07fc1a6f58892615b7c31dca6c96db58c4bbc538a6b8a22999aaa860c32',
     '505334c7745df2fc61486dffb900784505776a898377172ffa77384892749179',
     'bed0af2ce8aa8cb2bc3f9416c9d518fdee15d1ff15b8ded28376fcb23db6db69',
@@ -42,7 +32,7 @@ const FEDERATOR_PRIVATE_KEYS = [
     'e1910f6fe9f6dc6bf995a80aadb32f860d1103cd415fe5ff716c8e70d74b19bb',
     'f98f0f65c83e50dee8db45975a443a915b289bd916473910059111a226b0495b',
     '9dd9e22f9ea340a9818a21dd32ce937a61b7dc26f019cd36138098f5d7985574',
-    // 13 to 20: generated for the manual scenarios, see the note above.
+    // 13 to 20: sha256('rootstock-integration-tests/manual-tests/federation-growth/federator-<n>').
     '01c790dbd5bc076fcf781c2189e50029100bd3c563ccdd2387a9da2dfe31af7d',
     'f4a06d07f9262c1d853929c59a2e477647f338d4aff50b695b6e3859ad002aa7',
     'ffb97b1bcfe37d94c24d5c7a0e8fa95d25b509f08c2b4d9f366500c1cb2528e8',
@@ -108,12 +98,13 @@ const getFederators = (federatorsCount) => {
 };
 
 /**
- * The amount of signatures a powpeg of the given size needs: half plus one. This is consensus
- * code in the Bridge and does not change.
+ * The signatures a powpeg of the given size needs: half plus one, as the Bridge requires.
  * @param {number} federatorsCount
  * @returns {number}
  */
-const getRequiredSignaturesCount = (federatorsCount) => Math.floor(federatorsCount / 2) + 1;
+const getRequiredSignaturesCount = (federatorsCount) => {
+    return Math.floor(federatorsCount / 2) + 1;
+};
 
 module.exports = {
     MAX_FEDERATORS_COUNT,
