@@ -29,9 +29,10 @@ const REPO_ROOT = path.resolve(MANUAL_TESTS_DIR, '..');
 // real gate; this makes the shape of what is accepted explicit instead of implied.
 const SCENARIO_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*$/i;
 
-// A scenario can run for hours, so the default is far longer than the main suite's 20 minutes.
-// A scenario can lower or raise it through its manifest.
-const DEFAULT_TIMEOUT_IN_MILLISECONDS = 4 * 60 * 60 * 1000;
+// Mocha applies this to each test and each hook, not to the whole scenario. Longer than the
+// main suite's 20 minutes, since a single federation change can run for several, and short
+// enough that something hung does not sit for most of a day. A scenario can raise it.
+const DEFAULT_TIMEOUT_IN_MILLISECONDS = 60 * 60 * 1000;
 
 const listScenarioNames = () => {
     return fs
