@@ -27,8 +27,16 @@ inputs:
     description: 'The name of the base rskj repository to checkout (e.g. a private fork)'
     required: false
     default: 'rskj'
+  powpeg-repo:
+    description: 'The name of the powpeg-node repository to checkout (e.g. a private fork). Defaults to powpeg-node.'
+    required: false
+    default: 'powpeg-node'
+  rit-repo:
+    description: 'The name of the rootstock-integration-tests repository to checkout (e.g. a private fork). Defaults to rootstock-integration-tests.'
+    required: false
+    default: 'rootstock-integration-tests'
   github-token:
-    description: 'Token used to clone a private base rskj repository. Optional; only required when rskj-repo is private. Pass it from a GitHub Actions secret (reference it with the standard secrets expression, e.g. secrets.MY_TOKEN) and do not hardcode.'
+    description: 'Token used to clone a private base repository (rskj, powpeg-node or rootstock-integration-tests). Optional; only required when one of the *-repo inputs points at a private repo. Pass it from a GitHub Actions secret (e.g. secrets.MY_TOKEN) and do not hardcode.'
     required: false
     default: ''
   test-suite:
@@ -52,5 +60,7 @@ runs:
     INPUT_RIT_LOG_LEVEL: ${{ inputs.rit-log-level }}
     INPUT_REPO_OWNER: ${{ inputs.repo-owner }}
     INPUT_RSKJ_REPO: ${{ inputs.rskj-repo }}
+    INPUT_POWPEG_REPO: ${{ inputs.powpeg-repo }}
+    INPUT_RIT_REPO: ${{ inputs.rit-repo }}
     INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
     INPUT_TEST_SUITE: ${{ inputs.test-suite }}

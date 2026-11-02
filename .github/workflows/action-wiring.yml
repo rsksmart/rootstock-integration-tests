@@ -121,6 +121,11 @@ jobs:
           powpeg-node-branch: ${{ env.POWPEG_BRANCH }}
           rit-branch: ${{ env.RIT_BRANCH }}
           test-suite: short
+          # Point the RIT clone at THIS repo with a token so a private fork tests its own code;
+          # rskj/powpeg fall back to public when absent under this owner.
+          repo-owner: ${{ github.repository_owner }}
+          rit-repo: ${{ github.event.repository.name }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Print RIT Status and Message
         id: output
