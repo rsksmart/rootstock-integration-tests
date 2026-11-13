@@ -67,6 +67,30 @@ Create a folder next to the existing ones with:
 A scenario may also bring its own node configuration (`configFile`) and its own root level
 before/after hooks (`bootstrapFile`); the runner wires both up.
 
+### Running on the regular suite's node configurations
+
+`lib/suite-config-bootstrap.js` is a `bootstrapFile` for a scenario that runs on one of the
+regular suite's node configurations:
+
+- `config/regtest-all-keyfiles.js` - every federation signs with keyfiles.
+- `config/regtest-key-files-and-hsms.js` - the genesis federation signs with keyfiles, and the
+  federations it changes to also sign with HSMs (tcpsigner).
+
+It reuses the regular suite's root hooks (`test.js`) to start bitcoind and the genesis federation,
+without registering any of the regular suite's tests, clears the bitcoin data directory first, and
+mines the 515 blocks the regular suite's first test mines before the scenario's specs run.
+
+```js
+module.exports = {
+    description: '...',
+    configFile: '../../config/regtest-key-files-and-hsms.js',
+    bootstrapFile: '../lib/suite-config-bootstrap.js',
+};
+```
+
+A scenario that needs something more, like an environment variable set before the nodes start,
+brings its own `bootstrapFile` that sets it and then requires `lib/suite-config-bootstrap.js`.
+
 ## Scenarios
 
 - **`harness-check`** — checks this harness itself. Starts no nodes, finishes in seconds. Copy it
