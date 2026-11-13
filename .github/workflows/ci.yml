@@ -160,6 +160,9 @@ jobs:
           INPUT_RIT_LOG_LEVEL: info
         run: |
           mkdir -p "${{ github.workspace }}/reports"
+          # Point the RIT clone at THIS repo (owner + name) with a token so a private fork's CI
+          # tests its own RIT code. rskj/powpeg keep their default names and, when absent under
+          # this owner, fall back to the public rsksmart repos.
           docker run \
             --env GITHUB_OUTPUT="/github-output"  \
             --env GITHUB_WORKSPACE="/github/workspace"  \
@@ -168,6 +171,9 @@ jobs:
             --env INPUT_RIT_BRANCH="${{ env.RIT_BRANCH }}"  \
             --env INPUT_RIT_LOG_LEVEL="${{ env.INPUT_RIT_LOG_LEVEL }}" \
             --env INPUT_TEST_SUITE="${{ env.TEST_SUITE }}" \
+            --env INPUT_REPO_OWNER="${{ github.repository_owner }}" \
+            --env INPUT_RIT_REPO="${{ github.event.repository.name }}" \
+            --env INPUT_GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}" \
             -v "$GITHUB_OUTPUT:/github-output"  \
             -v "${{ github.workspace }}/reports:/github/workspace/reports"  \
             --rm ${{ env.TEST_TAG }}
