@@ -27,7 +27,7 @@
   "license": "GPL3",
   "dependencies": {
     "@noble/secp256k1": "3.2.0",
-    "@rsksmart/bridge-state-data-parser": "2.3.0",
+    "@rsksmart/bridge-state-data-parser": "git+https://git@github.com/rsksmart/bridge-state-data-parser.git#fix/parse-utxo-output-index-length",
     "@rsksmart/bridge-transaction-parser": "3.0.0",
     "@rsksmart/btc-eth-unit-converter": "1.0.1",
     "@rsksmart/btc-rsk-derivation": "0.0.2",

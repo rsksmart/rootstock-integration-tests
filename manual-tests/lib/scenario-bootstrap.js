@@ -21,7 +21,7 @@ const { satoshisToBtc, btcToSatoshis } = require('@rsksmart/btc-eth-unit-convert
 const {
     createSenderRecipientInfo,
     sendPeginToActiveFederation,
-    ensurePeginIsRegistered,
+    ensureBtcTxIsRegistered,
 } = require('../../lib/2wp-utils');
 const rskUtils = require('../../lib/rsk-utils');
 const { fundNewFederators } = require('../../lib/federation-utils');
@@ -454,7 +454,7 @@ const fundActiveFederation = async () => {
         senderRecipientInfo.btcSenderAddressInfo,
         PEGIN_VALUE_IN_BTC
     );
-    await ensurePeginIsRegistered(rskTxHelper, peginBtcTxHash);
+    await ensureBtcTxIsRegistered(rskTxHelper, peginBtcTxHash);
 
     // Check what actually arrived rather than settling for "something did". A pegin that did not
     // register would otherwise pass here and resurface much later as the Bridge being unable to
