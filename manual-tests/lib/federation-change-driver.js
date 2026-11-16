@@ -10,6 +10,7 @@
  * budget runs out. A fixed sequence does not survive the timing differences between runs.
  */
 const rskUtils = require('../../lib/rsk-utils');
+const { findEventInBlock } = require('../../lib/events-utils');
 const { getBridge } = require('../../lib/bridge-provider');
 const { getRskTransactionHelpers } = require('../../lib/rsk-tx-helper-provider');
 const { getBtcClient } = require('../../lib/btc-client-provider');
@@ -279,7 +280,7 @@ const runSvp = async (context, commitBlockNumber) => {
     let failureEvent = null;
     let failureEventLookupError = null;
     try {
-        failureEvent = await rskUtils.findEventInBlock(
+        failureEvent = await findEventInBlock(
             rskTxHelper,
             FEDERATION_EVENTS.COMMIT_FEDERATION_FAILED.name,
             commitBlockNumber,
