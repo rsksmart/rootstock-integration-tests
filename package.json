@@ -34,7 +34,7 @@
     "@rsksmart/btc-transaction-helper": "git+https://git@github.com/rsksmart/btc-transaction-helper.git#v5.0.0",
     "@rsksmart/pmt-builder": "3.0.1",
     "@rsksmart/powpeg-redeemscript-parser": "2.0.0",
-    "@rsksmart/rsk-precompiled-abis": "git+https://git@github.com/rsksmart/rsk-precompiled-abis.git#master",
+    "@rsksmart/rsk-precompiled-abis": "10.0.0-CARDAMOM",
     "bitcoinjs-lib": "7.0.4",
     "bn.js": "5.2.5",
     "chai": "4.5.0",
@@ -69,7 +69,6 @@
     "shelljs": "0.10.0"
   },
   "overrides": {
-    "diff": "8.0.3",
-    "@rsksmart/rsk-precompiled-abis": "$@rsksmart/rsk-precompiled-abis"
+    "diff": "8.0.3"
   }
 }
