@@ -23,6 +23,9 @@ RIT_OWNER="${INPUT_RIT_OWNER:-rsksmart}"
 RIT_REPO="${INPUT_RIT_REPO:-rootstock-integration-tests}"
 
 GH_TOKEN="${INPUT_GITHUB_TOKEN}"  # Optional; required to clone any private repo (rskj, powpeg or RIT)
+# Drop the exported copy right away so the token is not inherited by the build/test processes.
+# GH_TOKEN is a plain shell variable (not exported) and is unset once all the clones are done.
+unset INPUT_GITHUB_TOKEN
 
 # Resolve whether a git ref exists in a GitHub repository. The inputs may be a
 # branch, a tag or a specific commit (see container-action/README.md), so we use
@@ -179,6 +182,8 @@ else
   echo "Error: unexpected HTTP status ${RIT_REF_STATUS#error:} while checking $RIT_OWNER/$RIT_REPO for ref $RIT_BRANCH (invalid ref, insufficient token permissions, or GitHub rate limits)" >&2
   exit 1
 fi
+# All clones are done; the token is no longer needed.
+unset GH_TOKEN
 cd rit
 
 echo -e "\n\n--------- Checking out the RIT branch: $RIT_BRANCH ---------\n\n"
