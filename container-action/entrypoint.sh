@@ -18,6 +18,8 @@ REPO_OWNER="${INPUT_REPO_OWNER:-rsksmart}"
 RSKJ_REPO="${INPUT_RSKJ_REPO:-rskj}"
 POWPEG_REPO="${INPUT_POWPEG_REPO:-powpeg-node}"
 
+# RIT has its own owner, independent of REPO_OWNER
+RIT_OWNER="${INPUT_RIT_OWNER:-rsksmart}"
 RIT_REPO="${INPUT_RIT_REPO:-rootstock-integration-tests}"
 
 GH_TOKEN="${INPUT_GITHUB_TOKEN}"  # Optional; required to clone any private repo (rskj, powpeg or RIT)

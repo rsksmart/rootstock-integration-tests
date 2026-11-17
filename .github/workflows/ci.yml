@@ -172,6 +172,7 @@ jobs:
             --env INPUT_RIT_LOG_LEVEL="${{ env.INPUT_RIT_LOG_LEVEL }}" \
             --env INPUT_TEST_SUITE="${{ env.TEST_SUITE }}" \
             --env INPUT_REPO_OWNER="${{ github.repository_owner }}" \
+            --env INPUT_RIT_OWNER="${{ github.repository_owner }}" \
             --env INPUT_RIT_REPO="${{ github.event.repository.name }}" \
             --env INPUT_GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}" \
             -v "$GITHUB_OUTPUT:/github-output"  \
