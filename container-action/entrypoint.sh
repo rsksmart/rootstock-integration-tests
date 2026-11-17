@@ -6,14 +6,34 @@
 # review gate on their side, so test changes carefully before merging to main.
 
 set -e
+
+# GitHub also exports the github-token input as INPUT_GITHUB-TOKEN (hyphenated) when this action is
+# used via `uses:`. Bash cannot unset that name, so re-exec without it to keep the token out of the
+# build/test subprocesses.
+if printenv 'INPUT_GITHUB-TOKEN' >/dev/null; then
+  exec env -u 'INPUT_GITHUB-TOKEN' "$0" "$@"
+fi
+
 RSKJ_BRANCH="${INPUT_RSKJ_BRANCH}"
 POWPEG_NODE_BRANCH="${INPUT_POWPEG_NODE_BRANCH}"
 RIT_BRANCH="${INPUT_RIT_BRANCH}"
 LOG_LEVEL="${INPUT_RIT_LOG_LEVEL}"
-REPO_OWNER="${INPUT_REPO_OWNER:-rsksmart}"  # Default to 'rsksmart' if not provided
-RSKJ_REPO="${INPUT_RSKJ_REPO:-rskj}"        # Name of the base rskj repo; default to 'rskj'
-GH_TOKEN="${INPUT_GITHUB_TOKEN}"            # Optional; required to clone a private base rskj repo
-TEST_SUITE="${INPUT_TEST_SUITE:-full}"      # Default to 'full' (long) suite if not provided
+TEST_SUITE="${INPUT_TEST_SUITE:-full}"  # Default to 'full' (long) suite if not provided
+
+# Owner of rskj and powpeg-node. Callers set it to the PR author's owner so the PR's own fork is
+# tested; when the ref is not found there, both fall back to rsksmart.
+REPO_OWNER="${INPUT_REPO_OWNER:-rsksmart}"
+RSKJ_REPO="${INPUT_RSKJ_REPO:-rskj}"
+POWPEG_REPO="${INPUT_POWPEG_REPO:-powpeg-node}"
+
+# RIT has its own owner, independent of REPO_OWNER
+RIT_OWNER="${INPUT_RIT_OWNER:-rsksmart}"
+RIT_REPO="${INPUT_RIT_REPO:-rootstock-integration-tests}"
+
+GH_TOKEN="${INPUT_GITHUB_TOKEN}"  # Optional; required to clone any private repo (rskj, powpeg or RIT)
+# Drop the exported copy right away so the token is not inherited by the build/test processes.
+# GH_TOKEN is a plain shell variable (not exported) and is unset once all the clones are done.
+unset INPUT_GITHUB_TOKEN
 
 # Resolve whether a git ref exists in a GitHub repository. The inputs may be a
 # branch, a tag or a specific commit (see container-action/README.md), so we use
@@ -49,7 +69,8 @@ ref_status() {
 }
 
 RSKJ_REF_STATUS=$(ref_status "$REPO_OWNER" "$RSKJ_REPO" "$RSKJ_BRANCH")
-POWPEG_REF_STATUS=$(ref_status "$REPO_OWNER" "powpeg-node" "$POWPEG_NODE_BRANCH")
+POWPEG_REF_STATUS=$(ref_status "$REPO_OWNER" "$POWPEG_REPO" "$POWPEG_NODE_BRANCH")
+RIT_REF_STATUS=$(ref_status "$RIT_OWNER" "$RIT_REPO" "$RIT_BRANCH")
 
 echo -e "\n\n--------- Input parameters received ---------\n\n"
 echo "RSKJ_BRANCH=$RSKJ_BRANCH"
@@ -58,6 +79,9 @@ echo "RIT_BRANCH=$RIT_BRANCH"
 echo "LOG_LEVEL=$LOG_LEVEL"
 echo "REPO_OWNER=$REPO_OWNER"
 echo "RSKJ_REPO=$RSKJ_REPO"
+echo "POWPEG_REPO=$POWPEG_REPO"
+echo "RIT_OWNER=$RIT_OWNER"
+echo "RIT_REPO=$RIT_REPO"
 echo "TEST_SUITE=$TEST_SUITE"
 
 echo -e "\n\n--------- Starting the configuration of rskj ---------\n\n"
@@ -103,17 +127,30 @@ chmod +x ./configure.sh && chmod +x gradlew
 echo -e  "\n\n--------- Starting the configuration of powpeg ---------\n\n"
 cd /usr/src/
 if [[ "$POWPEG_REF_STATUS" == "found" ]]; then
-  echo "Found matching ref $POWPEG_NODE_BRANCH in $REPO_OWNER/powpeg-node.git repo"
-  git clone "https://github.com/$REPO_OWNER/powpeg-node.git" powpeg
+  echo "Found matching ref $POWPEG_NODE_BRANCH in $REPO_OWNER/$POWPEG_REPO.git repo"
+  # Token-authenticated clone (same scheme as rskj) so a private powpeg fork can be cloned; the
+  # credential is passed via a per-command header and never embedded in the URL nor persisted.
+  if [[ -n "$GH_TOKEN" ]]; then
+    GH_BASIC_AUTH=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')
+    echo "::add-mask::${GH_BASIC_AUTH}"
+    GIT_TERMINAL_PROMPT=0 git -c http.extraheader="Authorization: Basic ${GH_BASIC_AUTH}" clone "https://github.com/$REPO_OWNER/$POWPEG_REPO.git" powpeg
+    unset GH_BASIC_AUTH
+  else
+    git clone "https://github.com/$REPO_OWNER/$POWPEG_REPO.git" powpeg
+  fi
 elif [[ "$POWPEG_REF_STATUS" == "notfound" ]]; then
-  # Only a genuine not-found (branch/tag/commit absent in the configured owner)
-  # triggers the fallback to upstream rsksmart/powpeg-node. Any other status
-  # (401/403/rate limit) is treated as a hard error so we never silently switch
-  # repos.
-  echo "No ref $POWPEG_NODE_BRANCH in $REPO_OWNER/powpeg-node.git; falling back to default rsksmart/powpeg-node.git repo"
-  git clone "https://github.com/rsksmart/powpeg-node.git" powpeg
+  # Only fall back to upstream rsksmart/powpeg-node when the caller kept the default repo name.
+  # A custom powpeg-repo that is missing is a hard error, so tests are never silently run against
+  # a different codebase (and a missing/insufficient token for a private fork is surfaced).
+  if [[ "$POWPEG_REPO" == "powpeg-node" ]]; then
+    echo "No ref $POWPEG_NODE_BRANCH in $REPO_OWNER/$POWPEG_REPO.git (branch/tag/commit not found, or repo not accessible with the provided token); falling back to default rsksmart/powpeg-node.git repo"
+    git clone "https://github.com/rsksmart/powpeg-node.git" powpeg
+  else
+    echo "Error: ref $POWPEG_NODE_BRANCH not found in the explicitly configured $REPO_OWNER/$POWPEG_REPO.git (branch/tag/commit missing, or repo not accessible with the provided token). Refusing to fall back to rsksmart/powpeg-node so the tests are not silently run against a different codebase." >&2
+    exit 1
+  fi
 else
-  echo "Error: unexpected HTTP status ${POWPEG_REF_STATUS#error:} while checking $REPO_OWNER/powpeg-node for ref $POWPEG_NODE_BRANCH (invalid ref, insufficient token permissions, or GitHub rate limits)" >&2
+  echo "Error: unexpected HTTP status ${POWPEG_REF_STATUS#error:} while checking $REPO_OWNER/$POWPEG_REPO for ref $POWPEG_NODE_BRANCH (invalid ref, insufficient token permissions, or GitHub rate limits)" >&2
   exit 1
 fi
 cp configure_gradle_powpeg.sh powpeg
@@ -127,7 +164,34 @@ echo "POWPEG_VERSION=$POWPEG_VERSION"
 echo -e "\n\n--------- Starting the configuration of RIT ---------\n\n"
 
 cd /usr/src/
-git clone https://github.com/rsksmart/rootstock-integration-tests.git rit
+if [[ "$RIT_REF_STATUS" == "found" ]]; then
+  echo "Found matching ref $RIT_BRANCH in $RIT_OWNER/$RIT_REPO.git repo"
+  # Token-authenticated clone (same scheme as rskj) so a private RIT fork can be cloned. This is
+  # what lets a private fork's CI test its own RIT code instead of the public upstream's.
+  if [[ -n "$GH_TOKEN" ]]; then
+    GH_BASIC_AUTH=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')
+    echo "::add-mask::${GH_BASIC_AUTH}"
+    GIT_TERMINAL_PROMPT=0 git -c http.extraheader="Authorization: Basic ${GH_BASIC_AUTH}" clone "https://github.com/$RIT_OWNER/$RIT_REPO.git" rit
+    unset GH_BASIC_AUTH
+  else
+    git clone "https://github.com/$RIT_OWNER/$RIT_REPO.git" rit
+  fi
+elif [[ "$RIT_REF_STATUS" == "notfound" ]]; then
+  # Fall back to upstream only when the default repo name is used; a custom rit-repo that is
+  # missing is a hard error (never silently run a different RIT codebase).
+  if [[ "$RIT_REPO" == "rootstock-integration-tests" ]]; then
+    echo "No ref $RIT_BRANCH in $RIT_OWNER/$RIT_REPO.git (branch/tag/commit not found, or repo not accessible with the provided token); falling back to default rsksmart/rootstock-integration-tests.git repo"
+    git clone "https://github.com/rsksmart/rootstock-integration-tests.git" rit
+  else
+    echo "Error: ref $RIT_BRANCH not found in the explicitly configured $RIT_OWNER/$RIT_REPO.git (branch/tag/commit missing, or repo not accessible with the provided token). Refusing to fall back to rsksmart/rootstock-integration-tests so the tests are not silently run against a different codebase." >&2
+    exit 1
+  fi
+else
+  echo "Error: unexpected HTTP status ${RIT_REF_STATUS#error:} while checking $RIT_OWNER/$RIT_REPO for ref $RIT_BRANCH (invalid ref, insufficient token permissions, or GitHub rate limits)" >&2
+  exit 1
+fi
+# All clones are done; the token is no longer needed.
+unset GH_TOKEN
 cd rit
 
 echo -e "\n\n--------- Checking out the RIT branch: $RIT_BRANCH ---------\n\n"
