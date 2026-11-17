@@ -6,6 +6,14 @@
 # review gate on their side, so test changes carefully before merging to main.
 
 set -e
+
+# GitHub also exports the github-token input as INPUT_GITHUB-TOKEN (hyphenated) when this action is
+# used via `uses:`. Bash cannot unset that name, so re-exec without it to keep the token out of the
+# build/test subprocesses.
+if printenv 'INPUT_GITHUB-TOKEN' >/dev/null; then
+  exec env -u 'INPUT_GITHUB-TOKEN' "$0" "$@"
+fi
+
 RSKJ_BRANCH="${INPUT_RSKJ_BRANCH}"
 POWPEG_NODE_BRANCH="${INPUT_POWPEG_NODE_BRANCH}"
 RIT_BRANCH="${INPUT_RIT_BRANCH}"
