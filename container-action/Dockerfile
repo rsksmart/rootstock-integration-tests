@@ -18,7 +18,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && apt-get clean
 
 # -- nodeJs ---------------------------------------------------------
-ENV NODE_VERSION  v20.14.0
+ENV NODE_VERSION  v24.22.3
 ENV NVM_DIR /usr/local/nvm
 RUN mkdir -p /usr/local/nvm && \
     curl -fsSL --proto '=https' -o /tmp/nvm-install.sh https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh \

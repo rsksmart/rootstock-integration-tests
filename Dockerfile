@@ -23,7 +23,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && apt-get clean
 
 # -- nodeJs ---------------------------------------------------------
-ENV NODE_VERSION=v22.11.0
+ENV NODE_VERSION=v24.22.3
 ENV NVM_DIR=/usr/local/nvm
 RUN bash -c 'set -e; \
     mkdir -p "$NVM_DIR"; \
